@@ -1,9 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
-import { Image } from 'expo-image';
 import React from 'react';
 import { Dimensions, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import API_CONFIG from '../app/config/api';
 import { Declaration } from '../types/declaration';
+import ImageCarousel from './ImageCarousel';
 
 interface DeclarationCardProps {
   declaration: Declaration;
@@ -15,7 +14,7 @@ const { width } = Dimensions.get('window');
 
 export default function DeclarationCard({ declaration, onChatPress, onPress }: DeclarationCardProps) {
   const getSeverityColor = (severity: number) => {
-    if (severity >= 8) return '#FF3B30'; // High - Red
+    if (severity >= 7) return '#FF3B30'; // High - Red
     if (severity >= 5) return '#FF9500'; // Medium - Orange
     return '#34C759'; // Low - Green
   };
@@ -94,38 +93,10 @@ export default function DeclarationCard({ declaration, onChatPress, onPress }: D
         </View>
       </View>
 
-      {/* Preview Image if available */}
-      {(() => {
-        const photos = declaration.photos;
-        const imageUrl = photos && photos.length > 0 ? `${API_CONFIG.BASE_URL}${photos[0].photo}` : null;
-        
-        console.log('🔍 DeclarationCard - Photos check:', {
-          id: declaration.id,
-          hasPhotos: !!photos,
-          photosLength: photos?.length || 0,
-          photoCount: declaration.photo_count,
-          photoPath: photos?.[0]?.photo,
-          fullImageUrl: imageUrl
-        });
-        
-        return photos && photos.length > 0 ? (
-          <View style={styles.imagePreviewContainer}>
-            <Image
-              source={{ uri: imageUrl! }}
-              style={styles.imagePreview}
-              contentFit="cover"
-              transition={200}
-              onLoad={() => console.log('✅ Image loaded successfully:', imageUrl)}
-              onError={(error) => console.error('❌ Image failed to load:', error, 'URL:', imageUrl)}
-            />
-            {photos.length > 1 && (
-              <View style={styles.imageCountBadge}>
-                <Text style={styles.imageCountText}>+{photos.length - 1}</Text>
-              </View>
-            )}
-          </View>
-        ) : null;
-      })()}
+      {/* Image Carousel */}
+      {declaration.photos && declaration.photos.length > 0 && (
+        <ImageCarousel images={declaration.photos} />
+      )}
 
       {/* Chat Button */}
       <TouchableOpacity
@@ -217,29 +188,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#8E8E93',
   },
-  imagePreviewContainer: {
-    position: 'relative',
-    marginBottom: 16,
-  },
-  imagePreview: {
-    width: '100%',
-    height: 120,
-    borderRadius: 12,
-  },
-  imageCountBadge: {
-    position: 'absolute',
-    top: 8,
-    right: 8,
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
-  },
-  imageCountText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#FFFFFF',
-  },
+
   chatButton: {
     flexDirection: 'row',
     alignItems: 'center',

@@ -6,13 +6,13 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  TouchableOpacity,
   View
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import ChatModal from '../../components/ChatModal';
 import CreateDeclarationModal from '../../components/CreateDeclarationModal';
 import DeclarationCard from '../../components/DeclarationCard';
-import FloatingActionButton from '../../components/FloatingActionButton';
 import LoadingScreen from '../../components/LoadingScreen';
 import { useAuth } from '../../contexts/AuthContext';
 import declarationService from '../../services/declarationService';
@@ -31,6 +31,9 @@ export default function DeclarationScreen() {
   const [declarationTypes, setDeclarationTypes] = useState<DeclarationType[]>([]);
   const [zones, setZones] = useState<Zone[]>([]);
   const [isCreating, setIsCreating] = useState(false);
+  
+  // Filter state
+  const [sortBy, setSortBy] = useState<'date' | 'severity'>('date');
 
   // Load declarations and required data on component mount
   useEffect(() => {
@@ -188,24 +191,65 @@ export default function DeclarationScreen() {
     }
   }, [token, selectedDeclaration]);
 
+  // Calculate statistics
+  const getStatistics = () => {
+    const totalDeclarations = declarations.length;
+    const highPriorityCount = declarations.filter(d => d.severite >= 7).length;
+    return { totalDeclarations, highPriorityCount };
+  };
+
+  // Sort declarations based on current filter
+  const getSortedDeclarations = () => {
+    const sorted = [...declarations];
+    if (sortBy === 'date') {
+      return sorted.sort((a, b) => new Date(b.date_declaration).getTime() - new Date(a.date_declaration).getTime());
+    } else {
+      return sorted.sort((a, b) => b.severite - a.severite);
+    }
+  };
+
   if (loading) {
     return <LoadingScreen message="Loading declarations..." />;
   }
 
+  const stats = getStatistics();
+  const sortedDeclarations = getSortedDeclarations();
+
   return (
     <SafeAreaView style={styles.container}>
-      {/* Header */}
+      {/* Enhanced Header */}
       <View style={styles.header}>
-        <View style={styles.headerContent}>
-          <Text style={styles.title}>Declarations</Text>
-          <Text style={styles.subtitle}>
-            Manage your reports and requests
-          </Text>
+        <View style={styles.headerTop}>
+          <View style={styles.headerLeft}>
+            <Text style={styles.title}>Declarations</Text>
+            <Text style={styles.subtitle}>
+              {stats.totalDeclarations} declarations • {stats.highPriorityCount} high priority
+            </Text>
+          </View>
+          <TouchableOpacity style={styles.addButton} onPress={handleCreateDeclaration}>
+            <Ionicons name="add" size={24} color="#1C1C1E" />
+          </TouchableOpacity>
         </View>
-        <View style={styles.headerStats}>
-          <View style={styles.statItem}>
-            <Text style={styles.statNumber}>{declarations.length}</Text>
-            <Text style={styles.statLabel}>Total</Text>
+        
+        {/* Filter Controls */}
+        <View style={styles.filterContainer}>
+          <View style={styles.segmentedControl}>
+            <TouchableOpacity
+              style={[styles.filterButton, sortBy === 'date' && styles.filterButtonActive]}
+              onPress={() => setSortBy('date')}
+            >
+              <Text style={[styles.filterButtonText, sortBy === 'date' && styles.filterButtonTextActive]}>
+                By Date
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.filterButton, sortBy === 'severity' && styles.filterButtonActive]}
+              onPress={() => setSortBy('severity')}
+            >
+              <Text style={[styles.filterButtonText, sortBy === 'severity' && styles.filterButtonTextActive]}>
+                By Severity
+              </Text>
+            </TouchableOpacity>
           </View>
         </View>
       </View>
@@ -237,7 +281,7 @@ export default function DeclarationScreen() {
             </View>
           </View>
         ) : (
-          declarations.map((declaration) => (
+          sortedDeclarations.map((declaration) => (
             <DeclarationCard
               key={declaration.id}
               declaration={declaration}
@@ -247,16 +291,10 @@ export default function DeclarationScreen() {
           ))
         )}
         
-        {/* Bottom spacing for FAB */}
-        <View style={styles.bottomSpacing} />
+
       </ScrollView>
 
-      {/* Floating Action Button */}
-      <FloatingActionButton
-        onPress={handleCreateDeclaration}
-        icon="add"
-        backgroundColor="#007AFF"
-      />
+
 
       {/* Chat Modal */}
                    <ChatModal
@@ -292,8 +330,14 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#E5E5EA',
   },
-  headerContent: {
+  headerTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
     marginBottom: 16,
+  },
+  headerLeft: {
+    flex: 1,
   },
   title: {
     fontSize: 28,
@@ -306,22 +350,47 @@ const styles = StyleSheet.create({
     color: '#8E8E93',
     lineHeight: 22,
   },
-  headerStats: {
-    flexDirection: 'row',
-    gap: 24,
+  addButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#F2F2F7',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: 12,
   },
-  statItem: {
+  filterContainer: {
+    marginTop: 8,
+  },
+  segmentedControl: {
+    flexDirection: 'row',
+    backgroundColor: '#F2F2F7',
+    borderRadius: 8,
+    padding: 2,
+  },
+  filterButton: {
+    flex: 1,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 6,
     alignItems: 'center',
   },
-  statNumber: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#007AFF',
+  filterButtonActive: {
+    backgroundColor: '#FFFFFF',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
   },
-  statLabel: {
-    fontSize: 12,
+  filterButtonText: {
+    fontSize: 14,
+    fontWeight: '500',
     color: '#8E8E93',
-    marginTop: 2,
+  },
+  filterButtonTextActive: {
+    color: '#007AFF',
+    fontWeight: '600',
   },
   scrollView: {
     flex: 1,
@@ -365,8 +434,5 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: '#007AFF',
-  },
-  bottomSpacing: {
-    height: 100, // Space for FAB
   },
 });

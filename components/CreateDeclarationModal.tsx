@@ -115,6 +115,18 @@ export default function CreateDeclarationModal({
     return zone ? zone.title : 'Select zone';
   };
 
+  const getSeverityColor = (severity: number) => {
+    if (severity >= 7) return '#FF3B30'; // High - Red
+    if (severity >= 5) return '#FF9500'; // Medium - Orange
+    return '#34C759'; // Low - Green
+  };
+
+  const getSeverityText = (severity: number) => {
+    if (severity >= 7) return 'High';
+    if (severity >= 5) return 'Medium';
+    return 'Low';
+  };
+
   const updateFormData = (field: keyof CreateDeclarationData, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
     // Clear error when user starts typing
@@ -244,18 +256,26 @@ export default function CreateDeclarationModal({
             </TouchableOpacity>
             {showTypeDropdown && (
               <View style={styles.dropdownList}>
-                {declarationTypes.map((type) => (
-                  <TouchableOpacity
-                    key={type.id}
-                    style={styles.dropdownItem}
-                    onPress={() => {
-                      updateFormData('id_declaration_type', type.id);
-                      setShowTypeDropdown(false);
-                    }}
-                  >
-                    <Text style={styles.dropdownItemText}>{type.title}</Text>
-                  </TouchableOpacity>
-                ))}
+                <ScrollView 
+                  showsVerticalScrollIndicator={false}
+                  nestedScrollEnabled={true}
+                >
+                  {declarationTypes.map((type, index) => (
+                    <TouchableOpacity
+                      key={type.id}
+                      style={[
+                        styles.dropdownItem,
+                        index === declarationTypes.length - 1 && styles.dropdownItemLast
+                      ]}
+                      onPress={() => {
+                        updateFormData('id_declaration_type', type.id);
+                        setShowTypeDropdown(false);
+                      }}
+                    >
+                      <Text style={styles.dropdownItemText}>{type.title}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
               </View>
             )}
             {errors.id_declaration_type && (
@@ -267,17 +287,25 @@ export default function CreateDeclarationModal({
           <View style={styles.fieldContainer}>
             <Text style={styles.fieldLabel}>Severity *</Text>
             <View style={styles.severityContainer}>
-              <Text style={styles.severityValue}>{formData.severite}/10</Text>
+              <View style={styles.severityHeader}>
+                <Text style={[styles.severityValue, { color: getSeverityColor(formData.severite) }]}>
+                  {formData.severite}/10
+                </Text>
+                <View style={[styles.severityBadge, { backgroundColor: getSeverityColor(formData.severite) }]}>
+                  <Text style={styles.severityBadgeText}>{getSeverityText(formData.severite)}</Text>
+                </View>
+              </View>
               <View style={styles.severitySlider}>
                 {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((value) => (
                   <TouchableOpacity
                     key={value}
                     style={[
                       styles.severityDot,
-                      formData.severite >= value && styles.severityDotActive,
-                      formData.severite === value && styles.severityDotSelected,
+                      formData.severite >= value && [styles.severityDotActive, { backgroundColor: getSeverityColor(formData.severite) }],
+                      formData.severite === value && [styles.severityDotSelected, { borderColor: getSeverityColor(formData.severite) }],
                     ]}
                     onPress={() => updateFormData('severite', value)}
+                    activeOpacity={0.7}
                   />
                 ))}
               </View>
@@ -308,18 +336,26 @@ export default function CreateDeclarationModal({
             </TouchableOpacity>
             {showZoneDropdown && (
               <View style={styles.dropdownList}>
-                {zones.map((zone) => (
-                  <TouchableOpacity
-                    key={zone.id}
-                    style={styles.dropdownItem}
-                    onPress={() => {
-                      updateFormData('id_zone', zone.id);
-                      setShowZoneDropdown(false);
-                    }}
-                  >
-                    <Text style={styles.dropdownItemText}>{zone.title}</Text>
-                  </TouchableOpacity>
-                ))}
+                <ScrollView 
+                  showsVerticalScrollIndicator={false}
+                  nestedScrollEnabled={true}
+                >
+                  {zones.map((zone, index) => (
+                    <TouchableOpacity
+                      key={zone.id}
+                      style={[
+                        styles.dropdownItem,
+                        index === zones.length - 1 && styles.dropdownItemLast
+                      ]}
+                      onPress={() => {
+                        updateFormData('id_zone', zone.id);
+                        setShowZoneDropdown(false);
+                      }}
+                    >
+                      <Text style={styles.dropdownItemText}>{zone.title}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
               </View>
             )}
             {errors.id_zone && (
@@ -477,12 +513,26 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     marginTop: 4,
     maxHeight: 200,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
   dropdownItem: {
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
     borderBottomColor: '#F2F2F7',
+  },
+  dropdownItemLast: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 0,
   },
   dropdownItemText: {
     fontSize: 16,
@@ -491,11 +541,27 @@ const styles = StyleSheet.create({
   severityContainer: {
     alignItems: 'center',
   },
+  severityHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginBottom: 12,
+  },
   severityValue: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#007AFF',
-    marginBottom: 12,
+    marginBottom: 0,
+  },
+  severityBadge: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+  },
+  severityBadgeText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#FFFFFF',
+    textTransform: 'uppercase',
   },
   severitySlider: {
     flexDirection: 'row',
@@ -511,12 +577,10 @@ const styles = StyleSheet.create({
     borderColor: '#E5E5EA',
   },
   severityDotActive: {
-    backgroundColor: '#007AFF',
-    borderColor: '#007AFF',
+    borderColor: '#E5E5EA',
   },
   severityDotSelected: {
-    backgroundColor: '#007AFF',
-    borderColor: '#FFFFFF',
+    backgroundColor: '#FFFFFF',
     borderWidth: 3,
   },
   textArea: {
