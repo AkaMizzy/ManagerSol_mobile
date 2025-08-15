@@ -327,19 +327,10 @@ export default function ChatModal({ visible, declaration, onClose, onSendMessage
           )}
           
           <View style={styles.inputWrapper}>
-            <TouchableOpacity
-              style={styles.photoButton}
-              onPress={showPhotoOptions}
-              disabled={isLoading}
-              activeOpacity={0.8}
-            >
-              <Ionicons name="camera-outline" size={24} color="#007AFF" />
-            </TouchableOpacity>
-            
             <TextInput
               ref={inputRef}
               style={styles.textInput}
-              placeholder="Type your message..."
+              placeholder="Type a message..."
               value={message}
               onChangeText={setMessage}
               multiline
@@ -347,6 +338,15 @@ export default function ChatModal({ visible, declaration, onClose, onSendMessage
               editable={!isLoading}
             />
             <TouchableOpacity
+              style={styles.attachmentButton}
+              onPress={showPhotoOptions}
+              disabled={isLoading}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="camera-outline" size={20} color="#007AFF" />
+            </TouchableOpacity>
+            {(message.trim() || selectedPhoto) && (
+              <TouchableOpacity
               style={[
                 styles.sendButton,
                 (!message.trim() && !selectedPhoto || isLoading) && styles.sendButtonDisabled,
@@ -361,6 +361,7 @@ export default function ChatModal({ visible, declaration, onClose, onSendMessage
                 <Ionicons name="send" size={20} color="#FFFFFF" />
               )}
             </TouchableOpacity>
+            )}
           </View>
         </KeyboardAvoidingView>
       </SafeAreaView>
@@ -368,10 +369,11 @@ export default function ChatModal({ visible, declaration, onClose, onSendMessage
   );
 }
 
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F2F2F7',
+    backgroundColor: '#F8F9FA', // Using the updated background color from second stylesheet
   },
   header: {
     flexDirection: 'row',
@@ -384,6 +386,10 @@ const styles = StyleSheet.create({
   closeButton: {
     padding: 8,
     marginRight: 12,
+  },
+  menuButton: {
+    padding: 8,
+    marginLeft: 12,
   },
   headerContent: {
     flex: 1,
@@ -417,18 +423,37 @@ const styles = StyleSheet.create({
   },
   messageHeader: {
     flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 4,
+    alignItems: 'flex-start', // Using the updated alignment from second stylesheet
+    marginBottom: 8, // Using the updated margin from second stylesheet
     gap: 8,
+  },
+  avatarContainer: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#E5E5EA',
+  },
+  avatarText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#1C1C1E',
+  },
+  messageInfo: {
+    flex: 1,
   },
   messageAuthor: {
     fontSize: 12,
-    fontWeight: '500',
-    color: '#8E8E93',
+    fontWeight: '600', // Using the updated font weight from second stylesheet
+    color: '#007AFF', // Using the updated color from second stylesheet
+    marginBottom: 2, // Added margin from second stylesheet
   },
   messageTime: {
     fontSize: 11,
-    color: '#C7C7CC',
+    color: '#8E8E93', // Using the updated color from second stylesheet
   },
   messageTitle: {
     fontSize: 14,
@@ -441,6 +466,7 @@ const styles = StyleSheet.create({
     lineHeight: 22,
     padding: 12,
     borderRadius: 18,
+    marginBottom: 4, // Added margin from second stylesheet
   },
   messageContentContainer: {
     gap: 8,
@@ -501,26 +527,30 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderTopWidth: 1,
     borderTopColor: '#E5E5EA',
-    padding: 15,
-    paddingBottom: Platform.OS === 'android' ? 40 : 32, // Extra padding for Android navigation bar
+    padding: 16, // Using the consistent padding from second stylesheet
+    paddingBottom: Platform.OS === 'android' ? 40 : 32,
   },
   inputWrapper: {
     flexDirection: 'row',
     alignItems: 'flex-end',
     gap: 20,
-    minHeight: 50, // Ensure minimum height for better touch targets
+    minHeight: 50,
   },
   textInput: {
     flex: 1,
-    backgroundColor: '#F2F2F7',
+    backgroundColor: '#FFFFFF', // Using the updated background from second stylesheet
     borderRadius: 20,
     paddingHorizontal: 16,
-    paddingVertical: 12, // Increased vertical padding for better touch area
+    paddingVertical: 12,
     fontSize: 16,
     maxHeight: 100,
     borderWidth: 1,
     borderColor: '#E5E5EA',
-    minHeight: 44, // Ensure minimum height for accessibility
+    minHeight: 44,
+  },
+  attachmentButton: {
+    padding: 12,
+    marginLeft: 8,
   },
   sendButton: {
     backgroundColor: '#007AFF',
@@ -551,11 +581,11 @@ const styles = StyleSheet.create({
     borderRadius: 10,
   },
   photoButton: {
-    padding: 12, // Increased padding for better touch target
+    padding: 12,
     borderRadius: 20,
     backgroundColor: '#F2F2F7',
-    minWidth: 44, // Ensure minimum width for accessibility
-    minHeight: 44, // Ensure minimum height for accessibility
+    minWidth: 44,
+    minHeight: 44,
     alignItems: 'center',
     justifyContent: 'center',
   },
