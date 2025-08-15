@@ -69,6 +69,17 @@ export default function DeclarationScreen() {
         throw new Error('No authentication token available');
       }
       const data = await declarationService.getDeclarations(token);
+      console.log('🔍 Loaded declarations:', data.length);
+      data.forEach((declaration, index) => {
+        console.log(`🔍 Declaration ${index + 1}:`, {
+          id: declaration.id,
+          title: declaration.declaration_type_title,
+          photos: declaration.photos?.length || 0,
+          photo_count: declaration.photo_count,
+          hasPhotosArray: !!declaration.photos,
+          firstPhoto: declaration.photos?.[0]?.photo
+        });
+      });
       setDeclarations(data);
     } catch (error) {
       console.error('Failed to load declarations:', error);

@@ -95,21 +95,37 @@ export default function DeclarationCard({ declaration, onChatPress, onPress }: D
       </View>
 
       {/* Preview Image if available */}
-      {declaration.photos && declaration.photos.length > 0 && (
-        <View style={styles.imagePreviewContainer}>
-          <Image
-            source={{ uri: `${API_CONFIG.BASE_URL}${declaration.photos[0].photo}` }}
-            style={styles.imagePreview}
-            contentFit="cover"
-            transition={200}
-          />
-          {declaration.photos.length > 1 && (
-            <View style={styles.imageCountBadge}>
-              <Text style={styles.imageCountText}>+{declaration.photos.length - 1}</Text>
-            </View>
-          )}
-        </View>
-      )}
+      {(() => {
+        const photos = declaration.photos;
+        const imageUrl = photos && photos.length > 0 ? `${API_CONFIG.BASE_URL}${photos[0].photo}` : null;
+        
+        console.log('🔍 DeclarationCard - Photos check:', {
+          id: declaration.id,
+          hasPhotos: !!photos,
+          photosLength: photos?.length || 0,
+          photoCount: declaration.photo_count,
+          photoPath: photos?.[0]?.photo,
+          fullImageUrl: imageUrl
+        });
+        
+        return photos && photos.length > 0 ? (
+          <View style={styles.imagePreviewContainer}>
+            <Image
+              source={{ uri: imageUrl! }}
+              style={styles.imagePreview}
+              contentFit="cover"
+              transition={200}
+              onLoad={() => console.log('✅ Image loaded successfully:', imageUrl)}
+              onError={(error) => console.error('❌ Image failed to load:', error, 'URL:', imageUrl)}
+            />
+            {photos.length > 1 && (
+              <View style={styles.imageCountBadge}>
+                <Text style={styles.imageCountText}>+{photos.length - 1}</Text>
+              </View>
+            )}
+          </View>
+        ) : null;
+      })()}
 
       {/* Chat Button */}
       <TouchableOpacity

@@ -90,10 +90,17 @@ export default function CreateDeclarationModal({
         ...formData,
         photos: selectedPhotos.length > 0 ? selectedPhotos : undefined
       };
+      
+      console.log('🔍 Submitting declaration with data:', dataWithPhotos);
+      console.log('🔍 Selected photos count:', selectedPhotos.length);
+      if (selectedPhotos.length > 0) {
+        console.log('🔍 Photo details:', selectedPhotos.map(p => ({ name: p.name, type: p.type, uri: p.uri.substring(0, 50) + '...' })));
+      }
+      
       await onSubmit(dataWithPhotos);
       onClose();
     } catch (error) {
-      console.error('Failed to create declaration:', error);
+      console.error('❌ Failed to create declaration:', error);
       Alert.alert('Error', 'Failed to create declaration. Please try again.');
     }
   };

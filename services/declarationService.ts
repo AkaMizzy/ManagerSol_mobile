@@ -54,13 +54,18 @@ class DeclarationService {
       }),
     });
 
+    console.log('🔍 Declaration created, response:', response);
+
     // If there are photos, upload them
     if (data.photos && data.photos.length > 0) {
-      const declarationId = response.declarationId || response.id;
+      const declarationId = response.declarationId;
+      console.log('🔍 Photos to upload:', data.photos.length, 'for declaration:', declarationId);
+      
       if (declarationId) {
         try {
           const formData = new FormData();
           data.photos.forEach((photo, index) => {
+            console.log('🔍 Adding photo to FormData:', photo.name, photo.type);
             formData.append('photos', {
               uri: photo.uri,
               type: photo.type,
@@ -68,12 +73,18 @@ class DeclarationService {
             } as any);
           });
 
-          await this.uploadPhotos(declarationId, formData, token);
+          console.log('🔍 Uploading photos to backend...');
+          const uploadResult = await this.uploadPhotos(declarationId, formData, token);
+          console.log('✅ Photos uploaded successfully:', uploadResult);
         } catch (error) {
-          console.error('Failed to upload photos:', error);
+          console.error('❌ Failed to upload photos:', error);
           // Don't fail the entire creation if photo upload fails
         }
+      } else {
+        console.error('❌ No declarationId received from backend');
       }
+    } else {
+      console.log('🔍 No photos to upload');
     }
 
     return response;
@@ -98,6 +109,9 @@ class DeclarationService {
       throw new Error('Authentication token required');
     }
     
+    console.log('🔍 Uploading photos to:', `${this.baseUrl}/declarations/${declarationId}/photos`);
+    console.log('🔍 FormData contents:', photos);
+    
     const response = await fetch(`${this.baseUrl}/declarations/${declarationId}/photos`, {
       method: 'POST',
       headers: {
@@ -106,12 +120,18 @@ class DeclarationService {
       body: photos,
     });
 
+    console.log('🔍 Upload response status:', response.status);
+    console.log('🔍 Upload response headers:', response.headers);
+
     if (!response.ok) {
       const error = await response.json();
+      console.error('❌ Upload failed:', error);
       throw new Error(error.error || 'Upload failed');
     }
 
-    return response.json();
+    const result = await response.json();
+    console.log('✅ Upload successful:', result);
+    return result;
   }
 
   async deletePhoto(declarationId: string, photoId: string, token: string): Promise<{ message: string }> {
