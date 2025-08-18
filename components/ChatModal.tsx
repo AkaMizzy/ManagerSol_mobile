@@ -3,18 +3,18 @@ import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import React, { useEffect, useRef, useState } from 'react';
 import {
-    ActivityIndicator,
-    Alert,
-    Dimensions,
-    KeyboardAvoidingView,
-    Modal,
-    Platform,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Alert,
+  Dimensions,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import API_CONFIG from '../app/config/api';
@@ -110,8 +110,9 @@ export default function ChatModal({ visible, declaration, onClose, onSendMessage
   };
 
   const isOwnMessage = (chatMessage: ChatMessage) => {
-    // This will be updated when we integrate with AuthContext
-    return false; // For now, assume all messages are from others
+    // Messages WITHOUT a title are from the current user (as per backend logic)
+    // Messages WITH a title are from other users (support team)
+    return chatMessage.title === null || chatMessage.title === undefined;
   };
 
   const requestPermissions = async () => {
@@ -238,15 +239,27 @@ export default function ChatModal({ visible, declaration, onClose, onSendMessage
               <Text style={styles.loadingText}>Loading messages...</Text>
             </View>
           ) : chatMessages && chatMessages.length > 0 ? (
-            chatMessages.map((chatMessage) => (
-              <View
-                key={chatMessage.id}
-                style={[
-                  styles.messageContainer,
-                  isOwnMessage(chatMessage) ? styles.ownMessage : styles.otherMessage,
-                ]}
-              >
-                {!isOwnMessage(chatMessage) && (
+            chatMessages.map((chatMessage) => {
+              const isOwn = isOwnMessage(chatMessage);
+              console.log('🔍 Chat message:', {
+                id: chatMessage.id,
+                title: chatMessage.title,
+                description: chatMessage.description,
+                isOwn: isOwn,
+                firstname: chatMessage.firstname,
+                lastname: chatMessage.lastname,
+                messageType: isOwn ? 'USER MESSAGE (RIGHT)' : 'SUPPORT MESSAGE (LEFT)'
+              });
+              
+              return (
+                <View
+                  key={chatMessage.id}
+                  style={[
+                    styles.messageContainer,
+                    isOwn ? styles.ownMessage : styles.otherMessage,
+                  ]}
+                >
+                {!isOwn && (
                   <View style={styles.messageHeader}>
                     <Text style={styles.messageAuthor}>
                       {chatMessage.firstname} {chatMessage.lastname}
@@ -257,19 +270,34 @@ export default function ChatModal({ visible, declaration, onClose, onSendMessage
                   </View>
                 )}
                 
+                {isOwn && (
+                  <View style={styles.ownMessageHeader}>
+                    <Text style={styles.ownMessageLabel}>You</Text>
+                    <Text style={styles.ownMessageTime}>
+                      {formatTime(chatMessage.date_chat)}
+                    </Text>
+                  </View>
+                )}
+                
                 {chatMessage.title && (
-                  <Text style={styles.messageTitle}>{chatMessage.title}</Text>
+                  <Text style={[
+                    styles.messageTitle,
+                    isOwn && styles.ownMessageTitle
+                  ]}>
+                    {chatMessage.title}
+                  </Text>
                 )}
                 
                 {/* Message Content Container */}
                 <View style={[
                   styles.messageContentContainer,
-                  !chatMessage.description && chatMessage.photo && styles.photoOnlyContainer
+                  !chatMessage.description && chatMessage.photo && styles.photoOnlyContainer,
+                  isOwn && styles.ownMessageContent
                 ]}>
                   {chatMessage.description && (
                     <Text style={[
                       styles.messageText,
-                      isOwnMessage(chatMessage) ? styles.ownMessageText : styles.otherMessageText,
+                      isOwn ? styles.ownMessageText : styles.otherMessageText,
                     ]}>
                       {chatMessage.description}
                     </Text>
@@ -298,7 +326,8 @@ export default function ChatModal({ visible, declaration, onClose, onSendMessage
                   )}
                 </View>
               </View>
-            ))
+            );
+            })
           ) : (
             <View style={styles.emptyState}>
               <Ionicons name="chatbubbles-outline" size={48} color="#C7C7CC" />
@@ -417,15 +446,28 @@ const styles = StyleSheet.create({
   },
   ownMessage: {
     alignSelf: 'flex-end',
+    alignItems: 'flex-end',
   },
   otherMessage: {
     alignSelf: 'flex-start',
+    alignItems: 'flex-start',
   },
   messageHeader: {
     flexDirection: 'row',
     alignItems: 'flex-start', // Using the updated alignment from second stylesheet
     marginBottom: 8, // Using the updated margin from second stylesheet
     gap: 8,
+  },
+  ownMessageHeader: {
+    alignSelf: 'flex-end',
+    marginBottom: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  ownMessageTime: {
+    fontSize: 11,
+    color: '#8E8E93',
   },
   avatarContainer: {
     width: 32,
@@ -461,12 +503,16 @@ const styles = StyleSheet.create({
     color: '#1C1C1E',
     marginBottom: 4,
   },
+  ownMessageTitle: {
+    color: '#FFFFFF',
+    textAlign: 'right',
+  },
   messageText: {
     fontSize: 16,
     lineHeight: 22,
     padding: 12,
     borderRadius: 18,
-    marginBottom: 4, // Added margin from second stylesheet
+    marginBottom: 4,
   },
   messageContentContainer: {
     gap: 8,
@@ -475,6 +521,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#007AFF',
     color: '#FFFFFF',
     borderBottomRightRadius: 6,
+    textAlign: 'right',
   },
   otherMessageText: {
     backgroundColor: '#FFFFFF',
@@ -482,6 +529,7 @@ const styles = StyleSheet.create({
     borderBottomLeftRadius: 6,
     borderWidth: 1,
     borderColor: '#E5E5EA',
+    textAlign: 'left',
   },
   messagePhotoContainer: {
     marginTop: 8,
@@ -598,5 +646,13 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#8E8E93',
     marginTop: 16,
+  },
+  ownMessageContent: {
+    alignItems: 'flex-end',
+  },
+  ownMessageLabel: {
+    fontSize: 11,
+    color: '#8E8E93',
+    marginTop: 4,
   },
 });

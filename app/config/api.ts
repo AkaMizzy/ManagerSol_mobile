@@ -1,7 +1,6 @@
 // API Configuration
 const API_CONFIG = {
-  // For physical device testing (Expo Go)
-  BASE_URL: 'http://192.168.1.5:5000',
+  BASE_URL: 'https://838dd021d521.ngrok-free.app',
   
   // For web/emulator testing
   // BASE_URL: 'http://localhost:5000',
