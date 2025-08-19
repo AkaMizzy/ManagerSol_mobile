@@ -3,6 +3,7 @@ import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import React, { useState } from 'react';
 import { Alert, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import DateTimePickerModal from 'react-native-modal-datetime-picker';
 import API_CONFIG from '../app/config/api';
 import { CreateActionData, DeclarationAction } from '../types/declaration';
 
@@ -14,9 +15,24 @@ interface ActionsModalProps {
 }
 
 export default function ActionsModal({ visible, actions, onClose, onCreateAction }: ActionsModalProps) {
-  const [form, setForm] = useState<CreateActionData>({ status: 1 });
+  const [form, setForm] = useState<CreateActionData>({});
   const [showForm, setShowForm] = useState(false);
   const [photo, setPhoto] = useState<CreateActionData['photo']>();
+  const [showPlanPicker, setShowPlanPicker] = useState(false);
+  const [showExecPicker, setShowExecPicker] = useState(false);
+
+  const toISODate = (d: Date) => {
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  const formatDisplayDate = (iso?: string) => {
+    if (!iso) return '';
+    const [y, m, d] = iso.split('-');
+    return `${d}/${m}/${y}`;
+  };
 
   const pickImage = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -31,7 +47,7 @@ export default function ActionsModal({ visible, actions, onClose, onCreateAction
   };
 
   const resetForm = () => {
-    setForm({ status: 1 });
+    setForm({});
     setPhoto(undefined);
   };
 
@@ -85,33 +101,54 @@ export default function ActionsModal({ visible, actions, onClose, onCreateAction
               <Text style={styles.formTitle}>New Action</Text>
               <TextInput
                 style={styles.input}
-                placeholder="Title (optional)"
+                placeholder="Title "
                 placeholderTextColor="#8E8E93"
                 value={form.title}
                 onChangeText={(t) => setForm((p) => ({ ...p, title: t }))}
               />
               <TextInput
                 style={[styles.input, styles.textArea]}
-                placeholder="Description (optional)"
+                placeholder="Description "
                 placeholderTextColor="#8E8E93"
                 value={form.description}
                 onChangeText={(t) => setForm((p) => ({ ...p, description: t }))}
                 multiline
               />
               <View style={styles.rowGap}>
-                <TextInput
-                  style={styles.input}
-                  placeholder="Planned date (YYYY-MM-DD)"
-                  placeholderTextColor="#8E8E93"
-                  value={form.date_planification}
-                  onChangeText={(t) => setForm((p) => ({ ...p, date_planification: t }))}
+                {/* Planned date picker */}
+                <TouchableOpacity style={styles.dateInput} onPress={() => setShowPlanPicker(true)} activeOpacity={0.7}>
+                  <Ionicons name="calendar-outline" size={18} color="#8E8E93" />
+                  <Text style={[styles.dateText, !form.date_planification && styles.placeholderText]}>
+                    {form.date_planification ? formatDisplayDate(form.date_planification) : 'Planned date'}
+                  </Text>
+                </TouchableOpacity>
+                <DateTimePickerModal
+                  isVisible={showPlanPicker}
+                  mode="date"
+                  date={form.date_planification ? new Date(form.date_planification) : new Date()}
+                  onConfirm={(selectedDate) => {
+                    setShowPlanPicker(false);
+                    if (selectedDate) setForm((p) => ({ ...p, date_planification: toISODate(selectedDate) }));
+                  }}
+                  onCancel={() => setShowPlanPicker(false)}
                 />
-                <TextInput
-                  style={styles.input}
-                  placeholder="Execution date (YYYY-MM-DD)"
-                  placeholderTextColor="#8E8E93"
-                  value={form.date_execution}
-                  onChangeText={(t) => setForm((p) => ({ ...p, date_execution: t }))}
+
+                {/* Execution date picker */}
+                <TouchableOpacity style={styles.dateInput} onPress={() => setShowExecPicker(true)} activeOpacity={0.7}>
+                  <Ionicons name="calendar-outline" size={18} color="#8E8E93" />
+                  <Text style={[styles.dateText, !form.date_execution && styles.placeholderText]}>
+                    {form.date_execution ? formatDisplayDate(form.date_execution) : 'Execution date'}
+                  </Text>
+                </TouchableOpacity>
+                <DateTimePickerModal
+                  isVisible={showExecPicker}
+                  mode="date"
+                  date={form.date_execution ? new Date(form.date_execution) : new Date()}
+                  onConfirm={(selectedDate) => {
+                    setShowExecPicker(false);
+                    if (selectedDate) setForm((p) => ({ ...p, date_execution: toISODate(selectedDate) }));
+                  }}
+                  onCancel={() => setShowExecPicker(false)}
                 />
               </View>
               <View style={styles.row}>
@@ -150,9 +187,9 @@ export default function ActionsModal({ visible, actions, onClose, onCreateAction
                     <Text style={styles.metaText}>{[action.creator_firstname, action.creator_lastname].filter(Boolean).join(' ')}</Text>
                   ) : null}
                   {action.date_execution ? (
-                    <Text style={styles.metaText}>Executed: {new Date(action.date_execution).toLocaleDateString()}</Text>
+                    <Text style={styles.metaText}>Execute date: {new Date(action.date_execution).toLocaleDateString()}</Text>
                   ) : action.date_planification ? (
-                    <Text style={styles.metaText}>Planned: {new Date(action.date_planification).toLocaleDateString()}</Text>
+                    <Text style={styles.metaText}>Planned date: {new Date(action.date_planification).toLocaleDateString()}</Text>
                   ) : null}
                 </View>
               </View>
@@ -211,6 +248,19 @@ const styles = StyleSheet.create({
   photoName: { color: '#8E8E93', fontSize: 12 },
   submitBtn: { backgroundColor: '#34C759', paddingVertical: 12, borderRadius: 10, alignItems: 'center' },
   submitBtnText: { color: '#FFFFFF', fontWeight: '700' },
+  dateInput: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E5E5EA',
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+  },
+  dateText: { color: '#1C1C1E', fontSize: 14 },
+  placeholderText: { color: '#8E8E93' },
 });
 
 
