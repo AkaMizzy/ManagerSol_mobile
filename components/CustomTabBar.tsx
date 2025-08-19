@@ -1,11 +1,20 @@
 import { Ionicons } from '@expo/vector-icons';
 import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import React from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export function CustomTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
+  const insets = useSafeAreaInsets();
+
   return (
-    <View style={styles.container}>
+    <View style={[
+      styles.container,
+      {
+        paddingBottom: Platform.OS === 'android' ? Math.max(insets.bottom, 20) : 20,
+        paddingTop: Platform.OS === 'android' ? 12 : 12,
+      }
+    ]}>
       {state.routes.map((route, index) => {
         const { options } = descriptors[route.key];
         const label = options.title || route.name;
@@ -79,8 +88,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderTopWidth: 1,
     borderTopColor: '#E5E5EA',
-    paddingBottom: 20,
-    paddingTop: 12,
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
@@ -88,7 +95,7 @@ const styles = StyleSheet.create({
     },
     shadowOpacity: 0.05,
     shadowRadius: 8,
-    elevation: 5,
+    elevation: Platform.OS === 'android' ? 8 : 5,
   },
   tab: {
     flex: 1,
@@ -96,6 +103,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingVertical: 8,
     position: 'relative',
+    minHeight: Platform.OS === 'android' ? 56 : 48,
   },
   iconContainer: {
     marginBottom: 6,
@@ -116,7 +124,7 @@ const styles = StyleSheet.create({
   },
   activeIndicator: {
     position: 'absolute',
-    bottom: 0,
+    bottom: Platform.OS === 'android' ? 8 : 0,
     width: 20,
     height: 2,
     backgroundColor: '#F87B1B',
