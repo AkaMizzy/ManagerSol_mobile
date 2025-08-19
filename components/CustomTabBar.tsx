@@ -171,7 +171,7 @@ const styles = StyleSheet.create({
   },
   activeTab: {
     backgroundColor: '#F8FAFC',
-    shadowColor: '#6366F1',
+    shadowColor: '#11224e',
     shadowOffset: {
       width: 0,
       height: 2,

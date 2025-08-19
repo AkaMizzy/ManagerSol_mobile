@@ -8,11 +8,12 @@ interface DeclarationCardProps {
   declaration: Declaration;
   onChatPress: (declaration: Declaration) => void;
   onPress?: (declaration: Declaration) => void;
+  onViewActions?: (declaration: Declaration) => void;
 }
 
 const { width } = Dimensions.get('window');
 
-export default function DeclarationCard({ declaration, onChatPress, onPress }: DeclarationCardProps) {
+export default function DeclarationCard({ declaration, onChatPress, onPress, onViewActions }: DeclarationCardProps) {
   const getSeverityColor = (severity: number) => {
     if (severity >= 7) return '#FF3B30'; // High - Red
     if (severity >= 5) return '#FF9500'; // Medium - Orange
@@ -99,14 +100,24 @@ export default function DeclarationCard({ declaration, onChatPress, onPress }: D
       )}
 
       {/* Chat Button */}
-      <TouchableOpacity
-        style={styles.chatButton}
-        onPress={() => onChatPress(declaration)}
-        activeOpacity={0.8}
-      >
-        <Ionicons name="chatbubbles-outline" size={18} color="#007AFF" />
-        <Text style={styles.chatButtonText}>Open Chat</Text>
-      </TouchableOpacity>
+      <View style={styles.actionsRow}>
+        <TouchableOpacity
+          style={styles.secondaryButton}
+          onPress={() => onViewActions?.(declaration)}
+          activeOpacity={0.8}
+        >
+          <Ionicons name="list-outline" size={18} color="#1C1C1E" />
+          <Text style={styles.secondaryButtonText}>View Actions</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.chatButton}
+          onPress={() => onChatPress(declaration)}
+          activeOpacity={0.8}
+        >
+          <Ionicons name="chatbubbles-outline" size={18} color="#007AFF" />
+          <Text style={styles.chatButtonText}>Open Chat</Text>
+        </TouchableOpacity>
+      </View>
     </TouchableOpacity>
   );
 }
@@ -205,5 +216,28 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: '#007AFF',
+  },
+  actionsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  secondaryButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FFFFFF',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    gap: 8,
+    borderWidth: 1,
+    borderColor: '#E5E5EA',
+    flex: 1,
+  },
+  secondaryButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1C1C1E',
   },
 });

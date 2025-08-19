@@ -10,6 +10,7 @@ import {
   View
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import ActionsModal from '../../components/ActionsModal';
 import ChatModal from '../../components/ChatModal';
 import CreateDeclarationModal from '../../components/CreateDeclarationModal';
 import DeclarationCard from '../../components/DeclarationCard';
@@ -25,6 +26,8 @@ export default function DeclarationScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [chatModalVisible, setChatModalVisible] = useState(false);
   const [selectedDeclaration, setSelectedDeclaration] = useState<Declaration | null>(null);
+  const [actionsModalVisible, setActionsModalVisible] = useState(false);
+  const [actionsForDeclaration, setActionsForDeclaration] = useState<import('../../types/declaration').DeclarationAction[] | null>(null);
   
   // New state for create declaration modal
   const [createModalVisible, setCreateModalVisible] = useState(false);
@@ -110,6 +113,26 @@ export default function DeclarationScreen() {
 
   const handleCreateDeclaration = () => {
     setCreateModalVisible(true);
+  };
+
+  const handleViewActions = async (declaration: Declaration) => {
+    if (!token) return;
+    try {
+      setSelectedDeclaration(declaration);
+      setActionsModalVisible(true);
+      const actions = await declarationService.getActions(declaration.id, token);
+      setActionsForDeclaration(actions);
+    } catch (e) {
+      console.error('Failed to load actions:', e);
+      Alert.alert('Error', 'Failed to load actions. Please try again.');
+    }
+  };
+
+  const handleCreateAction = async (data: import('../../types/declaration').CreateActionData) => {
+    if (!selectedDeclaration || !token) return;
+    await declarationService.createAction(selectedDeclaration.id, data, token);
+    const actions = await declarationService.getActions(selectedDeclaration.id, token);
+    setActionsForDeclaration(actions);
   };
 
   const handleCreateDeclarationSubmit = async (data: CreateDeclarationData) => {
@@ -287,6 +310,7 @@ export default function DeclarationScreen() {
               declaration={declaration}
               onChatPress={handleChatPress}
               onPress={handleDeclarationPress}
+              onViewActions={handleViewActions}
             />
           ))
         )}
@@ -304,6 +328,17 @@ export default function DeclarationScreen() {
                onSendMessage={handleSendMessage}
                onFetchMessages={handleFetchMessages}
              />
+
+      {/* Actions Modal */}
+      <ActionsModal
+        visible={actionsModalVisible}
+        actions={actionsForDeclaration}
+        onCreateAction={handleCreateAction}
+        onClose={() => {
+          setActionsModalVisible(false);
+          setActionsForDeclaration(null);
+        }}
+      />
 
       {/* Create Declaration Modal */}
       <CreateDeclarationModal

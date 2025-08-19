@@ -43,7 +43,7 @@ export function TabIcon({ name, isActive, size = 24 }: TabIconProps) {
       <Ionicons
         name={name as any}
         size={size}
-        color={isActive ? '#6366F1' : '#9CA3AF'}
+        color={isActive ? '#11224e' : '#9CA3AF'}
       />
     </View>
   );
@@ -75,7 +75,7 @@ const styles = StyleSheet.create({
   },
   activeTabButton: {
     backgroundColor: '#F8FAFC',
-    shadowColor: '#6366F1',
+    shadowColor: '#11224e',
     shadowOffset: {
       width: 0,
       height: 2,
@@ -107,7 +107,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   activeTabLabel: {
-    color: '#6366F1',
+    color: '#11224e',
     fontWeight: '700',
   },
 });

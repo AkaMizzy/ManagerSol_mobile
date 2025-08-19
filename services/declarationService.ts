@@ -1,5 +1,5 @@
 import API_CONFIG from '../app/config/api';
-import { CreateDeclarationData, Declaration, DeclarationType, Zone } from '../types/declaration';
+import { CreateActionData, CreateDeclarationData, Declaration, DeclarationAction, DeclarationType, Zone } from '../types/declaration';
 
 class DeclarationService {
   private baseUrl = API_CONFIG.BASE_URL;
@@ -192,6 +192,45 @@ class DeclarationService {
   // Zones (for declaration creation)
   async getZones(token: string): Promise<Zone[]> {
     return this.makeRequest('/zones', token);
+  }
+
+  // Actions
+  async getActions(declarationId: string, token: string): Promise<DeclarationAction[]> {
+    return this.makeRequest(`/declarations/${declarationId}/actions`, token);
+  }
+
+  async createAction(declarationId: string, data: CreateActionData, token: string): Promise<{ message: string }> {
+    if (data.photo) {
+      const form = new FormData();
+      if (data.title) form.append('title', data.title);
+      if (data.description) form.append('description', data.description);
+      if (data.status !== undefined) form.append('status', String(data.status));
+      if (data.date_planification) form.append('date_planification', data.date_planification);
+      if (data.date_execution) form.append('date_execution', data.date_execution);
+      if (data.sort_order !== undefined) form.append('sort_order', String(data.sort_order));
+      if (data.id_user_validateur) form.append('id_user_validateur', data.id_user_validateur);
+      form.append('photo', {
+        uri: data.photo.uri,
+        type: data.photo.type,
+        name: data.photo.name,
+      } as any);
+
+      const response = await fetch(`${this.baseUrl}/declarations/${declarationId}/actions`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` },
+        body: form,
+      });
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to create action');
+      }
+      return response.json();
+    } else {
+      return this.makeRequest(`/declarations/${declarationId}/actions`, token, {
+        method: 'POST',
+        body: JSON.stringify(data),
+      });
+    }
   }
 }
 
