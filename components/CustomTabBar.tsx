@@ -3,7 +3,6 @@ import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import React from 'react';
 import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-
 export function CustomTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
 
@@ -11,8 +10,8 @@ export function CustomTabBar({ state, descriptors, navigation }: BottomTabBarPro
     <View style={[
       styles.container,
       {
-        paddingBottom: Platform.OS === 'android' ? Math.max(insets.bottom, 20) : 20,
-        paddingTop: Platform.OS === 'android' ? 12 : 12,
+        paddingBottom: Platform.OS === 'android' ? Math.max(insets.bottom, 16) : 20,
+        paddingTop: Platform.OS === 'android' ? 8 : 12,
       }
     ]}>
       {state.routes.map((route, index) => {
@@ -96,17 +95,22 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.05,
     shadowRadius: 8,
     elevation: Platform.OS === 'android' ? 8 : 5,
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    zIndex: 1000,
   },
   tab: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 8,
+    paddingVertical: Platform.OS === 'android' ? 8 : 8,
     position: 'relative',
     minHeight: Platform.OS === 'android' ? 56 : 48,
   },
   iconContainer: {
-    marginBottom: 6,
+    marginBottom: Platform.OS === 'android' ? 4 : 6,
     alignItems: 'center',
     justifyContent: 'center',
     width: 32,
@@ -117,6 +121,7 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     color: '#8E8E93',
     textAlign: 'center',
+    marginBottom: Platform.OS === 'android' ? 2 : 0,
   },
   activeTabLabel: {
     color: '#F87B1B',
@@ -124,7 +129,7 @@ const styles = StyleSheet.create({
   },
   activeIndicator: {
     position: 'absolute',
-    bottom: Platform.OS === 'android' ? 8 : 0,
+    bottom: Platform.OS === 'android' ? 6 : 0,
     width: 20,
     height: 2,
     backgroundColor: '#F87B1B',

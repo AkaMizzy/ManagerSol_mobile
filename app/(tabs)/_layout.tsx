@@ -12,7 +12,15 @@ export default function TabLayout() {
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarStyle: { display: 'none' }, // Hide default tab bar
+        tabBarStyle: { 
+          display: 'none',
+          height: 0,
+          padding: 0,
+          margin: 0,
+        },
+        tabBarShowLabel: false,
+        tabBarActiveTintColor: 'transparent',
+        tabBarInactiveTintColor: 'transparent',
       }}
       tabBar={(props) => <CustomTabBar {...props} />}
     >

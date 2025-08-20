@@ -432,6 +432,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingTop: 8,
+    paddingBottom: 100, // Add space for tab bar
   },
   emptyState: {
     alignItems: 'center',
