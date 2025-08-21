@@ -32,7 +32,13 @@ function formatMonthTitle(date: Date): string {
   return date.toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
 }
 
-export default function CalendarComp(): JSX.Element {
+interface Props {
+  eventsByDate?: Record<string, string[]>; // date ISO -> array of contexts
+  onMonthChange?: (startIso: string, endIso: string) => void;
+  onDayPress?: (dateIso: string) => void;
+}
+
+export default function CalendarComp({ eventsByDate = {}, onMonthChange, onDayPress }: Props): JSX.Element {
   const [visibleMonth, setVisibleMonth] = useState<Date>(new Date());
   const { width } = useWindowDimensions();
 
@@ -61,6 +67,15 @@ export default function CalendarComp(): JSX.Element {
   const goNext = () => setVisibleMonth(p => new Date(p.getFullYear(), p.getMonth() + 1, 1));
   const goToday = () => setVisibleMonth(new Date());
 
+  React.useEffect(() => {
+    if (!onMonthChange) return;
+    const start = new Date(visibleMonth.getFullYear(), visibleMonth.getMonth(), 1);
+    const end = new Date(visibleMonth.getFullYear(), visibleMonth.getMonth() + 1, 0);
+    const startIso = `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, '0')}-01`;
+    const endIso = `${end.getFullYear()}-${String(end.getMonth() + 1).padStart(2, '0')}-${String(end.getDate()).padStart(2, '0')}`;
+    onMonthChange(startIso, endIso);
+  }, [visibleMonth]);
+
   return (
     <View style={styles.wrapper}>
       <View style={styles.header}>
@@ -72,10 +87,7 @@ export default function CalendarComp(): JSX.Element {
           <Text style={styles.navText}>{'>'}</Text>
         </TouchableOpacity>
       </View>
-      <TouchableOpacity onPress={goToday} style={styles.todayPill} accessibilityRole="button">
-        <Text style={styles.todayPillText}>Today</Text>
-      </TouchableOpacity>
-
+     
       <View style={[styles.weekRow, { paddingHorizontal: pagePadding }]}>
         {['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].map(w => (
           <View key={w} style={[styles.weekdayCell, { width: cellSize }]}> 
@@ -88,18 +100,34 @@ export default function CalendarComp(): JSX.Element {
         {weeks.map((week, wIdx) => (
           <View key={`week_${wIdx}`} style={[styles.weekDaysRow, { marginBottom: wIdx < 5 ? gap : 0 }]}>
             {week.map((cell, cIdx) => (
-              <View
+              <TouchableOpacity
                 key={`${cell.date.toISOString()}_${cIdx}`}
                 style={[
                   styles.dayCell,
                   { width: cellSize, height: cellSize, marginRight: cIdx < 6 ? gap : 0 },
                   cell.isToday && styles.todayCell,
                 ]}
+                activeOpacity={0.85}
+                onPress={() => {
+                  if (!onDayPress) return;
+                  const iso = `${cell.date.getFullYear()}-${String(cell.date.getMonth() + 1).padStart(2, '0')}-${String(cell.date.getDate()).padStart(2, '0')}`;
+                  onDayPress(iso);
+                }}
               >
                 <Text style={[styles.dayText, !cell.isCurrentMonth && styles.mutedDay]}>
                   {cell.date.getDate()}
                 </Text>
-              </View>
+                <View style={styles.indicatorsRow}>
+                  {(eventsByDate[formatDateKey(cell.date)] || []).slice(0,3).map((ctx, i) => (
+                    <View key={i} style={[styles.dot, { backgroundColor: contextToColor(ctx) }]} />
+                  ))}
+                  {((eventsByDate[formatDateKey(cell.date)] || []).length > 3) ? (
+                    <Text style={styles.moreText}>
+                      +{(eventsByDate[formatDateKey(cell.date)] || []).length - 3}
+                    </Text>
+                  ) : null}
+                </View>
+              </TouchableOpacity>
             ))}
           </View>
         ))}
@@ -205,6 +233,48 @@ const styles = StyleSheet.create({
     borderColor: '#f87b1b',
     borderWidth: 2,
   },
+  indicatorsRow: {
+    position: 'absolute',
+    bottom: 6,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  dot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+  },
+  moreText: {
+    fontSize: 10,
+    color: '#8E8E93',
+    fontWeight: '600',
+  },
 });
+
+function contextToColor(ctx: string): string {
+  switch (ctx) {
+    case 'declaration_anomalie':
+      return '#FF3B30';
+    case 'action_corrective':
+      return '#34C759';
+    case 'audit_zone':
+      return '#007AFF';
+    case 'prelevement_echantillon':
+      return '#AF52DE';
+    case 'inventaire_article':
+      return '#FF9F0A';
+    default:
+      return '#8E8E93';
+  }
+}
+
+function formatDateKey(d: Date): string {
+  // Use the device's local calendar day without timezone shifting
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
 
 

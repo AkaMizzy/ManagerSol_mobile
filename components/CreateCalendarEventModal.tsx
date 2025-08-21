@@ -1,7 +1,7 @@
 import { CALENDAR_CONTEXTS } from '@/constants/Calendar';
 import { Ionicons } from '@expo/vector-icons';
 import React, { useState } from 'react';
-import { Alert, Modal, Platform, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Alert, Keyboard, Modal, Platform, StyleSheet, Text, TextInput, TouchableOpacity, TouchableWithoutFeedback, View } from 'react-native';
 import DateTimePickerModal from 'react-native-modal-datetime-picker';
 
 export interface CreateCalendarEventValues {
@@ -98,8 +98,10 @@ export default function CreateCalendarEventModal({ visible, onClose, onSubmit }:
 
   return (
     <Modal visible={visible} onRequestClose={onClose} animationType="slide" transparent>
-      <View style={styles.backdrop}>
-        <View style={styles.card}>
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+        <View style={styles.backdrop}>
+          <TouchableWithoutFeedback onPress={() => {}} accessible={false}>
+            <View style={styles.card}>
           <Text style={styles.title}>Create Event</Text>
 
           <Text style={styles.label}>Context</Text>
@@ -186,8 +188,10 @@ export default function CreateCalendarEventModal({ visible, onClose, onSubmit }:
             <TouchableOpacity onPress={onClose} style={[styles.btn, styles.secondaryBtn]} accessibilityRole="button"><Text style={[styles.btnText, styles.secondaryBtnText]}>Cancel</Text></TouchableOpacity>
             <TouchableOpacity onPress={handleSubmit} style={[styles.btn, styles.primaryBtn]} disabled={submitting} accessibilityRole="button"><Text style={styles.btnText}>{submitting ? 'Saving…' : 'Create'}</Text></TouchableOpacity>
           </View>
+            </View>
+          </TouchableWithoutFeedback>
         </View>
-      </View>
+      </TouchableWithoutFeedback>
     </Modal>
   );
 }
@@ -287,6 +291,20 @@ const styles = StyleSheet.create({
   secondaryBtnText: {
     color: '#1C1C1E',
   },
+  // Modern pill-like input button used for date/time pickers
+  dateInput: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E5E5EA',
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+  },
+  dateText: { color: '#1C1C1E', fontSize: 14 },
+  placeholderText: { color: '#8E8E93' },
 });
 
 

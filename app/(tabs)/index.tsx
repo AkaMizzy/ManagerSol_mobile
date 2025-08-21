@@ -12,10 +12,16 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import CalendarComp from '../../components/CalendarComp';
 import CreateCalendarEventModal from '../../components/CreateCalendarEventModal';
+import DayEventsModal from '../../components/DayEventsModal';
+import API_CONFIG from '../config/api';
 
 export default function DashboardScreen() {
   const { user, token } = useAuth();
   const [eventModalVisible, setEventModalVisible] = useState(false);
+  const [eventsByDate, setEventsByDate] = useState<Record<string, string[]>>({});
+  const [dayModalVisible, setDayModalVisible] = useState(false);
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [dayEvents, setDayEvents] = useState<any[]>([]);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -56,7 +62,45 @@ export default function DashboardScreen() {
         </View>
 
         {/* Calendar */}
-        <CalendarComp />
+        <CalendarComp
+          eventsByDate={eventsByDate}
+          onMonthChange={async (startIso, endIso) => {
+            try {
+              if (!token) return;
+              const res = await fetch(`${API_CONFIG.BASE_URL}/calendar?start_date=${startIso}&end_date=${endIso}`, {
+                headers: {
+                  Authorization: `Bearer ${token}`,
+                },
+              });
+              const data = await res.json();
+              if (!res.ok) return;
+              const map: Record<string, string[]> = {};
+              (data || []).forEach((ev: any) => {
+                const key = ev.date?.slice(0,10);
+                if (!key) return;
+                if (!map[key]) map[key] = [];
+                map[key].push(ev.context);
+              });
+              setEventsByDate(map);
+            } catch {}
+          }}
+          onDayPress={async (dateIso) => {
+            setSelectedDate(dateIso);
+            if (!token) { setDayEvents([]); setDayModalVisible(true); return; }
+            try {
+              const res = await fetch(`${API_CONFIG.BASE_URL}/calendar?start_date=${dateIso}&end_date=${dateIso}`, {
+                headers: { Authorization: `Bearer ${token}` },
+              });
+              const data = await res.json();
+              if (!res.ok) throw new Error('Failed');
+              setDayEvents(Array.isArray(data) ? data : []);
+            } catch {
+              setDayEvents([]);
+            } finally {
+              setDayModalVisible(true);
+            }
+          }}
+        />
 
         {/* Recent Activity */}
         <View style={styles.section}>
@@ -99,7 +143,7 @@ export default function DashboardScreen() {
         onClose={() => setEventModalVisible(false)}
         onSubmit={async (vals) => {
           if (!token) return;
-          await createCalendarEvent(
+          const created = await createCalendarEvent(
             {
               context: vals.context,
               title: vals.title,
@@ -111,7 +155,24 @@ export default function DashboardScreen() {
             token
           );
           Alert.alert('Success', 'Event created successfully');
+          // Optimistically update indicators on the calendar
+          try {
+            const key = vals.date; // use the submitted local ISO (YYYY-MM-DD) to avoid TZ shifts
+            setEventsByDate(prev => {
+              const next = { ...prev };
+              const list = next[key] ? [...next[key]] : [];
+              list.push(vals.context);
+              next[key] = list;
+              return next;
+            });
+          } catch {}
         }}
+      />
+      <DayEventsModal
+        visible={dayModalVisible}
+        date={selectedDate}
+        events={dayEvents}
+        onClose={() => setDayModalVisible(false)}
       />
     </SafeAreaView>
   );
