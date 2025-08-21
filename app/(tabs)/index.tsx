@@ -1,95 +1,25 @@
 import { useAuth } from '@/contexts/AuthContext';
+import { createCalendarEvent } from '@/services/calendarService';
 import { Ionicons } from '@expo/vector-icons';
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import {
   Alert,
-  RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
-  View,
+  View
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import Calendar from '../../components/Calendar';
-import CreateEventModal from '../../components/CreateEventModal';
-import calendarService, { CalendarEvent, CreateEventData } from '../../services/calendarService';
+import CalendarComp from '../../components/CalendarComp';
+import CreateCalendarEventModal from '../../components/CreateCalendarEventModal';
 
 export default function DashboardScreen() {
   const { user, token } = useAuth();
-  const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
-  const [events, setEvents] = useState<CalendarEvent[]>([]);
-  const [showCreateModal, setShowCreateModal] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [refreshing, setRefreshing] = useState(false);
-
-  // Load events from backend
-  const loadEvents = async () => {
-    if (!token) return;
-
-    try {
-      setIsLoading(true);
-      const eventsData = await calendarService.getEvents(token);
-      setEvents(eventsData);
-      console.log('Events loaded:', eventsData.length);
-    } catch (error: any) {
-      console.error('Failed to load events:', error);
-      Alert.alert('Error', 'Failed to load events. Please try again.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // Load events on component mount
-  useEffect(() => {
-    loadEvents();
-  }, [token]);
-
-  // Handle pull-to-refresh
-  const onRefresh = async () => {
-    setRefreshing(true);
-    await loadEvents();
-    setRefreshing(false);
-  };
-
-  const handleDateSelect = (date: Date) => {
-    setSelectedDate(date);
-    console.log('Selected date:', date.toDateString());
-    // TODO: Could load events for specific date here if needed
-  };
-
-  const handleCreateEvent = () => {
-    setShowCreateModal(true);
-  };
-
-  const handleEventSubmit = async (eventData: CreateEventData) => {
-    try {
-      // Reload events to get the newly created event from backend
-      await loadEvents();
-      
-      console.log('Event created and events reloaded');
-      
-      // Optional: Show success message (already shown in modal)
-      // Alert.alert('Success', 'Event created successfully!');
-      
-    } catch (error: any) {
-      console.error('Failed to reload events after creation:', error);
-      // Don't show error to user as the event was created successfully
-    }
-  };
+  const [eventModalVisible, setEventModalVisible] = useState(false);
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView 
-        style={styles.scrollView}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            colors={['#007AFF']}
-            tintColor="#007AFF"
-          />
-        }
-      >
+      <ScrollView style={styles.scrollView}>
         {/* Header */}
         <View style={styles.header}>
           <Text style={styles.greeting}>Welcome back!</Text>
@@ -117,16 +47,16 @@ export default function DashboardScreen() {
           </View>
         </View>
 
-        {/* Calendar Section */}
-        <View style={styles.section}>
-          
-          <Calendar 
-            onDateSelect={handleDateSelect}
-            selectedDate={selectedDate}
-            events={events}
-            onCreateEvent={handleCreateEvent}
-          />
+        {/* Create Event CTA */}
+        <View style={{ paddingHorizontal: 20, marginTop: 12 }}>
+
+          <View style={{ alignItems: 'flex-end' }}>
+            <Text onPress={() => setEventModalVisible(true)} style={styles.linkButton} accessibilityRole="button">+ Create Event</Text>
+          </View>
         </View>
+
+        {/* Calendar */}
+        <CalendarComp />
 
         {/* Recent Activity */}
         <View style={styles.section}>
@@ -164,13 +94,24 @@ export default function DashboardScreen() {
           </View>
         </View>
       </ScrollView>
-
-      {/* Create Event Modal */}
-      <CreateEventModal
-        visible={showCreateModal}
-        onClose={() => setShowCreateModal(false)}
-        onSubmit={handleEventSubmit}
-        selectedDate={selectedDate}
+      <CreateCalendarEventModal
+        visible={eventModalVisible}
+        onClose={() => setEventModalVisible(false)}
+        onSubmit={async (vals) => {
+          if (!token) return;
+          await createCalendarEvent(
+            {
+              context: vals.context,
+              title: vals.title,
+              description: vals.description,
+              date: vals.date,
+              heur_debut: vals.heur_debut,
+              heur_fin: vals.heur_fin,
+            },
+            token
+          );
+          Alert.alert('Success', 'Event created successfully');
+        }}
       />
     </SafeAreaView>
   );
@@ -243,6 +184,38 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#1C1C1E',
     marginBottom: 16,
+  },
+  linkButton: {
+    color: '#f87b1b',
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  actionsContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+  },
+  actionCard: {
+    width: '47%',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 16,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  actionText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#1C1C1E',
+    marginTop: 8,
+    textAlign: 'center',
   },
   activityContainer: {
     backgroundColor: '#FFFFFF',
