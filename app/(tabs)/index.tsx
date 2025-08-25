@@ -85,7 +85,7 @@ export default function DashboardScreen() {
         <View style={{ paddingHorizontal: 20, marginTop: 12 }}>
 
           <View style={{ alignItems: 'flex-end' }}>
-            <Text onPress={() => setEventModalVisible(true)} style={styles.linkButton} accessibilityRole="button">+ Create Event</Text>
+            <Text onPress={() => setEventModalVisible(true)} style={styles.linkButton} accessibilityRole="button">+ Create Action</Text>
           </View>
         </View>
 

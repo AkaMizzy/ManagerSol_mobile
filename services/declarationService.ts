@@ -209,7 +209,7 @@ class DeclarationService {
       if (data.date_planification) form.append('date_planification', data.date_planification);
       if (data.date_execution) form.append('date_execution', data.date_execution);
       if (data.sort_order !== undefined) form.append('sort_order', String(data.sort_order));
-      if (data.id_user_validateur) form.append('id_user_validateur', data.id_user_validateur);
+      if (data.assigned_to) form.append('assigned_to', data.assigned_to);
       if (data.id_zone) form.append('id_zone', data.id_zone);
       form.append('photo', {
         uri: data.photo.uri,

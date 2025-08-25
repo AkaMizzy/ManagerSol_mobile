@@ -1,11 +1,12 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Alert, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import DateTimePickerModal from 'react-native-modal-datetime-picker';
 import API_CONFIG from '../app/config/api';
-import { CreateActionData, DeclarationAction, Zone } from '../types/declaration';
+import { useAuth } from '../contexts/AuthContext';
+import { CompanyUser, CreateActionData, DeclarationAction, Zone } from '../types/declaration';
 
 interface ActionsModalProps {
   visible: boolean;
@@ -17,6 +18,7 @@ interface ActionsModalProps {
 }
 
 export default function ActionsModal({ visible, actions, onClose, onCreateAction, parentZone, childZones }: ActionsModalProps) {
+  const { token } = useAuth();
   const [form, setForm] = useState<CreateActionData>({ id_zone: parentZone?.id });
   const [showForm, setShowForm] = useState(false);
   const [photo, setPhoto] = useState<CreateActionData['photo']>();
@@ -25,6 +27,9 @@ export default function ActionsModal({ visible, actions, onClose, onCreateAction
   const [zones, setZones] = useState<Zone[]>([]);
   const [showZoneDropdown, setShowZoneDropdown] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [companyUsers, setCompanyUsers] = useState<CompanyUser[]>([]);
+  const [showUserDropdown, setShowUserDropdown] = useState(false);
+  const [loadingUsers, setLoadingUsers] = useState(false);
 
   const toISODate = (d: Date) => {
     const year = d.getFullYear();
@@ -48,6 +53,34 @@ export default function ActionsModal({ visible, actions, onClose, onCreateAction
     const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, quality: 0.8 });
     if (!result.canceled && result.assets && result.assets[0]) {
       setPhoto({ uri: result.assets[0].uri, type: 'image/jpeg', name: `action_${Date.now()}.jpg` });
+    }
+  };
+
+  const fetchCompanyUsers = async () => {
+    if (!token) {
+      Alert.alert('Error', 'Authentication required');
+      return;
+    }
+    
+    try {
+      setLoadingUsers(true);
+      const response = await fetch(`${API_CONFIG.BASE_URL}/company-users`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch company users');
+      }
+      
+      const users = await response.json();
+      setCompanyUsers(users);
+    } catch (error) {
+      console.error('Error fetching company users:', error);
+      Alert.alert('Error', 'Failed to load company users');
+    } finally {
+      setLoadingUsers(false);
     }
   };
 
@@ -79,6 +112,13 @@ export default function ActionsModal({ visible, actions, onClose, onCreateAction
     setForm((p) => ({ ...p, id_zone: parentZone?.id }));
   }, [parentZone?.id, childZones?.length]);
 
+  // Fetch company users when form is shown
+  useEffect(() => {
+    if (showForm && companyUsers.length === 0) {
+      fetchCompanyUsers();
+    }
+  }, [showForm, token]);
+
   const renderZoneOption = (zone: Zone) => {
     const uri = zone.logo ? `${API_CONFIG.BASE_URL}${zone.logo}` : undefined;
     const isChild = parentZone && zone.id !== parentZone.id;
@@ -88,6 +128,21 @@ export default function ActionsModal({ visible, actions, onClose, onCreateAction
         <Text style={[styles.zoneText, isChild && styles.zoneChildText]}>{isChild ? `— ${zone.title}` : zone.title}</Text>
       </View>
     );
+  };
+
+  const renderUserOption = (user: CompanyUser) => {
+    return (
+      <View style={styles.userRow}>
+        <Text style={styles.userText}>{`${user.firstname} ${user.lastname}`}</Text>
+        {user.role && <Text style={styles.userRole}>{user.role}</Text>}
+      </View>
+    );
+  };
+
+  const getSelectedUserName = () => {
+    if (!form.assigned_to) return 'Select user';
+    const user = companyUsers.find(u => u.id === form.assigned_to);
+    return user ? `${user.firstname} ${user.lastname}` : 'Select user';
   };
   const renderPhoto = (photo?: string | null) => {
     if (!photo) return null;
@@ -204,6 +259,55 @@ export default function ActionsModal({ visible, actions, onClose, onCreateAction
                 onChangeText={(t) => setForm((p) => ({ ...p, description: t }))}
                 multiline
               />
+              
+              {/* User Assignment */}
+              <View style={{ marginBottom: 10 }}>
+                <Text style={styles.label}>Assign To</Text>
+                <TouchableOpacity
+                  style={styles.selectHeader}
+                  onPress={() => setShowUserDropdown((s) => !s)}
+                  activeOpacity={0.7}
+                >
+                  <View style={styles.selectedPreview}>
+                    <Text style={[styles.dateText, !form.assigned_to && styles.placeholderText]}>
+                      {getSelectedUserName()}
+                    </Text>
+                  </View>
+                  <Ionicons name={showUserDropdown ? 'chevron-up' : 'chevron-down'} size={18} color="#8E8E93" />
+                </TouchableOpacity>
+
+                {showUserDropdown ? (
+                  <View style={styles.selectBox}>
+                    <ScrollView style={{ maxHeight: 220 }}>
+                      {loadingUsers ? (
+                        <View style={styles.loadingItem}>
+                          <Text style={styles.loadingText}>Loading users...</Text>
+                        </View>
+                      ) : companyUsers.length === 0 ? (
+                        <View style={styles.loadingItem}>
+                          <Text style={styles.loadingText}>No users available</Text>
+                        </View>
+                      ) : (
+                        companyUsers.map((user) => (
+                          <TouchableOpacity
+                            key={user.id}
+                            style={styles.selectItem}
+                            onPress={() => {
+                              setForm((p) => ({ ...p, assigned_to: user.id }));
+                              setShowUserDropdown(false);
+                            }}
+                          >
+                            <View style={[styles.selectItemInner, form.assigned_to === user.id && styles.selectItemSelected]}>
+                              {renderUserOption(user)}
+                              {form.assigned_to === user.id ? <Ionicons name="checkmark" size={18} color="#34C759" /> : null}
+                            </View>
+                          </TouchableOpacity>
+                        ))
+                      )}
+                    </ScrollView>
+                  </View>
+                ) : null}
+              </View>
               <View style={styles.rowGap}>
                 {/* Planned date picker */}
                 <TouchableOpacity style={styles.dateInput} onPress={() => setShowPlanPicker(true)} activeOpacity={0.7}>
@@ -260,30 +364,66 @@ export default function ActionsModal({ visible, actions, onClose, onCreateAction
               <Text style={styles.emptyTitle}>{searchQuery ? 'No matches found' : 'No actions have been added for this declaration yet.'}</Text>
             </View>
           ) : (
-            filteredActions.map((action) => (
-              <View key={action.id} style={styles.card}>
-                <View style={styles.cardHeader}>
-                  <Text style={styles.cardTitle}>{action.title || 'Untitled action'}</Text>
-                  <View style={styles.statusPill}>
-                    <Text style={styles.statusText}>{String(action.status ?? 'pending')}</Text>
-                  </View>
-                </View>
-                {action.description ? (
-                  <Text style={styles.cardDesc}>{action.description}</Text>
-                ) : null}
-                {renderPhoto(action.photo)}
-                <View style={styles.metaRow}>
-                  {action.creator_firstname || action.creator_lastname ? (
-                    <Text style={styles.metaText}>{[action.creator_firstname, action.creator_lastname].filter(Boolean).join(' ')}</Text>
-                  ) : null}
-                  {action.date_execution ? (
-                    <Text style={styles.metaText}>Execute date: {new Date(action.date_execution).toLocaleDateString()}</Text>
-                  ) : action.date_planification ? (
-                    <Text style={styles.metaText}>Planned date: {new Date(action.date_planification).toLocaleDateString()}</Text>
-                  ) : null}
-                </View>
-              </View>
-            ))
+                         filteredActions.map((action) => (
+               <View key={action.id} style={styles.card}>
+                 <View style={styles.cardHeader}>
+                   <Text style={styles.cardTitle}>{action.title || 'Untitled action'}</Text>
+                   <View style={styles.statusPill}>
+                     <Text style={styles.statusText}>{String(action.status ?? 'pending')}</Text>
+                   </View>
+                 </View>
+                 
+                 {action.description ? (
+                   <Text style={styles.cardDesc}>{action.description}</Text>
+                 ) : null}
+                 
+                 {renderPhoto(action.photo)}
+                 
+                 <View style={styles.metaSection}>
+                   {/* User Information */}
+                   <View style={styles.userInfoRow}>
+                     {action.creator_firstname || action.creator_lastname ? (
+                       <View style={styles.userInfoItem}>
+                         <Text style={styles.userInfoLabel}>Created by</Text>
+                         <Text style={styles.userInfoValue}>
+                           {[action.creator_firstname, action.creator_lastname].filter(Boolean).join(' ')}
+                         </Text>
+                       </View>
+                     ) : null}
+                     
+                     {action.assigned_firstname || action.assigned_lastname ? (
+                       <View style={styles.userInfoItem}>
+                         <Text style={styles.userInfoLabel}>Assigned to</Text>
+                         <Text style={styles.userInfoValue}>
+                           {[action.assigned_firstname, action.assigned_lastname].filter(Boolean).join(' ')}
+                         </Text>
+                       </View>
+                     ) : null}
+                   </View>
+                   
+                   {/* Date Information */}
+                   {(action.date_execution || action.date_planification) && (
+                     <View style={styles.dateInfoRow}>
+                       {action.date_execution ? (
+                         <View style={styles.dateInfoItem}>
+                           <Text style={styles.dateInfoLabel}>Execute date</Text>
+                           <Text style={styles.dateInfoValue}>
+                             {new Date(action.date_execution).toLocaleDateString()}
+                           </Text>
+                         </View>
+                       ) : action.date_planification ? (
+                         <View style={styles.dateInfoItem}>
+                           <Text style={styles.dateInfoLabel}>Planned date</Text>
+                           <Text style={styles.dateInfoValue}>
+                             {new Date(action.date_planification).toLocaleDateString()}
+                           </Text>
+                         </View>
+                       ) : null}
+                     </View>
+                   )}
+                 </View>
+               </View>
+             ))
           )}
         </ScrollView>
       </View>
@@ -327,8 +467,15 @@ const styles = StyleSheet.create({
   statusText: { fontSize: 12, color: '#8E8E93', fontWeight: '600' },
   cardDesc: { fontSize: 14, color: '#1C1C1E', marginBottom: 8 },
   actionImage: { width: '100%', height: 160, borderRadius: 8, marginTop: 4 },
-  metaRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 10 },
-  metaText: { fontSize: 12, color: '#8E8E93' },
+  metaSection: { marginTop: 16 },
+  userInfoRow: { marginBottom: 12 },
+  userInfoItem: { marginBottom: 8 },
+  userInfoLabel: { fontSize: 11, color: '#8E8E93', fontWeight: '600', marginBottom: 2, textTransform: 'uppercase', letterSpacing: 0.5 },
+  userInfoValue: { fontSize: 14, color: '#1C1C1E', fontWeight: '500' },
+  dateInfoRow: { borderTopWidth: 1, borderTopColor: '#F2F2F7', paddingTop: 12 },
+  dateInfoItem: { marginBottom: 4 },
+  dateInfoLabel: { fontSize: 11, color: '#8E8E93', fontWeight: '600', marginBottom: 2, textTransform: 'uppercase', letterSpacing: 0.5 },
+  dateInfoValue: { fontSize: 14, color: '#1C1C1E', fontWeight: '500' },
   formCard: { backgroundColor: '#FFFFFF', borderRadius: 12, padding: 16, marginBottom: 16, borderWidth: 1, borderColor: '#E5E5EA' },
   formTitle: { fontSize: 16, fontWeight: '600', marginBottom: 8, color: '#1C1C1E' },
   input: { backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#E5E5EA', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10, color: '#1C1C1E', marginBottom: 10 },
@@ -364,6 +511,11 @@ const styles = StyleSheet.create({
   zoneText: { color: '#1C1C1E' },
   zoneChildText: { color: '#1C1C1E' },
   selectedPreview: { marginTop: 8, paddingHorizontal: 8 },
+  userRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', flex: 1 },
+  userText: { color: '#1C1C1E', fontSize: 14, fontWeight: '500' },
+  userRole: { color: '#8E8E93', fontSize: 12 },
+  loadingItem: { paddingHorizontal: 10, paddingVertical: 15, alignItems: 'center' },
+  loadingText: { color: '#8E8E93', fontSize: 14 },
 });
 
 

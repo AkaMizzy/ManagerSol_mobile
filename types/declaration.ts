@@ -67,14 +67,22 @@ export interface DeclarationAction {
   date_planification?: string | null;
   date_execution?: string | null;
   sort_order?: number | null;
-  id_user_validateur?: string | null;
+  assigned_to?: string | null;
   id_company?: string | null;
   photo?: string | null;
   created_at: string;
   creator_firstname?: string;
   creator_lastname?: string;
-  validator_firstname?: string | null;
-  validator_lastname?: string | null;
+  assigned_firstname?: string | null;
+  assigned_lastname?: string | null;
+}
+
+export interface CompanyUser {
+  id: string;
+  firstname: string;
+  lastname: string;
+  email: string;
+  role?: string;
 }
 
 export interface CreateActionData {
@@ -84,7 +92,7 @@ export interface CreateActionData {
   date_planification?: string; // ISO date string
   date_execution?: string; // ISO date string
   sort_order?: number;
-  id_user_validateur?: string;
+  assigned_to?: string;
   photo?: { uri: string; type: string; name: string };
   id_zone?: string; // zone for the action (defaults to declaration's zone)
 }
