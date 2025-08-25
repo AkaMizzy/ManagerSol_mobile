@@ -52,14 +52,33 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="profile"
+        name="audit"
         options={{
-          title: 'Profile',
+          title: 'Audit',
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="person-outline" size={size} color={color} />
+            <Ionicons name="search-circle-outline" size={size} color={color} />
           ),
         }}
       />
+      <Tabs.Screen
+        name="echantillon"
+        options={{
+          title: 'Echantillon',
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="cube-outline" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="inventaire"
+        options={{
+          title: 'Inventaire',
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="archive-outline" size={size} color={color} />
+          ),
+        }}
+      />
+      {/* Profile tab removed; accessible via header icon */}
     </Tabs>
   );
 }

@@ -14,7 +14,7 @@ export function CustomTabBar({ state, descriptors, navigation }: BottomTabBarPro
         paddingTop: Platform.OS === 'android' ? 8 : 12,
       }
     ]}>
-      {state.routes.map((route, index) => {
+      {state.routes.filter(r => r.name !== 'profile').map((route, index) => {
         const { options } = descriptors[route.key];
         const label = options.title || route.name;
         const isFocused = state.index === index;
@@ -46,6 +46,12 @@ export function CustomTabBar({ state, descriptors, navigation }: BottomTabBarPro
               return 'list-outline';
             case 'declaration':
               return 'document-text-outline';
+            case 'audit':
+              return 'search-circle-outline';
+            case 'echantillon':
+              return 'cube-outline';
+            case 'inventaire':
+              return 'archive-outline';
             case 'profile':
               return 'person-outline';
             default:

@@ -1,13 +1,15 @@
 import { useAuth } from '@/contexts/AuthContext';
 import { createCalendarEvent } from '@/services/calendarService';
 import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import {
-  Alert,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View
+    Alert,
+    Image,
+    ScrollView,
+    StyleSheet,
+    Text,
+    View
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import CalendarComp from '../../components/CalendarComp';
@@ -17,6 +19,7 @@ import API_CONFIG from '../config/api';
 
 export default function DashboardScreen() {
   const { user, token } = useAuth();
+  const router = useRouter();
   const [eventModalVisible, setEventModalVisible] = useState(false);
   const [eventsByDate, setEventsByDate] = useState<Record<string, string[]>>({});
   const [dayModalVisible, setDayModalVisible] = useState(false);
@@ -28,10 +31,35 @@ export default function DashboardScreen() {
       <ScrollView style={styles.scrollView}>
         {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.greeting}>Welcome back!</Text>
-          <Text style={styles.userName}>
-            {user ? `${user.firstname} ${user.lastname}` : 'Loading...'}
-          </Text>
+          <View style={styles.headerRow}>
+            <View style={styles.headerLeft}>
+              <View style={styles.brandRow}>
+                <Image
+                  source={require('../../assets/images/icon.png')}
+                  style={styles.logo}
+                  resizeMode="contain"
+                />
+                <Text style={styles.appName}>TrackSol</Text>
+              </View>
+            </View>
+            {/* Center username removed to prioritize brand space */}
+            <View style={styles.headerRight}>
+              <Text
+                accessibilityRole="button"
+                style={styles.iconButton}
+                onPress={() => {}}
+              >
+                <Ionicons name="notifications-outline" size={22} color="#1C1C1E" />
+              </Text>
+              <Text
+                accessibilityRole="button"
+                style={styles.iconButton}
+                onPress={() => router.push('/(tabs)/profile')}
+              >
+                <Ionicons name="person-circle-outline" size={24} color="#1C1C1E" />
+              </Text>
+            </View>
+          </View>
         </View>
 
         {/* Quick Stats */}
@@ -188,11 +216,24 @@ const styles = StyleSheet.create({
     paddingBottom: 100, // Add space for tab bar
   },
   header: {
-    padding: 20,
+    paddingHorizontal: 20,
+    paddingVertical: 14,
     backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
     borderBottomColor: '#E5E5EA',
   },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  headerLeft: { flex: 1 },
+  headerRight: { flex: 1, flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center', gap: 12 },
+  appName: { fontSize: 24, fontWeight: '800', color: '#11224e' },
+  brandRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  logo: { width: 36, height: 36 },
+  userChip: { fontSize: 13, color: '#8E8E93', fontWeight: '600', maxWidth: '90%' },
+  iconButton: { paddingHorizontal: 8, paddingVertical: 4 },
   greeting: {
     fontSize: 16,
     color: '#8E8E93',
