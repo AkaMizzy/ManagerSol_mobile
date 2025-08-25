@@ -269,6 +269,20 @@ class DeclarationService {
       });
     }
   }
+
+  // Get actions created by the current user
+  async getMyActions(token: string): Promise<DeclarationAction[]> {
+    return this.makeRequest('/my-actions', token, {
+      method: 'GET',
+    });
+  }
+
+  // Get actions assigned to the current user
+  async getAssignedActions(token: string): Promise<DeclarationAction[]> {
+    return this.makeRequest('/assigned-actions', token, {
+      method: 'GET',
+    });
+  }
 }
 
 export default new DeclarationService();

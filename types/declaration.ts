@@ -77,6 +77,7 @@ export interface DeclarationAction {
   assigned_firstname?: string | null;
   assigned_lastname?: string | null;
   company_title?: string | null;
+  zone_title?: string | null;
 }
 
 export interface CompanyUser {

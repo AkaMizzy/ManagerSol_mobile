@@ -250,7 +250,7 @@ export default function ActionsModal({ visible, actions, onClose, onCreateAction
           {/* Create bar */}
           <View style={styles.createBar}>
             <TouchableOpacity style={styles.createButton} onPress={() => setShowForm((s) => !s)}>
-              <Ionicons name={showForm ? 'remove' : 'add'} size={20} color="#FFFFFF" />
+              <Ionicons name={showForm ? 'remove' : 'add'} size={20} color="#007AFF" />
               <Text style={styles.createButtonText}>{showForm ? 'Close' : 'Add Action'}</Text>
             </TouchableOpacity>
           </View>
@@ -578,7 +578,7 @@ export default function ActionsModal({ visible, actions, onClose, onCreateAction
 
                 <View style={styles.actionsRow}>
                   <TouchableOpacity style={styles.updateButton} onPress={handleUpdate}>
-                    <Ionicons name="create-outline" size={18} color="#FFFFFF" />
+                    <Ionicons name="create-outline" size={18} color="#f87b1b" />
                     <Text style={styles.updateButtonText}>Update</Text>
                   </TouchableOpacity>
                   <TouchableOpacity style={styles.addMiniButton} onPress={() => {
@@ -789,8 +789,17 @@ const styles = StyleSheet.create({
   searchBar: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#E5E5EA', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8, marginBottom: 12 },
   searchInput: { flex: 1, fontSize: 14, color: '#1C1C1E' },
   createBar: { marginBottom: 12 },
-  createButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: '#007AFF', paddingVertical: 10, borderRadius: 10, gap: 6 },
-  createButtonText: { color: '#FFFFFF', fontWeight: '600' },
+  createButton: { flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#007AFF',
+    paddingVertical: 12,
+    borderRadius: 10,
+    gap: 6, },
+  createButtonText: { color: '#007AFF', fontWeight: '600' },
   emptyState: { alignItems: 'center', justifyContent: 'center', paddingVertical: 60 },
   emptyTitle: { marginTop: 12, fontSize: 16, color: '#8E8E93', textAlign: 'center' },
   card: {
@@ -874,13 +883,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#34C759',
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#f87b1b',
     paddingVertical: 12,
     borderRadius: 10,
     gap: 6,
   },
   updateButtonText: {
-    color: '#FFFFFF',
+    color: '#f87b1b',
     fontWeight: '600',
   },
   addMiniButton: {
