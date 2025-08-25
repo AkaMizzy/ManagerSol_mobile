@@ -38,7 +38,7 @@ interface Props {
   onDayPress?: (dateIso: string) => void;
 }
 
-export default function CalendarComp({ eventsByDate = {}, onMonthChange, onDayPress }: Props): JSX.Element {
+export default function CalendarComp({ eventsByDate = {}, onMonthChange, onDayPress }: Props) {
   const [visibleMonth, setVisibleMonth] = useState<Date>(new Date());
   const { width } = useWindowDimensions();
 
@@ -105,6 +105,14 @@ export default function CalendarComp({ eventsByDate = {}, onMonthChange, onDayPr
                 style={[
                   styles.dayCell,
                   { width: cellSize, height: cellSize, marginRight: cIdx < 6 ? gap : 0 },
+                  // Apply background color if there are events on this day
+                  (() => {
+                    const key = formatDateKey(cell.date);
+                    const contexts = eventsByDate[key] || [];
+                    if (contexts.length === 0) return {};
+                    const bg = contextToColor(contexts[0]);
+                    return { backgroundColor: bg, borderColor: bg };
+                  })(),
                   cell.isToday && styles.todayCell,
                 ]}
                 activeOpacity={0.85}
@@ -114,19 +122,19 @@ export default function CalendarComp({ eventsByDate = {}, onMonthChange, onDayPr
                   onDayPress(iso);
                 }}
               >
-                <Text style={[styles.dayText, !cell.isCurrentMonth && styles.mutedDay]}>
+                {(() => {
+                  const key = formatDateKey(cell.date);
+                  const hasEvents = (eventsByDate[key] || []).length > 0;
+                  return (
+                    <Text style={[
+                      styles.dayText,
+                      !cell.isCurrentMonth && styles.mutedDay,
+                      hasEvents && styles.dayTextOnColored
+                    ]}>
                   {cell.date.getDate()}
-                </Text>
-                <View style={styles.indicatorsRow}>
-                  {(eventsByDate[formatDateKey(cell.date)] || []).slice(0,3).map((ctx, i) => (
-                    <View key={i} style={[styles.dot, { backgroundColor: contextToColor(ctx) }]} />
-                  ))}
-                  {((eventsByDate[formatDateKey(cell.date)] || []).length > 3) ? (
-                    <Text style={styles.moreText}>
-                      +{(eventsByDate[formatDateKey(cell.date)] || []).length - 3}
                     </Text>
-                  ) : null}
-                </View>
+                  );
+                })()}
               </TouchableOpacity>
             ))}
           </View>
@@ -225,6 +233,9 @@ const styles = StyleSheet.create({
     color: '#1C1C1E',
     fontWeight: '700',
   },
+  dayTextOnColored: {
+    color: '#FFFFFF',
+  },
   mutedDay: {
     color: '#C7C7CC',
     fontWeight: '600',
@@ -232,23 +243,6 @@ const styles = StyleSheet.create({
   todayCell: {
     borderColor: '#f87b1b',
     borderWidth: 2,
-  },
-  indicatorsRow: {
-    position: 'absolute',
-    bottom: 6,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  dot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-  },
-  moreText: {
-    fontSize: 10,
-    color: '#8E8E93',
-    fontWeight: '600',
   },
 });
 

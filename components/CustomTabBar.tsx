@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import React from 'react';
-import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Image, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 export function CustomTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
@@ -38,24 +38,65 @@ export function CustomTabBar({ state, descriptors, navigation }: BottomTabBarPro
           });
         };
 
-        const getIconName = (routeName: string): string => {
+        const renderIcon = (routeName: string) => {
+          const opacity = isFocused ? 1 : 0.6;
           switch (routeName) {
             case 'index':
-              return 'home-outline';
+              return (
+                <Ionicons
+                  name="home-outline"
+                  size={24}
+                  color={isFocused ? '#F87B1B' : '#8E8E93'}
+                />
+              );
             case 'tasks':
-              return 'list-outline';
+              return (
+                <Image
+                  source={require('../assets/icons/action_corrective.png')}
+                  style={[styles.customIcon, { opacity }]}
+                  resizeMode="contain"
+                />
+              );
             case 'declaration':
-              return 'document-text-outline';
+              return (
+                <Image
+                  source={require('../assets/icons/declaration_anomalie.png')}
+                  style={[styles.customIcon, { opacity }]}
+                  resizeMode="contain"
+                />
+              );
             case 'audit':
-              return 'search-circle-outline';
+              return (
+                <Image
+                  source={require('../assets/icons/audit_zone.png')}
+                  style={[styles.customIcon, { opacity }]}
+                  resizeMode="contain"
+                />
+              );
             case 'echantillon':
-              return 'cube-outline';
+              return (
+                <Image
+                  source={require('../assets/icons/prelevement_echantillon.png')}
+                  style={[styles.customIcon, { opacity }]}
+                  resizeMode="contain"
+                />
+              );
             case 'inventaire':
-              return 'archive-outline';
-            case 'profile':
-              return 'person-outline';
+              return (
+                <Image
+                  source={require('../assets/icons/inventaire_article.png')}
+                  style={[styles.customIcon, { opacity }]}
+                  resizeMode="contain"
+                />
+              );
             default:
-              return 'help-outline';
+              return (
+                <Ionicons
+                  name="help-outline"
+                  size={24}
+                  color={isFocused ? '#F87B1B' : '#8E8E93'}
+                />
+              );
           }
         };
 
@@ -70,11 +111,7 @@ export function CustomTabBar({ state, descriptors, navigation }: BottomTabBarPro
             style={styles.tab}
           >
             <View style={styles.iconContainer}>
-              <Ionicons
-                name={getIconName(route.name) as any}
-                size={24}
-                color={isFocused ? '#F87B1B' : '#8E8E93'}
-              />
+              {renderIcon(route.name)}
             </View>
             <Text style={[styles.tabLabel, isFocused && styles.activeTabLabel]}>
               {label}
@@ -121,6 +158,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     width: 32,
     height: 32,
+  },
+  customIcon: {
+    width: 24,
+    height: 24,
   },
   tabLabel: {
     fontSize: 12,
