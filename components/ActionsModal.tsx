@@ -24,6 +24,7 @@ export default function ActionsModal({ visible, actions, onClose, onCreateAction
   const [showExecPicker, setShowExecPicker] = useState(false);
   const [zones, setZones] = useState<Zone[]>([]);
   const [showZoneDropdown, setShowZoneDropdown] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
 
   const toISODate = (d: Date) => {
     const year = d.getFullYear();
@@ -96,6 +97,12 @@ export default function ActionsModal({ visible, actions, onClose, onCreateAction
     );
   };
 
+  const filteredActions = React.useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q || !actions) return actions || [];
+    return actions.filter(a => (a.title || '').toLowerCase().includes(q));
+  }, [actions, searchQuery]);
+
   return (
     <Modal
       visible={visible}
@@ -121,6 +128,23 @@ export default function ActionsModal({ visible, actions, onClose, onCreateAction
               <Ionicons name={showForm ? 'remove' : 'add'} size={20} color="#FFFFFF" />
               <Text style={styles.createButtonText}>{showForm ? 'Close' : 'Add Action'}</Text>
             </TouchableOpacity>
+          </View>
+
+          {/* Search bar */}
+          <View style={styles.searchBar}>
+            <Ionicons name="search" size={18} color="#8E8E93" />
+            <TextInput
+              placeholder="Search actions by title"
+              placeholderTextColor="#8E8E93"
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              style={styles.searchInput}
+            />
+            {searchQuery.length > 0 ? (
+              <TouchableOpacity onPress={() => setSearchQuery('')} accessibilityLabel="Clear search">
+                <Ionicons name="close-circle" size={18} color="#C7C7CC" />
+              </TouchableOpacity>
+            ) : null}
           </View>
 
           {showForm && (
@@ -230,13 +254,13 @@ export default function ActionsModal({ visible, actions, onClose, onCreateAction
             </View>
           )}
 
-          {!actions || actions.length === 0 ? (
+          {!filteredActions || filteredActions.length === 0 ? (
             <View style={styles.emptyState}>
               <Ionicons name="list-outline" size={48} color="#C7C7CC" />
-              <Text style={styles.emptyTitle}>No actions have been added for this declaration yet.</Text>
+              <Text style={styles.emptyTitle}>{searchQuery ? 'No matches found' : 'No actions have been added for this declaration yet.'}</Text>
             </View>
           ) : (
-            actions.map((action) => (
+            filteredActions.map((action) => (
               <View key={action.id} style={styles.card}>
                 <View style={styles.cardHeader}>
                   <Text style={styles.cardTitle}>{action.title || 'Untitled action'}</Text>
@@ -282,6 +306,8 @@ const styles = StyleSheet.create({
   headerTitle: { fontSize: 18, fontWeight: '600', color: '#1C1C1E' },
   placeholder: { width: 24 },
   content: { padding: 16 },
+  searchBar: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#E5E5EA', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8, marginBottom: 12 },
+  searchInput: { flex: 1, fontSize: 14, color: '#1C1C1E' },
   createBar: { marginBottom: 12 },
   createButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: '#007AFF', paddingVertical: 10, borderRadius: 10, gap: 6 },
   createButtonText: { color: '#FFFFFF', fontWeight: '600' },
