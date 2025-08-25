@@ -1,13 +1,14 @@
 import { Ionicons } from '@expo/vector-icons';
 import React, { useCallback, useEffect, useState } from 'react';
 import {
-  Alert,
-  RefreshControl,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View
+    Alert,
+    RefreshControl,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import ActionsModal from '../../components/ActionsModal';
@@ -37,6 +38,7 @@ export default function DeclarationScreen() {
   
   // Filter state
   const [sortBy, setSortBy] = useState<'date' | 'severity'>('date');
+  const [searchQuery, setSearchQuery] = useState('');
 
   // Load declarations and required data on component mount
   useEffect(() => {
@@ -221,9 +223,13 @@ export default function DeclarationScreen() {
     return { totalDeclarations, highPriorityCount };
   };
 
-  // Sort declarations based on current filter
+  // Filter by title, then sort based on current filter
   const getSortedDeclarations = () => {
-    const sorted = [...declarations];
+    const query = searchQuery.trim().toLowerCase();
+    const filtered = query
+      ? declarations.filter(d => (d.title || '').toLowerCase().includes(query))
+      : [...declarations];
+    const sorted = [...filtered];
     if (sortBy === 'date') {
       return sorted.sort((a, b) => new Date(b.date_declaration).getTime() - new Date(a.date_declaration).getTime());
     } else {
@@ -256,6 +262,29 @@ export default function DeclarationScreen() {
         
         {/* Filter Controls */}
         <View style={styles.filterContainer}>
+          {/* Search Bar */}
+          <View style={styles.searchBar}>
+            <Ionicons name="search" size={18} color="#8E8E93" />
+            <Text
+              accessibilityRole="text"
+              style={{ display: 'none' }}
+            >Search by title</Text>
+            <View style={{ flex: 1 }}>
+              <TextInput
+                placeholder="Search by title"
+                placeholderTextColor="#8E8E93"
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+                style={styles.searchInput}
+              />
+            </View>
+            {searchQuery.length > 0 ? (
+              <TouchableOpacity onPress={() => setSearchQuery('')} accessibilityLabel="Clear search">
+                <Ionicons name="close-circle" size={18} color="#C7C7CC" />
+              </TouchableOpacity>
+            ) : null}
+          </View>
+
           <View style={styles.segmentedControl}>
             <TouchableOpacity
               style={[styles.filterButton, sortBy === 'date' && styles.filterButtonActive]}
@@ -291,12 +320,12 @@ export default function DeclarationScreen() {
           />
         }
       >
-        {declarations.length === 0 ? (
+        {sortedDeclarations.length === 0 ? (
           <View style={styles.emptyState}>
             <Ionicons name="document-text-outline" size={64} color="#C7C7CC" />
-            <Text style={styles.emptyStateTitle}>No Declarations Yet</Text>
+            <Text style={styles.emptyStateTitle}>{searchQuery ? 'No matches found' : 'No Declarations Yet'}</Text>
             <Text style={styles.emptyStateSubtitle}>
-              Create your first declaration to get started
+              {searchQuery ? 'Try a different title keyword' : 'Create your first declaration to get started'}
             </Text>
             <View style={styles.emptyStateButton}>
               <Ionicons name="add-circle" size={20} color="#007AFF" />
@@ -338,6 +367,8 @@ export default function DeclarationScreen() {
           setActionsModalVisible(false);
           setActionsForDeclaration(null);
         }}
+        parentZone={selectedDeclaration ? zones.find(z => z.id === selectedDeclaration.id_zone) || null : null}
+        childZones={selectedDeclaration ? zones.filter(z => z.id_zone === selectedDeclaration.id_zone) : []}
       />
 
       {/* Create Declaration Modal */}
@@ -373,6 +404,23 @@ const styles = StyleSheet.create({
   },
   headerLeft: {
     flex: 1,
+  },
+  searchBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E5E5EA',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    marginBottom: 10,
+  },
+  searchInput: {
+    fontSize: 14,
+    color: '#1C1C1E',
+    paddingVertical: 2,
   },
   title: {
     fontSize: 28,

@@ -1,5 +1,6 @@
 import { useAuth } from '@/contexts/AuthContext';
 import { Ionicons } from '@expo/vector-icons';
+import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
@@ -73,13 +74,17 @@ export default function LoginScreen() {
           {/* Header */}
           <View style={styles.header}>
             <View style={styles.logoContainer}>
-              <View style={styles.logo}>
-                <Ionicons name="business" size={40} color="#007AFF" />
+              <View style={styles.logo}> 
+                <Image
+                  source={require('../../assets/images/icon.png')}
+                  style={styles.logoImage}
+                  contentFit="contain"
+                />
               </View>
             </View>
-            <Text style={styles.title}>ManagerSol</Text>
+            <Text style={styles.title}>TrackSol</Text>
             <Text style={styles.subtitle}>
-              Sign in to access your account
+              Streamlined construction operations for your teams
             </Text>
           </View>
 
@@ -192,32 +197,36 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   logo: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
+    width: 96,
+    height: 96,
+    borderRadius: 20,
     backgroundColor: '#F2F2F7',
     justifyContent: 'center',
     alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#E5E5EA',
     shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 10,
+    elevation: 3,
+  },
+  logoImage: {
+    width: '80%',
+    height: '80%',
   },
   title: {
     fontSize: 28,
     fontWeight: '700',
-    color: '#1C1C1E',
-    marginBottom: 8,
+    color: '#11224e',
+    marginBottom: 6,
+    letterSpacing: 0.2,
   },
   subtitle: {
-    fontSize: 16,
+    fontSize: 14,
     color: '#8E8E93',
     textAlign: 'center',
-    lineHeight: 22,
+    lineHeight: 20,
   },
   form: {
     marginBottom: 32,
@@ -228,12 +237,12 @@ const styles = StyleSheet.create({
   inputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F2F2F7',
+    backgroundColor: '#F9FAFB',
     borderRadius: 12,
     paddingHorizontal: 16,
-    paddingVertical: 16,
+    paddingVertical: 14,
     borderWidth: 1,
-    borderColor: '#E5E5EA',
+    borderColor: '#E5E7EB',
   },
   inputIcon: {
     marginRight: 12,
@@ -248,17 +257,14 @@ const styles = StyleSheet.create({
     padding: 4,
   },
   loginButton: {
-    backgroundColor: '#007AFF',
+    backgroundColor: '#11224e',
     borderRadius: 12,
     paddingVertical: 16,
     alignItems: 'center',
     marginTop: 8,
-    shadowColor: '#007AFF',
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.3,
+    shadowColor: '#11224e',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
     shadowRadius: 8,
     elevation: 6,
   },

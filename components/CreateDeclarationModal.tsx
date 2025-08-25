@@ -3,17 +3,18 @@ import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import React, { useEffect, useState } from 'react';
 import {
-    Alert,
-    Dimensions,
-    Modal,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  Alert,
+  Dimensions,
+  Modal,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import API_CONFIG from '../app/config/api';
 import { CreateDeclarationData, DeclarationType, Zone } from '../types/declaration';
 
 interface CreateDeclarationModalProps {
@@ -36,6 +37,7 @@ export default function CreateDeclarationModal({
   isLoading = false,
 }: CreateDeclarationModalProps) {
   const [formData, setFormData] = useState<CreateDeclarationData>({
+    title: '',
     id_declaration_type: '',
     severite: 5,
     id_zone: '',
@@ -52,6 +54,7 @@ export default function CreateDeclarationModal({
   useEffect(() => {
     if (visible) {
       setFormData({
+        title: '',
         id_declaration_type: '',
         severite: 5,
         id_zone: '',
@@ -65,6 +68,9 @@ export default function CreateDeclarationModal({
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
 
+    if (!formData.title.trim()) {
+      newErrors.title = 'Title is required';
+    }
     if (!formData.id_declaration_type) {
       newErrors.id_declaration_type = 'Declaration type is required';
     }
@@ -113,6 +119,12 @@ export default function CreateDeclarationModal({
   const getZoneTitle = (id: string) => {
     const zone = zones.find(z => z.id === id);
     return zone ? zone.title : 'Select zone';
+  };
+
+  const getZoneLogo = (id: string) => {
+    const zone = zones.find(z => z.id === id);
+    if (!zone || !zone.logo) return null;
+    return `${API_CONFIG.BASE_URL}${zone.logo}`;
   };
 
   const getSeverityColor = (severity: number) => {
@@ -235,6 +247,19 @@ export default function CreateDeclarationModal({
 
         {/* Form */}
         <ScrollView style={styles.form} showsVerticalScrollIndicator={false}>
+          {/* Title */}
+          <View style={styles.fieldContainer}>
+            <Text style={styles.fieldLabel}>Title *</Text>
+            <TextInput
+              style={[styles.textInput, errors.title && styles.textAreaError]}
+              placeholder="Enter a concise title"
+              placeholderTextColor="#8E8E93"
+              value={formData.title}
+              onChangeText={(value) => updateFormData('title', value)}
+            />
+            {errors.title ? <Text style={styles.errorText}>{errors.title}</Text> : null}
+          </View>
+
           {/* Declaration Type */}
           <View style={styles.fieldContainer}>
             <Text style={styles.fieldLabel}>Declaration Type *</Text>
@@ -322,12 +347,19 @@ export default function CreateDeclarationModal({
               style={[styles.dropdown, errors.id_zone && styles.dropdownError]}
               onPress={() => setShowZoneDropdown(!showZoneDropdown)}
             >
-              <Text style={[
-                styles.dropdownText,
-                !formData.id_zone && styles.placeholderText
-              ]}>
-                {getZoneTitle(formData.id_zone)}
-              </Text>
+              {formData.id_zone ? (
+                <View style={styles.zoneSelectedRow}>
+                  {getZoneLogo(formData.id_zone) && (
+                    <Image
+                      source={{ uri: getZoneLogo(formData.id_zone)! }}
+                      style={styles.zoneLogo}
+                    />
+                  )}
+                  <Text style={styles.dropdownText}>{getZoneTitle(formData.id_zone)}</Text>
+                </View>
+              ) : (
+                <Text style={[styles.dropdownText, styles.placeholderText]}>Select zone</Text>
+              )}
               <Ionicons
                 name={showZoneDropdown ? 'chevron-up' : 'chevron-down'}
                 size={20}
@@ -352,7 +384,12 @@ export default function CreateDeclarationModal({
                         setShowZoneDropdown(false);
                       }}
                     >
-                      <Text style={styles.dropdownItemText}>{zone.title}</Text>
+                      <View style={styles.zoneItemRow}>
+                        {zone.logo ? (
+                          <Image source={{ uri: `${API_CONFIG.BASE_URL}${zone.logo}` }} style={styles.zoneLogo} />
+                        ) : null}
+                        <Text style={styles.dropdownItemText}>{zone.title}</Text>
+                      </View>
                     </TouchableOpacity>
                   ))}
                 </ScrollView>
@@ -538,6 +575,22 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#1C1C1E',
   },
+  zoneItemRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  zoneSelectedRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    flex: 1,
+  },
+  zoneLogo: {
+    width: 24,
+    height: 24,
+    borderRadius: 4,
+  },
   severityContainer: {
     alignItems: 'center',
   },
@@ -593,6 +646,16 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#1C1C1E',
     minHeight: 100,
+  },
+  textInput: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E5E5EA',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    fontSize: 16,
+    color: '#1C1C1E',
   },
   textAreaError: {
     borderColor: '#FF3B30',

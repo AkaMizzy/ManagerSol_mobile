@@ -24,6 +24,7 @@ export interface ChatMessage {
 
 export interface Declaration {
   id: string;
+  title: string;
   id_users: string;
   id_declaration_type: string;
   severite: number;
@@ -39,6 +40,7 @@ export interface Declaration {
 }
 
 export interface CreateDeclarationData {
+  title: string;
   id_declaration_type: string;
   severite: number;
   id_zone: string;
@@ -50,6 +52,9 @@ export interface Zone {
   id: string;
   title: string;
   code: string;
+  logo?: string | null;
+  id_zone?: string | null; // parent zone id
+  level?: number | null;
 }
 
 export interface DeclarationAction {
@@ -81,4 +86,5 @@ export interface CreateActionData {
   sort_order?: number;
   id_user_validateur?: string;
   photo?: { uri: string; type: string; name: string };
+  id_zone?: string; // zone for the action (defaults to declaration's zone)
 }

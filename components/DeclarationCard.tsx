@@ -48,11 +48,14 @@ export default function DeclarationCard({ declaration, onChatPress, onPress, onV
       onPress={() => onPress?.(declaration)}
       activeOpacity={0.95}
     >
-      {/* Header with Type and Severity */}
+      {/* Header with Title and Severity */}
       <View style={styles.header}>
-        <View style={styles.typeContainer}>
-          <Ionicons name="document-text" size={16} color="#007AFF" />
-          <Text style={styles.typeText}>{declaration.declaration_type_title}</Text>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.titleText} numberOfLines={1}>{declaration.title}</Text>
+          <View style={styles.typeContainer}>
+            <Ionicons name="document-text" size={14} color="#8E8E93" />
+            <Text style={styles.typeSecondaryText}>{declaration.declaration_type_title}</Text>
+          </View>
         </View>
         <View style={[styles.severityBadge, { backgroundColor: getSeverityColor(declaration.severite) }]}>
           <Text style={styles.severityText}>{getSeverityText(declaration.severite)}</Text>
@@ -153,6 +156,17 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: '#1C1C1E',
+  },
+  typeSecondaryText: {
+    fontSize: 13,
+    color: '#8E8E93',
+    fontWeight: '500',
+  },
+  titleText: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#1C1C1E',
+    marginBottom: 2,
   },
   severityBadge: {
     paddingHorizontal: 12,

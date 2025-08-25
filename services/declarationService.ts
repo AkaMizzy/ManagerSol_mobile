@@ -47,6 +47,7 @@ class DeclarationService {
     const response = await this.makeRequest('/declarations', token, {
       method: 'POST',
       body: JSON.stringify({
+        title: (data as any).title,
         id_declaration_type: data.id_declaration_type,
         severite: data.severite,
         id_zone: data.id_zone,
@@ -209,6 +210,7 @@ class DeclarationService {
       if (data.date_execution) form.append('date_execution', data.date_execution);
       if (data.sort_order !== undefined) form.append('sort_order', String(data.sort_order));
       if (data.id_user_validateur) form.append('id_user_validateur', data.id_user_validateur);
+      if (data.id_zone) form.append('id_zone', data.id_zone);
       form.append('photo', {
         uri: data.photo.uri,
         type: data.photo.type,

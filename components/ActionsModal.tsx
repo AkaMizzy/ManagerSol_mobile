@@ -5,21 +5,25 @@ import React, { useState } from 'react';
 import { Alert, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import DateTimePickerModal from 'react-native-modal-datetime-picker';
 import API_CONFIG from '../app/config/api';
-import { CreateActionData, DeclarationAction } from '../types/declaration';
+import { CreateActionData, DeclarationAction, Zone } from '../types/declaration';
 
 interface ActionsModalProps {
   visible: boolean;
   actions: DeclarationAction[] | null;
   onClose: () => void;
   onCreateAction?: (data: CreateActionData) => Promise<void>;
+  parentZone?: Zone | null; // declaration's zone
+  childZones?: Zone[]; // optional: pass preloaded child zones
 }
 
-export default function ActionsModal({ visible, actions, onClose, onCreateAction }: ActionsModalProps) {
-  const [form, setForm] = useState<CreateActionData>({});
+export default function ActionsModal({ visible, actions, onClose, onCreateAction, parentZone, childZones }: ActionsModalProps) {
+  const [form, setForm] = useState<CreateActionData>({ id_zone: parentZone?.id });
   const [showForm, setShowForm] = useState(false);
   const [photo, setPhoto] = useState<CreateActionData['photo']>();
   const [showPlanPicker, setShowPlanPicker] = useState(false);
   const [showExecPicker, setShowExecPicker] = useState(false);
+  const [zones, setZones] = useState<Zone[]>([]);
+  const [showZoneDropdown, setShowZoneDropdown] = useState(false);
 
   const toISODate = (d: Date) => {
     const year = d.getFullYear();
@@ -47,7 +51,7 @@ export default function ActionsModal({ visible, actions, onClose, onCreateAction
   };
 
   const resetForm = () => {
-    setForm({});
+    setForm({ id_zone: parentZone?.id });
     setPhoto(undefined);
   };
 
@@ -60,6 +64,29 @@ export default function ActionsModal({ visible, actions, onClose, onCreateAction
     } catch (e) {
       Alert.alert('Error', (e as Error).message || 'Failed to create action');
     }
+  };
+
+  React.useEffect(() => {
+    // Build zones list: parent + its children
+    const list: Zone[] = [];
+    if (parentZone) list.push(parentZone);
+    if (childZones && childZones.length) {
+      childZones.forEach((z) => list.push(z));
+    }
+    setZones(list);
+    // default selection to parent
+    setForm((p) => ({ ...p, id_zone: parentZone?.id }));
+  }, [parentZone?.id, childZones?.length]);
+
+  const renderZoneOption = (zone: Zone) => {
+    const uri = zone.logo ? `${API_CONFIG.BASE_URL}${zone.logo}` : undefined;
+    const isChild = parentZone && zone.id !== parentZone.id;
+    return (
+      <View style={styles.zoneRow}>
+        {uri ? <Image source={{ uri }} style={styles.zoneLogo} /> : null}
+        <Text style={[styles.zoneText, isChild && styles.zoneChildText]}>{isChild ? `— ${zone.title}` : zone.title}</Text>
+      </View>
+    );
   };
   const renderPhoto = (photo?: string | null) => {
     if (!photo) return null;
@@ -99,6 +126,45 @@ export default function ActionsModal({ visible, actions, onClose, onCreateAction
           {showForm && (
             <View style={styles.formCard}>
               <Text style={styles.formTitle}>New Action</Text>
+              {/* Zone select */}
+              {parentZone ? (
+                <View style={{ marginBottom: 10 }}>
+                  <Text style={styles.label}>Zone</Text>
+                  {/* Select header */}
+                  <TouchableOpacity
+                    style={styles.selectHeader}
+                    onPress={() => setShowZoneDropdown((s) => !s)}
+                    activeOpacity={0.7}
+                  >
+                    <View style={styles.selectedPreview}>
+                      {renderZoneOption(zones.find(zz => zz.id === form.id_zone) || parentZone)}
+                    </View>
+                    <Ionicons name={showZoneDropdown ? 'chevron-up' : 'chevron-down'} size={18} color="#8E8E93" />
+                  </TouchableOpacity>
+
+                  {showZoneDropdown ? (
+                    <View style={styles.selectBox}>
+                      <ScrollView style={{ maxHeight: 220 }}>
+                        {zones.map((z) => (
+                          <TouchableOpacity
+                            key={z.id}
+                            style={styles.selectItem}
+                            onPress={() => {
+                              setForm((p) => ({ ...p, id_zone: z.id }));
+                              setShowZoneDropdown(false);
+                            }}
+                          >
+                            <View style={[styles.selectItemInner, form.id_zone === z.id && styles.selectItemSelected]}>
+                              {renderZoneOption(z)}
+                              {form.id_zone === z.id ? <Ionicons name="checkmark" size={18} color="#34C759" /> : null}
+                            </View>
+                          </TouchableOpacity>
+                        ))}
+                      </ScrollView>
+                    </View>
+                  ) : null}
+                </View>
+              ) : null}
               <TextInput
                 style={styles.input}
                 placeholder="Title "
@@ -261,6 +327,17 @@ const styles = StyleSheet.create({
   },
   dateText: { color: '#1C1C1E', fontSize: 14 },
   placeholderText: { color: '#8E8E93' },
+  label: { fontSize: 14, color: '#1C1C1E', marginBottom: 6, fontWeight: '600' },
+  selectHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#E5E5EA', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 12 },
+  selectBox: { backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#E5E5EA', borderRadius: 10 },
+  selectItem: { paddingHorizontal: 10, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: '#F2F2F7' },
+  selectItemInner: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  selectItemSelected: { backgroundColor: '#F8FFF9' },
+  zoneRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  zoneLogo: { width: 22, height: 22, borderRadius: 4 },
+  zoneText: { color: '#1C1C1E' },
+  zoneChildText: { color: '#1C1C1E' },
+  selectedPreview: { marginTop: 8, paddingHorizontal: 8 },
 });
 
 
