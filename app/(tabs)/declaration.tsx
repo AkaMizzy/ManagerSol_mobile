@@ -137,6 +137,13 @@ export default function DeclarationScreen() {
     setActionsForDeclaration(actions);
   };
 
+  const handleUpdateAction = async (actionId: string, data: import('../../types/declaration').CreateActionData) => {
+    if (!selectedDeclaration || !token) return;
+    await declarationService.updateAction(selectedDeclaration.id, actionId, data, token);
+    const actions = await declarationService.getActions(selectedDeclaration.id, token);
+    setActionsForDeclaration(actions);
+  };
+
   const handleCreateDeclarationSubmit = async (data: CreateDeclarationData) => {
     if (!token) return;
     
@@ -363,6 +370,7 @@ export default function DeclarationScreen() {
         visible={actionsModalVisible}
         actions={actionsForDeclaration}
         onCreateAction={handleCreateAction}
+        onUpdateAction={handleUpdateAction}
         onClose={() => {
           setActionsModalVisible(false);
           setActionsForDeclaration(null);

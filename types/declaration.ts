@@ -68,6 +68,7 @@ export interface DeclarationAction {
   date_execution?: string | null;
   sort_order?: number | null;
   assigned_to?: string | null;
+  id_zone?: string | null;
   id_company?: string | null;
   photo?: string | null;
   created_at: string;
@@ -75,6 +76,7 @@ export interface DeclarationAction {
   creator_lastname?: string;
   assigned_firstname?: string | null;
   assigned_lastname?: string | null;
+  company_title?: string | null;
 }
 
 export interface CompanyUser {

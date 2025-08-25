@@ -234,6 +234,41 @@ class DeclarationService {
       });
     }
   }
+
+  async updateAction(declarationId: string, actionId: string, data: CreateActionData, token: string): Promise<{ message: string }> {
+    if (data.photo) {
+      const form = new FormData();
+      if (data.title !== undefined) form.append('title', data.title || '');
+      if (data.description !== undefined) form.append('description', data.description || '');
+      if (data.status !== undefined) form.append('status', String(data.status));
+      if (data.date_planification !== undefined) form.append('date_planification', data.date_planification || '');
+      if (data.date_execution !== undefined) form.append('date_execution', data.date_execution || '');
+      if (data.sort_order !== undefined) form.append('sort_order', String(data.sort_order));
+      if (data.assigned_to !== undefined) form.append('assigned_to', data.assigned_to || '');
+      if (data.id_zone) form.append('id_zone', data.id_zone);
+      form.append('photo', {
+        uri: data.photo.uri,
+        type: data.photo.type,
+        name: data.photo.name,
+      } as any);
+
+      const response = await fetch(`${this.baseUrl}/declarations/${declarationId}/actions/${actionId}`, {
+        method: 'PUT',
+        headers: { 'Authorization': `Bearer ${token}` },
+        body: form,
+      });
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to update action');
+      }
+      return response.json();
+    } else {
+      return this.makeRequest(`/declarations/${declarationId}/actions/${actionId}`, token, {
+        method: 'PUT',
+        body: JSON.stringify(data),
+      });
+    }
+  }
 }
 
 export default new DeclarationService();
