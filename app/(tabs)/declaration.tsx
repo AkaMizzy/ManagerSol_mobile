@@ -18,7 +18,7 @@ import DeclarationCard from '../../components/DeclarationCard';
 import LoadingScreen from '../../components/LoadingScreen';
 import { useAuth } from '../../contexts/AuthContext';
 import declarationService from '../../services/declarationService';
-import { CreateDeclarationData, Declaration, DeclarationType, Zone } from '../../types/declaration';
+import { CompanyUser, CreateDeclarationData, Declaration, DeclarationType, Project, Zone } from '../../types/declaration';
 
 export default function DeclarationScreen() {
   const { user, token } = useAuth();
@@ -34,6 +34,8 @@ export default function DeclarationScreen() {
   const [createModalVisible, setCreateModalVisible] = useState(false);
   const [declarationTypes, setDeclarationTypes] = useState<DeclarationType[]>([]);
   const [zones, setZones] = useState<Zone[]>([]);
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [companyUsers, setCompanyUsers] = useState<CompanyUser[]>([]);
   const [isCreating, setIsCreating] = useState(false);
   
   // Filter state
@@ -53,15 +55,19 @@ export default function DeclarationScreen() {
       }
       
       // Load data in parallel
-      const [declarationsData, typesData, zonesData] = await Promise.all([
+      const [declarationsData, typesData, zonesData, projectsData, usersData] = await Promise.all([
         declarationService.getDeclarations(token),
         declarationService.getDeclarationTypes(token),
         declarationService.getZones(token),
+        declarationService.getCompanyProjects(token),
+        declarationService.getCompanyUsers(token),
       ]);
       
       setDeclarations(declarationsData);
       setDeclarationTypes(typesData);
       setZones(zonesData);
+      setProjects(projectsData);
+      setCompanyUsers(usersData);
     } catch (error) {
       console.error('Failed to load initial data:', error);
       Alert.alert('Error', 'Failed to load data. Please try again.');
@@ -386,6 +392,8 @@ export default function DeclarationScreen() {
         onSubmit={handleCreateDeclarationSubmit}
         declarationTypes={declarationTypes}
         zones={zones}
+        projects={projects}
+        companyUsers={companyUsers}
         isLoading={isCreating}
       />
     </SafeAreaView>

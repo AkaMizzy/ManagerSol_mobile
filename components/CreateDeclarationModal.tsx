@@ -13,9 +13,10 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import DateTimePickerModal from 'react-native-modal-datetime-picker';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import API_CONFIG from '../app/config/api';
-import { CreateDeclarationData, DeclarationType, Zone } from '../types/declaration';
+import { CompanyUser, CreateDeclarationData, DeclarationType, Project, Zone } from '../types/declaration';
 
 interface CreateDeclarationModalProps {
   visible: boolean;
@@ -23,6 +24,8 @@ interface CreateDeclarationModalProps {
   onSubmit: (data: CreateDeclarationData) => Promise<void>;
   declarationTypes: DeclarationType[];
   zones: Zone[];
+  projects: Project[];
+  companyUsers: CompanyUser[];
   isLoading?: boolean;
 }
 
@@ -34,6 +37,8 @@ export default function CreateDeclarationModal({
   onSubmit,
   declarationTypes,
   zones,
+  projects,
+  companyUsers,
   isLoading = false,
 }: CreateDeclarationModalProps) {
   const [formData, setFormData] = useState<CreateDeclarationData>({
@@ -42,13 +47,33 @@ export default function CreateDeclarationModal({
     severite: 5,
     id_zone: '',
     description: '',
+    date_declaration: '',
+    code_declaration: '',
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [showTypeDropdown, setShowTypeDropdown] = useState(false);
   const [showZoneDropdown, setShowZoneDropdown] = useState(false);
+  const [showProjectDropdown, setShowProjectDropdown] = useState(false);
+  const [showDeclarantDropdown, setShowDeclarantDropdown] = useState(false);
+  const [showDatePicker, setShowDatePicker] = useState(false);
   
   // Photo handling state
   const [selectedPhotos, setSelectedPhotos] = useState<{ uri: string; type: string; name: string }[]>([]);
+
+  // Date helper functions
+  const toISODate = (d: Date) => {
+    return d.toISOString().split('T')[0];
+  };
+
+  const formatDisplayDate = (iso?: string) => {
+    if (!iso) return '';
+    const date = new Date(iso);
+    return date.toLocaleDateString('en-US', { 
+      year: 'numeric', 
+      month: 'short', 
+      day: 'numeric' 
+    });
+  };
 
   // Reset form when modal opens/closes
   useEffect(() => {
@@ -59,6 +84,8 @@ export default function CreateDeclarationModal({
         severite: 5,
         id_zone: '',
         description: '',
+        date_declaration: '',
+        code_declaration: '',
       });
       setErrors({});
       setSelectedPhotos([]);
@@ -79,6 +106,12 @@ export default function CreateDeclarationModal({
     }
     if (!formData.description.trim()) {
       newErrors.description = 'Description is required';
+    }
+    if (!formData.date_declaration) {
+      newErrors.date_declaration = 'Declaration date is required';
+    }
+    if (!formData.code_declaration.trim()) {
+      newErrors.code_declaration = 'Declaration code is required';
     }
     if (formData.severite < 0 || formData.severite > 10) {
       newErrors.severite = 'Severity must be between 0 and 10';
@@ -125,6 +158,16 @@ export default function CreateDeclarationModal({
     const zone = zones.find(z => z.id === id);
     if (!zone || !zone.logo) return null;
     return `${API_CONFIG.BASE_URL}${zone.logo}`;
+  };
+
+  const getProjectTitle = (id: string) => {
+    const project = projects.find(p => p.id === id);
+    return project ? project.title : 'Select project';
+  };
+
+  const getDeclarantName = (id: string) => {
+    const user = companyUsers.find(u => u.id === id);
+    return user ? `${user.firstname} ${user.lastname}` : 'Select declarant';
   };
 
   const getSeverityColor = (severity: number) => {
@@ -260,6 +303,101 @@ export default function CreateDeclarationModal({
             {errors.title ? <Text style={styles.errorText}>{errors.title}</Text> : null}
           </View>
 
+          {/* Declaration Code */}
+          <View style={styles.fieldContainer}>
+            <Text style={styles.fieldLabel}>Declaration Code *</Text>
+            <TextInput
+              style={[styles.textInput, errors.code_declaration && styles.textAreaError]}
+              placeholder="Enter declaration code"
+              placeholderTextColor="#8E8E93"
+              value={formData.code_declaration}
+              onChangeText={(value) => updateFormData('code_declaration', value)}
+            />
+            {errors.code_declaration ? <Text style={styles.errorText}>{errors.code_declaration}</Text> : null}
+          </View>
+          {/* Declarant */}
+          <View style={styles.fieldContainer}>
+            <Text style={styles.fieldLabel}>Declarant *</Text>
+            <TouchableOpacity
+              style={styles.dropdown}
+              onPress={() => setShowDeclarantDropdown(!showDeclarantDropdown)}
+            >
+              <Text style={[
+                styles.dropdownText,
+                !formData.id_declarent && styles.placeholderText
+              ]}>
+                {getDeclarantName(formData.id_declarent || '')}
+              </Text>
+              <Ionicons
+                name={showDeclarantDropdown ? 'chevron-up' : 'chevron-down'}
+                size={20}
+                color="#8E8E93"
+              />
+            </TouchableOpacity>
+            {showDeclarantDropdown && (
+              <View style={styles.dropdownList}>
+                <ScrollView 
+                  showsVerticalScrollIndicator={false}
+                  nestedScrollEnabled={true}
+                >
+                  <TouchableOpacity
+                    style={styles.dropdownItem}
+                    onPress={() => {
+                      updateFormData('id_declarent', undefined);
+                      setShowDeclarantDropdown(false);
+                    }}
+                  >
+                    <Text style={styles.dropdownItemText}>No declarant</Text>
+                  </TouchableOpacity>
+                  {companyUsers.map((user, index) => (
+                    <TouchableOpacity
+                      key={user.id}
+                      style={[
+                        styles.dropdownItem,
+                        index === companyUsers.length - 1 && styles.dropdownItemLast
+                      ]}
+                      onPress={() => {
+                        updateFormData('id_declarent', user.id);
+                        setShowDeclarantDropdown(false);
+                      }}
+                    >
+                      <Text style={styles.dropdownItemText}>{`${user.firstname} ${user.lastname}`}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </View>
+            )}
+          </View>
+
+          {/* Declaration Date */}
+          <View style={styles.fieldContainer}>
+            <Text style={styles.fieldLabel}>Declaration Date *</Text>
+            <TouchableOpacity
+              style={[styles.dropdown, errors.date_declaration && styles.dropdownError]}
+              onPress={() => setShowDatePicker(true)}
+            >
+              <Ionicons name="calendar-outline" size={18} color="#8E8E93" />
+              <Text style={[
+                styles.dropdownText,
+                !formData.date_declaration && styles.placeholderText
+              ]}>
+                {formData.date_declaration ? formatDisplayDate(formData.date_declaration) : 'Select declaration date'}
+              </Text>
+            </TouchableOpacity>
+            <DateTimePickerModal
+              isVisible={showDatePicker}
+              mode="date"
+              date={formData.date_declaration ? new Date(formData.date_declaration) : new Date()}
+              maximumDate={new Date()} // Cannot select future dates
+              onConfirm={(selectedDate) => {
+                setShowDatePicker(false);
+                if (selectedDate) updateFormData('date_declaration', toISODate(selectedDate));
+              }}
+              onCancel={() => setShowDatePicker(false)}
+            />
+            {errors.date_declaration ? <Text style={styles.errorText}>{errors.date_declaration}</Text> : null}
+          </View>
+
           {/* Declaration Type */}
           <View style={styles.fieldContainer}>
             <Text style={styles.fieldLabel}>Declaration Type *</Text>
@@ -337,6 +475,60 @@ export default function CreateDeclarationModal({
             </View>
             {errors.severite && (
               <Text style={styles.errorText}>{errors.severite}</Text>
+            )}
+          </View>
+
+          {/* Project */}
+          <View style={styles.fieldContainer}>
+            <Text style={styles.fieldLabel}>Project *</Text>
+            <TouchableOpacity
+              style={styles.dropdown}
+              onPress={() => setShowProjectDropdown(!showProjectDropdown)}
+            >
+              <Text style={[
+                styles.dropdownText,
+                !formData.id_project && styles.placeholderText
+              ]}>
+                {getProjectTitle(formData.id_project || '')}
+              </Text>
+              <Ionicons
+                name={showProjectDropdown ? 'chevron-up' : 'chevron-down'}
+                size={20}
+                color="#8E8E93"
+              />
+            </TouchableOpacity>
+            {showProjectDropdown && (
+              <View style={styles.dropdownList}>
+                <ScrollView 
+                  showsVerticalScrollIndicator={false}
+                  nestedScrollEnabled={true}
+                >
+                  <TouchableOpacity
+                    style={styles.dropdownItem}
+                    onPress={() => {
+                      updateFormData('id_project', undefined);
+                      setShowProjectDropdown(false);
+                    }}
+                  >
+                    <Text style={styles.dropdownItemText}>No project</Text>
+                  </TouchableOpacity>
+                  {projects.map((project, index) => (
+                    <TouchableOpacity
+                      key={project.id}
+                      style={[
+                        styles.dropdownItem,
+                        index === projects.length - 1 && styles.dropdownItemLast
+                      ]}
+                      onPress={() => {
+                        updateFormData('id_project', project.id);
+                        setShowProjectDropdown(false);
+                      }}
+                    >
+                      <Text style={styles.dropdownItemText}>{project.title}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </View>
             )}
           </View>
 

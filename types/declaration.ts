@@ -31,8 +31,14 @@ export interface Declaration {
   id_zone: string;
   description: string;
   date_declaration: string;
+  code_declaration: string;
+  id_declarent?: string | null;
+  id_project?: string | null;
   declaration_type_title: string;
   zone_title: string;
+  project_title?: string | null;
+  declarent_firstname?: string | null;
+  declarent_lastname?: string | null;
   photo_count: number;
   chat_count: number;
   photos?: DeclarationPhoto[];
@@ -45,6 +51,10 @@ export interface CreateDeclarationData {
   severite: number;
   id_zone: string;
   description: string;
+  date_declaration: string;
+  code_declaration: string;
+  id_declarent?: string;
+  id_project?: string;
   photos?: { uri: string; type: string; name: string }[];
 }
 
@@ -55,6 +65,13 @@ export interface Zone {
   logo?: string | null;
   id_zone?: string | null; // parent zone id
   level?: number | null;
+}
+
+export interface Project {
+  id: string;
+  title: string;
+  code?: string | null;
+  status?: string | null;
 }
 
 export interface DeclarationAction {

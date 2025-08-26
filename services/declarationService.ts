@@ -1,5 +1,5 @@
 import API_CONFIG from '../app/config/api';
-import { CreateActionData, CreateDeclarationData, Declaration, DeclarationAction, DeclarationType, Zone } from '../types/declaration';
+import { CompanyUser, CreateActionData, CreateDeclarationData, Declaration, DeclarationAction, DeclarationType, Project, Zone } from '../types/declaration';
 
 class DeclarationService {
   private baseUrl = API_CONFIG.BASE_URL;
@@ -47,11 +47,15 @@ class DeclarationService {
     const response = await this.makeRequest('/declarations', token, {
       method: 'POST',
       body: JSON.stringify({
-        title: (data as any).title,
+        title: data.title,
         id_declaration_type: data.id_declaration_type,
         severite: data.severite,
         id_zone: data.id_zone,
         description: data.description,
+        date_declaration: data.date_declaration,
+        code_declaration: data.code_declaration,
+        id_declarent: data.id_declarent,
+        id_project: data.id_project,
       }),
     });
 
@@ -193,6 +197,16 @@ class DeclarationService {
   // Zones (for declaration creation)
   async getZones(token: string): Promise<Zone[]> {
     return this.makeRequest('/zones', token);
+  }
+
+  // Projects (for declaration creation)
+  async getCompanyProjects(token: string): Promise<Project[]> {
+    return this.makeRequest('/company-projects', token);
+  }
+
+  // Company Users (for declaration creation)
+  async getCompanyUsers(token: string): Promise<CompanyUser[]> {
+    return this.makeRequest('/company-users', token);
   }
 
   // Actions
