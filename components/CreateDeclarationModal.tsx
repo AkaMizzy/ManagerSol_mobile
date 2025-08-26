@@ -26,6 +26,7 @@ interface CreateDeclarationModalProps {
   zones: Zone[];
   projects: Project[];
   companyUsers: CompanyUser[];
+  currentUser: CompanyUser;
   isLoading?: boolean;
 }
 
@@ -39,6 +40,7 @@ export default function CreateDeclarationModal({
   zones,
   projects,
   companyUsers,
+  currentUser,
   isLoading = false,
 }: CreateDeclarationModalProps) {
   const [formData, setFormData] = useState<CreateDeclarationData>({
@@ -49,6 +51,7 @@ export default function CreateDeclarationModal({
     description: '',
     date_declaration: '',
     code_declaration: '',
+    id_declarent: currentUser?.id,
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [showTypeDropdown, setShowTypeDropdown] = useState(false);
@@ -86,11 +89,12 @@ export default function CreateDeclarationModal({
         description: '',
         date_declaration: '',
         code_declaration: '',
+        id_declarent: currentUser?.id,
       });
       setErrors({});
       setSelectedPhotos([]);
     }
-  }, [visible]);
+  }, [visible, currentUser?.id]);
 
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
@@ -166,6 +170,11 @@ export default function CreateDeclarationModal({
   };
 
   const getDeclarantName = (id: string) => {
+    // First check if it's the current user
+    if (id === currentUser?.id) {
+      return `${currentUser.firstname} ${currentUser.lastname}`;
+    }
+    // Then check company users
     const user = companyUsers.find(u => u.id === id);
     return user ? `${user.firstname} ${user.lastname}` : 'Select declarant';
   };
@@ -349,21 +358,35 @@ export default function CreateDeclarationModal({
                   >
                     <Text style={styles.dropdownItemText}>No declarant</Text>
                   </TouchableOpacity>
-                  {companyUsers.map((user, index) => (
-                    <TouchableOpacity
-                      key={user.id}
-                      style={[
-                        styles.dropdownItem,
-                        index === companyUsers.length - 1 && styles.dropdownItemLast
-                      ]}
-                      onPress={() => {
-                        updateFormData('id_declarent', user.id);
-                        setShowDeclarantDropdown(false);
-                      }}
-                    >
-                      <Text style={styles.dropdownItemText}>{`${user.firstname} ${user.lastname}`}</Text>
-                    </TouchableOpacity>
-                  ))}
+                  {/* Current user first */}
+                  <TouchableOpacity
+                    style={styles.dropdownItem}
+                    onPress={() => {
+                      updateFormData('id_declarent', currentUser.id);
+                      setShowDeclarantDropdown(false);
+                    }}
+                  >
+                    <Text style={styles.dropdownItemText}>{`${currentUser.firstname} ${currentUser.lastname}`} (You)</Text>
+                  </TouchableOpacity>
+                  
+                  {/* Other company users (excluding current user) */}
+                  {companyUsers
+                    .filter(user => user.id !== currentUser.id)
+                    .map((user, index) => (
+                      <TouchableOpacity
+                        key={user.id}
+                        style={[
+                          styles.dropdownItem,
+                          index === companyUsers.filter(u => u.id !== currentUser.id).length - 1 && styles.dropdownItemLast
+                        ]}
+                        onPress={() => {
+                          updateFormData('id_declarent', user.id);
+                          setShowDeclarantDropdown(false);
+                        }}
+                      >
+                        <Text style={styles.dropdownItemText}>{`${user.firstname} ${user.lastname}`}</Text>
+                      </TouchableOpacity>
+                    ))}
                 </ScrollView>
               </View>
             )}

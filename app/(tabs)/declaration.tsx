@@ -386,16 +386,19 @@ export default function DeclarationScreen() {
       />
 
       {/* Create Declaration Modal */}
-      <CreateDeclarationModal
-        visible={createModalVisible}
-        onClose={() => setCreateModalVisible(false)}
-        onSubmit={handleCreateDeclarationSubmit}
-        declarationTypes={declarationTypes}
-        zones={zones}
-        projects={projects}
-        companyUsers={companyUsers}
-        isLoading={isCreating}
-      />
+      {user && (
+        <CreateDeclarationModal
+          visible={createModalVisible}
+          onClose={() => setCreateModalVisible(false)}
+          onSubmit={handleCreateDeclarationSubmit}
+          declarationTypes={declarationTypes}
+          zones={zones}
+          projects={projects}
+          companyUsers={companyUsers}
+          currentUser={user}
+          isLoading={isCreating}
+        />
+      )}
     </SafeAreaView>
   );
 }
