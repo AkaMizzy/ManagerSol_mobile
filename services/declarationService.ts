@@ -56,6 +56,8 @@ class DeclarationService {
         code_declaration: data.code_declaration,
         id_declarent: data.id_declarent,
         id_project: data.id_project,
+        latitude: data.latitude,
+        longitude: data.longitude,
       }),
     });
 

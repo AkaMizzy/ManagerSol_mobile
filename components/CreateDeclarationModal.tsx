@@ -13,8 +13,10 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+// import MapView, { Marker } from 'react-native-maps';
 import DateTimePickerModal from 'react-native-modal-datetime-picker';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { WebView } from 'react-native-webview';
 import API_CONFIG from '../app/config/api';
 import { CompanyUser, CreateDeclarationData, DeclarationType, Project, Zone } from '../types/declaration';
 
@@ -52,6 +54,8 @@ export default function CreateDeclarationModal({
     date_declaration: '',
     code_declaration: '',
     id_declarent: currentUser?.id,
+    latitude: undefined,
+    longitude: undefined,
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [showTypeDropdown, setShowTypeDropdown] = useState(false);
@@ -59,9 +63,13 @@ export default function CreateDeclarationModal({
   const [showProjectDropdown, setShowProjectDropdown] = useState(false);
   const [showDeclarantDropdown, setShowDeclarantDropdown] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
+  const [showMap, setShowMap] = useState(false);
   
   // Photo handling state
   const [selectedPhotos, setSelectedPhotos] = useState<{ uri: string; type: string; name: string }[]>([]);
+  
+  // Location state
+  const [showLocationInput, setShowLocationInput] = useState(false);
 
   // Date helper functions
   const toISODate = (d: Date) => {
@@ -90,9 +98,12 @@ export default function CreateDeclarationModal({
         date_declaration: '',
         code_declaration: '',
         id_declarent: currentUser?.id,
+        latitude: undefined,
+        longitude: undefined,
       });
       setErrors({});
       setSelectedPhotos([]);
+      setShowLocationInput(false);
     }
   }, [visible, currentUser?.id]);
 
@@ -177,6 +188,144 @@ export default function CreateDeclarationModal({
     // Then check company users
     const user = companyUsers.find(u => u.id === id);
     return user ? `${user.firstname} ${user.lastname}` : 'Select declarant';
+  };
+
+  const handleLocationToggle = () => {
+    setShowLocationInput(!showLocationInput);
+  };
+
+  const getCoordinateDisplay = () => {
+    if (formData.latitude && formData.longitude) {
+      return `${formData.latitude.toFixed(6)}, ${formData.longitude.toFixed(6)}`;
+    }
+    return 'Open map to select location';
+  };
+
+  // OpenStreetMap HTML with Leaflet
+  const mapHtml = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+      <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+      <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+      <style>
+        body { margin: 0; padding: 0; }
+        #map { width: 100%; height: 100vh; }
+        .location-info {
+          position: absolute;
+          top: 10px;
+          left: 10px;
+          background: white;
+          padding: 10px;
+          border-radius: 5px;
+          box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+          z-index: 1000;
+          font-family: Arial, sans-serif;
+          font-size: 14px;
+        }
+        .select-button {
+          position: absolute;
+          bottom: 20px;
+          left: 50%;
+          transform: translateX(-50%);
+          background: #007AFF;
+          color: white;
+          border: none;
+          padding: 12px 24px;
+          border-radius: 25px;
+          font-size: 16px;
+          font-weight: bold;
+          z-index: 1000;
+          cursor: pointer;
+        }
+      </style>
+    </head>
+    <body>
+      <div id="map"></div>
+      <div class="location-info">
+        <strong>Selected Location:</strong><br>
+        <span id="coordinates">Tap on map to select</span>
+      </div>
+      <button class="select-button" onclick="selectLocation()">Select This Location</button>
+      
+      <script>
+        let map, marker, selectedLat, selectedLng;
+        
+        // Initialize map
+        map = L.map('map').setView([40.7128, -74.0060], 13);
+        
+        // Add OpenStreetMap tiles
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+        
+        // Handle map clicks
+        map.on('click', function(e) {
+          const lat = e.latlng.lat;
+          const lng = e.latlng.lng;
+          
+          // Remove existing marker
+          if (marker) {
+            map.removeLayer(marker);
+          }
+          
+          // Add new marker
+          marker = L.marker([lat, lng]).addTo(map);
+          
+          // Update coordinates display
+          selectedLat = lat;
+          selectedLng = lng;
+          document.getElementById('coordinates').innerHTML = 
+            lat.toFixed(6) + ', ' + lng.toFixed(6);
+        });
+        
+        // Function to select location and send to React Native
+        function selectLocation() {
+          if (selectedLat !== undefined && selectedLng !== undefined) {
+            window.ReactNativeWebView.postMessage(JSON.stringify({
+              type: 'locationSelected',
+              latitude: selectedLat,
+              longitude: selectedLng
+            }));
+          }
+        }
+        
+        // Try to get user's current location
+        if (navigator.geolocation) {
+          navigator.geolocation.getCurrentPosition(function(position) {
+            const lat = position.coords.latitude;
+            const lng = position.coords.longitude;
+            
+            // Center map on user location
+            map.setView([lat, lng], 15);
+            
+            // Add user location marker
+            L.marker([lat, lng])
+              .addTo(map)
+              .bindPopup('Your current location')
+              .openPopup();
+          });
+        }
+      </script>
+    </body>
+    </html>
+  `;
+
+  const handleMapMessage = (event: any) => {
+    try {
+      const data = JSON.parse(event.nativeEvent.data);
+      if (data.type === 'locationSelected') {
+        setFormData(prev => ({
+          ...prev,
+          latitude: data.latitude,
+          longitude: data.longitude,
+        }));
+        setShowLocationInput(false);
+      }
+    } catch (error) {
+      console.error('Error parsing map message:', error);
+    }
   };
 
   const getSeverityColor = (severity: number) => {
@@ -388,6 +537,50 @@ export default function CreateDeclarationModal({
                       </TouchableOpacity>
                     ))}
                 </ScrollView>
+              </View>
+            )}
+          </View>
+
+          {/* Location Coordinates */}
+          <View style={styles.fieldContainer}>
+            <Text style={styles.fieldLabel}>Location (Optional)</Text>
+            <TouchableOpacity
+              style={styles.mapButton}
+              onPress={handleLocationToggle}
+            >
+              <Ionicons name="map-outline" size={18} color="#8E8E93" />
+              <Text style={[
+                styles.mapButtonText,
+                !formData.latitude && !formData.longitude && styles.placeholderText
+              ]}>
+                {getCoordinateDisplay()}
+              </Text>
+              <Ionicons
+                name={showLocationInput ? 'chevron-up' : 'chevron-down'}
+                size={20}
+                color="#8E8E93"
+              />
+            </TouchableOpacity>
+            
+            {showLocationInput && (
+              <View style={styles.mapContainer}>
+                <WebView
+                  source={{ html: mapHtml }}
+                  style={styles.map}
+                  onMessage={handleMapMessage}
+                  javaScriptEnabled={true}
+                  domStorageEnabled={true}
+                  startInLoadingState={true}
+                  showsHorizontalScrollIndicator={false}
+                  showsVerticalScrollIndicator={false}
+                  scrollEnabled={true}
+                  bounces={false}
+                />
+                <View style={styles.mapInstructions}>
+                  <Text style={styles.mapInstructionsText}>
+                    Tap anywhere on the map to select location, then tap &quot;Select This Location&quot;
+                  </Text>
+                </View>
               </View>
             )}
           </View>
@@ -960,4 +1153,47 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#FFFFFF',
   },
+  // Map styles
+  mapButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E5E5EA',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+  },
+  mapButtonText: {
+    fontSize: 16,
+    color: '#1C1C1E',
+    flex: 1,
+    marginLeft: 8,
+  },
+  mapContainer: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E5E5EA',
+    borderRadius: 12,
+    marginTop: 4,
+    overflow: 'hidden',
+  },
+  map: {
+    height: 400,
+    width: '100%',
+    borderRadius: 8,
+  },
+  mapInstructions: {
+    padding: 12,
+    backgroundColor: '#F2F2F7',
+    borderTopWidth: 1,
+    borderTopColor: '#E5E5EA',
+  },
+  mapInstructionsText: {
+    fontSize: 12,
+    color: '#8E8E93',
+    textAlign: 'center',
+  },
+
 });

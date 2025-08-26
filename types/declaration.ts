@@ -34,6 +34,8 @@ export interface Declaration {
   code_declaration: string;
   id_declarent?: string | null;
   id_project?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
   declaration_type_title: string;
   zone_title: string;
   project_title?: string | null;
@@ -55,6 +57,8 @@ export interface CreateDeclarationData {
   code_declaration: string;
   id_declarent?: string;
   id_project?: string;
+  latitude?: number;
+  longitude?: number;
   photos?: { uri: string; type: string; name: string }[];
 }
 
