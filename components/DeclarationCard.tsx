@@ -32,8 +32,6 @@ export default function DeclarationCard({ declaration, onChatPress, onPress, onV
       month: 'short',
       day: 'numeric',
       year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
     });
   };
 
