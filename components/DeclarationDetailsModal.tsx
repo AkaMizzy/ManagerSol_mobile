@@ -379,6 +379,7 @@ export default function DeclarationDetailsModal({ visible, onClose, declaration 
               <KV label="Type" value={declaration.declaration_type_title} />
               <KV label="Zone" value={declaration.zone_title} />
               <KV label="Project" value={declaration.project_title || '—'} />
+              <KV label="Company" value={declaration.company_title || '—'} />
               <KV label="Declarant" value={declarantName || '—'} />
               <KV label="Location" value={(declaration.latitude && declaration.longitude) ? `${declaration.latitude}, ${declaration.longitude}` : '—'} />
             </View>

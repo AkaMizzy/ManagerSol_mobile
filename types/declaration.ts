@@ -39,6 +39,7 @@ export interface Declaration {
   declaration_type_title: string;
   zone_title: string;
   project_title?: string | null;
+  company_title?: string | null;
   declarent_firstname?: string | null;
   declarent_lastname?: string | null;
   photo_count: number;

@@ -3,15 +3,15 @@ import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import React, { useCallback, useEffect, useState } from 'react';
 import {
-  Alert,
-  Modal,
-  RefreshControl,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    Alert,
+    Modal,
+    RefreshControl,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from 'react-native';
 import DateTimePickerModal from 'react-native-modal-datetime-picker';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -29,6 +29,7 @@ export default function TaskScreen() {
   const [assignedActions, setAssignedActions] = useState<DeclarationAction[]>([]);
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
   const [selectedAction, setSelectedAction] = useState<DeclarationAction | null>(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   
@@ -300,7 +301,11 @@ export default function TaskScreen() {
   );
 
   const renderTabContent = () => {
-    const actions = activeTab === 'created' ? createdActions : assignedActions;
+    const baseActions = activeTab === 'created' ? createdActions : assignedActions;
+    const query = searchQuery.trim().toLowerCase();
+    const actions = query
+      ? baseActions.filter(a => (a.title || '').toLowerCase().includes(query))
+      : baseActions;
     
     if (loading) {
       return (
@@ -354,6 +359,25 @@ export default function TaskScreen() {
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Tasks</Text>
+        {/* Search Bar */}
+        <View style={styles.searchBar}>
+          <Ionicons name="search" size={18} color="#8E8E93" />
+          <Text accessibilityRole="text" style={{ display: 'none' }}>Search by title</Text>
+          <View style={{ flex: 1 }}>
+            <TextInput
+              placeholder="Search by title"
+              placeholderTextColor="#8E8E93"
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              style={styles.searchInput}
+            />
+          </View>
+          {searchQuery.length > 0 ? (
+            <TouchableOpacity onPress={() => setSearchQuery('')} accessibilityLabel="Clear search">
+              <Ionicons name="close-circle" size={18} color="#C7C7CC" />
+            </TouchableOpacity>
+          ) : null}
+        </View>
       </View>
 
       {/* Tab Navigation */}
@@ -673,6 +697,23 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     borderBottomWidth: 1,
     borderBottomColor: '#E5E5EA',
+  },
+  searchBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E5E5EA',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    marginTop: 12,
+  },
+  searchInput: {
+    fontSize: 14,
+    color: '#1C1C1E',
+    paddingVertical: 2,
   },
   headerTitle: {
     fontSize: 28,
