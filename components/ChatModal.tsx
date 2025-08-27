@@ -41,9 +41,7 @@ export default function ChatModal({ visible, declaration, onClose, onSendMessage
   const inputRef = useRef<TextInput>(null);
 
   useEffect(() => {
-    console.log('🔍 ChatModal useEffect triggered:', { visible, declarationId: declaration?.id, hasInitialFetch });
     if (visible && declaration && !hasInitialFetch) {
-      console.log('🚀 ChatModal: Initial fetch triggered');
       // Fetch messages only once when modal opens
       fetchMessages();
       setHasInitialFetch(true);

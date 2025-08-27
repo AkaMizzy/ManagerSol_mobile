@@ -46,6 +46,11 @@ export default function TaskScreen() {
   const [companyUsers, setCompanyUsers] = useState<CompanyUser[]>([]);
   const [zones, setZones] = useState<Zone[]>([]);
   const [loadingUsers, setLoadingUsers] = useState(false);
+  
+  // Sub-actions state
+  const [expandedActions, setExpandedActions] = useState<Set<string>>(new Set());
+  const [subActionsMap, setSubActionsMap] = useState<Record<string, DeclarationAction[]>>({});
+  const [loadingSubActions, setLoadingSubActions] = useState<Set<string>>(new Set());
 
   const toISODate = (d: Date) => {
     const year = d.getFullYear();
@@ -156,8 +161,10 @@ export default function TaskScreen() {
   };
 
   const renderZoneOption = (zone: Zone) => {
+    const uri = zone.logo ? `${API_CONFIG.BASE_URL}${zone.logo}` : undefined;
     return (
       <View style={styles.zoneRow}>
+        {uri ? <Image source={{ uri }} style={styles.zoneLogo} /> : null}
         <Text style={styles.zoneText}>{zone.title}</Text>
       </View>
     );
@@ -177,6 +184,56 @@ export default function TaskScreen() {
     const z = zones.find(zz => zz.id === zoneId);
     return z ? z.title : zoneId;
   }
+
+  const fetchSubActions = async (parentActionId: string, declarationId: string) => {
+    if (!token) return;
+    
+    try {
+      setLoadingSubActions(prev => new Set(prev).add(parentActionId));
+      const response = await fetch(`${API_CONFIG.BASE_URL}/declarations/${declarationId}/actions/${parentActionId}/sub-actions`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch sub-actions');
+      }
+
+      const subActions = await response.json();
+      setSubActionsMap(prev => ({
+        ...prev,
+        [parentActionId]: subActions
+      }));
+    } catch (error) {
+      console.error('Error fetching sub-actions:', error);
+    } finally {
+      setLoadingSubActions(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(parentActionId);
+        return newSet;
+      });
+    }
+  };
+
+  const toggleActionExpansion = (actionId: string, declarationId: string) => {
+    const isExpanded = expandedActions.has(actionId);
+    
+    if (isExpanded) {
+      // Collapse
+      setExpandedActions(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(actionId);
+        return newSet;
+      });
+    } else {
+      // Expand and fetch sub-actions if not already loaded
+      setExpandedActions(prev => new Set(prev).add(actionId));
+      if (!subActionsMap[actionId]) {
+        fetchSubActions(actionId, declarationId);
+      }
+    }
+  };
 
   const fetchActions = useCallback(async () => {
     if (!token) return;
@@ -202,6 +259,47 @@ export default function TaskScreen() {
     await fetchActions();
     setRefreshing(false);
   }, [fetchActions]);
+
+  // Separate parent actions from sub-actions
+  const { parentCreatedActions, parentAssignedActions } = React.useMemo(() => {
+    const parentCreated: DeclarationAction[] = [];
+    const parentAssigned: DeclarationAction[] = [];
+    
+    createdActions.forEach(action => {
+      if (!action.id_parent_action) {
+        parentCreated.push(action);
+      }
+    });
+    
+    assignedActions.forEach(action => {
+      if (!action.id_parent_action) {
+        parentAssigned.push(action);
+      }
+    });
+    
+    return { parentCreatedActions: parentCreated, parentAssignedActions: parentAssigned };
+  }, [createdActions, assignedActions]);
+
+  // Fetch sub-actions for all parent actions when component loads
+  useEffect(() => {
+    if (parentCreatedActions.length > 0 && token) {
+      parentCreatedActions.forEach(action => {
+        if (!subActionsMap[action.id]) {
+          fetchSubActions(action.id, action.id_declaration);
+        }
+      });
+    }
+  }, [parentCreatedActions, token]);
+
+  useEffect(() => {
+    if (parentAssignedActions.length > 0 && token) {
+      parentAssignedActions.forEach(action => {
+        if (!subActionsMap[action.id]) {
+          fetchSubActions(action.id, action.id_declaration);
+        }
+      });
+    }
+  }, [parentAssignedActions, token]);
 
   useEffect(() => {
     fetchActions();
@@ -230,78 +328,158 @@ export default function TaskScreen() {
     setShowDetailsModal(false);
   };
 
-  const renderActionCard = (action: DeclarationAction) => (
-    <TouchableOpacity
-      key={action.id}
-      style={styles.actionCard}
-      onPress={() => handleActionPress(action)}
-      activeOpacity={0.7}
-    >
-      <View style={styles.cardHeader}>
-        <Text style={styles.cardTitle}>{action.title || 'Untitled action'}</Text>
-        <View style={styles.statusPill}>
-          <Text style={styles.statusText}>{String(action.status ?? 'pending')}</Text>
-        </View>
-      </View>
+  const renderActionCard = (action: DeclarationAction) => {
+    const subActionsForThisAction = subActionsMap[action.id] || [];
+    const hasSubActions = subActionsForThisAction.length > 0;
+    const isExpanded = expandedActions.has(action.id);
+    const isLoading = loadingSubActions.has(action.id);
 
-      {action.description ? (
-        <Text style={styles.cardDesc}>{action.description}</Text>
-      ) : null}
-      
-      {action.photo && (
-        <Image
-          source={{ uri: `${API_CONFIG.BASE_URL}${action.photo}` }}
-          style={styles.actionImage}
-          contentFit="cover"
-        />
-      )}
-      
-      <View style={styles.metaSection}>
-        {/* User Information */}
-        <View style={styles.userInfoRow}>
-          {action.creator_firstname || action.creator_lastname ? (
-            <View style={styles.userInfoItem}>
-              <Text style={styles.userInfoLabel}>Created by</Text>
-              <Text style={styles.userInfoValue}>
-                {[action.creator_firstname, action.creator_lastname].filter(Boolean).join(' ')}
-              </Text>
+    return (
+      <View key={action.id} style={styles.actionCard}>
+        <TouchableOpacity
+          onPress={() => handleActionPress(action)}
+          activeOpacity={0.7}
+        >
+          <View style={styles.cardHeader}>
+            <Text style={styles.cardTitle}>{action.title || 'Untitled action'}</Text>
+            <View style={styles.statusPill}>
+              <Text style={styles.statusText}>{String(action.status ?? 'pending')}</Text>
             </View>
+          </View>
+
+          {action.description ? (
+            <Text style={styles.cardDesc}>{action.description}</Text>
           ) : null}
           
-          {action.assigned_firstname || action.assigned_lastname ? (
-            <View style={styles.userInfoItem}>
-              <Text style={styles.userInfoLabel}>Assigned to</Text>
-              <Text style={styles.userInfoValue}>
-                {[action.assigned_firstname, action.assigned_lastname].filter(Boolean).join(' ')}
-              </Text>
-            </View>
-          ) : null}
-        </View>
-        
-        {/* Additional Information */}
-        <View style={styles.additionalInfoRow}>
-          {action.date_planification && (
-            <View style={styles.infoItem}>
-              <Text style={styles.infoLabel}>Planned</Text>
-              <Text style={styles.infoValue}>
-                {new Date(action.date_planification).toLocaleDateString()}
-              </Text>
-            </View>
+          {action.photo && (
+            <Image
+              source={{ uri: `${API_CONFIG.BASE_URL}${action.photo}` }}
+              style={styles.actionImage}
+              contentFit="cover"
+            />
           )}
           
-          {action.zone_title && (
-            <View style={styles.infoItem}>
-              <Text style={styles.infoLabel}>Zone</Text>
-              <Text style={styles.infoValue}>{action.zone_title}</Text>
+          <View style={styles.metaSection}>
+            {/* User Information */}
+            <View style={styles.userInfoRow}>
+              {action.creator_firstname || action.creator_lastname ? (
+                <View style={styles.userInfoItem}>
+                  <Text style={styles.userInfoLabel}>Created by</Text>
+                  <Text style={styles.userInfoValue}>
+                    {[action.creator_firstname, action.creator_lastname].filter(Boolean).join(' ')}
+                  </Text>
+                </View>
+              ) : null}
+              
+              {action.assigned_firstname || action.assigned_lastname ? (
+                <View style={styles.userInfoItem}>
+                  <Text style={styles.userInfoLabel}>Assigned to</Text>
+                  <Text style={styles.userInfoValue}>
+                    {[action.assigned_firstname, action.assigned_lastname].filter(Boolean).join(' ')}
+                  </Text>
+                </View>
+              ) : null}
             </View>
-          )}
-        </View>
+            
+            {/* Additional Information */}
+            <View style={styles.additionalInfoRow}>
+              {action.date_planification && (
+                <View style={styles.infoItem}>
+                  <Text style={styles.infoLabel}>Planned</Text>
+                  <Text style={styles.infoValue}>
+                    {new Date(action.date_planification).toLocaleDateString()}
+                  </Text>
+                </View>
+              )}
+              
+              {action.zone_title && (
+                <View style={styles.infoItem}>
+                  <Text style={styles.infoLabel}>Zone</Text>
+                  <Text style={styles.infoValue}>{action.zone_title}</Text>
+                </View>
+              )}
+            </View>
+          </View>
+        </TouchableOpacity>
+
+        {/* Sub-actions section */}
+        {(hasSubActions || isLoading) && (
+          <View style={styles.subActionsSection}>
+            <TouchableOpacity 
+              style={styles.subActionsHeader}
+              onPress={() => toggleActionExpansion(action.id, action.id_declaration)}
+              activeOpacity={0.7}
+            >
+              <View style={styles.subActionsInfo}>
+                <Ionicons 
+                  name={isExpanded ? 'chevron-up' : 'chevron-down'} 
+                  size={16} 
+                  color="#8E8E93" 
+                />
+                <Text style={styles.subActionsCount}>
+                  {isLoading ? 'Loading...' : `${subActionsForThisAction.length} sub-action${subActionsForThisAction.length !== 1 ? 's' : ''}`}
+                </Text>
+              </View>
+            </TouchableOpacity>
+            
+            {isExpanded && subActionsForThisAction.length > 0 && (
+              <View style={styles.subActionsList}>
+                {subActionsForThisAction.map((subAction) => (
+                  <TouchableOpacity 
+                    key={subAction.id} 
+                    style={styles.subActionCard}
+                    onPress={() => handleActionPress(subAction)}
+                    activeOpacity={0.7}
+                  >
+                    <View style={styles.subActionHeader}>
+                      <Text style={styles.subActionTitle}>{subAction.title || 'Untitled sub-action'}</Text>
+                      <View style={styles.subActionStatusPill}>
+                        <Text style={styles.subActionStatusText}>{String(subAction.status ?? 'pending')}</Text>
+                      </View>
+                    </View>
+                    
+                    {subAction.description ? (
+                      <Text style={styles.subActionDesc}>{subAction.description}</Text>
+                    ) : null}
+                    
+                    {subAction.photo && (
+                      <Image
+                        source={{ uri: `${API_CONFIG.BASE_URL}${subAction.photo}` }}
+                        style={styles.subActionImage}
+                        contentFit="cover"
+                      />
+                    )}
+                    
+                    <View style={styles.subActionMeta}>
+                      {subAction.creator_firstname || subAction.creator_lastname ? (
+                        <Text style={styles.subActionMetaText}>
+                          By: {[subAction.creator_firstname, subAction.creator_lastname].filter(Boolean).join(' ')}
+                        </Text>
+                      ) : null}
+                      {subAction.date_planification && (
+                        <Text style={styles.subActionMetaText}>
+                          Planned: {new Date(subAction.date_planification).toLocaleDateString()}
+                        </Text>
+                      )}
+                    </View>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
+            
+            {isExpanded && subActionsForThisAction.length === 0 && !isLoading && (
+              <View style={styles.noSubActions}>
+                <Text style={styles.noSubActionsText}>No sub-actions found</Text>
+              </View>
+            )}
+          </View>
+        )}
       </View>
-    </TouchableOpacity>
-  );
+    );
+  };
 
   const renderTabContent = () => {
-    const baseActions = activeTab === 'created' ? createdActions : assignedActions;
+    const baseActions = activeTab === 'created' ? parentCreatedActions : parentAssignedActions;
     const query = searchQuery.trim().toLowerCase();
     const actions = query
       ? baseActions.filter(a => (a.title || '').toLowerCase().includes(query))
@@ -510,7 +688,7 @@ export default function TaskScreen() {
           </View>
       )}
 
-      {/* Edit Action Modal */}
+            {/* Edit Action Modal */}
       <Modal
         visible={showEditForm}
         animationType="slide"
@@ -556,9 +734,18 @@ export default function TaskScreen() {
                   activeOpacity={0.7}
                 >
                   <View style={styles.selectedPreview}>
-                    <Text style={[styles.dateText, !editForm.id_zone && styles.placeholderText]}>
-                      {editForm.id_zone ? getZoneTitleById(editForm.id_zone) : 'Select zone'}
-                    </Text>
+                    {editForm.id_zone ? (
+                      <View style={styles.zoneSelectedRow}>
+                        {(() => {
+                          const zone = zones.find(z => z.id === editForm.id_zone);
+                          const uri = zone?.logo ? `${API_CONFIG.BASE_URL}${zone.logo}` : undefined;
+                          return uri ? <Image source={{ uri }} style={styles.zoneLogo} /> : null;
+                        })()}
+                        <Text style={styles.dateText}>{getZoneTitleById(editForm.id_zone)}</Text>
+                      </View>
+                    ) : (
+                      <Text style={[styles.dateText, styles.placeholderText]}>Select zone</Text>
+                    )}
                   </View>
                   <Ionicons name={showEditZoneDropdown ? 'chevron-up' : 'chevron-down'} size={18} color="#8E8E93" />
                 </TouchableOpacity>
@@ -623,8 +810,8 @@ export default function TaskScreen() {
                             {editForm.assigned_to === user.id ? <Ionicons name="checkmark" size={18} color="#34C759" /> : null}
                           </View>
                         </TouchableOpacity>
-        ))}
-      </ScrollView>
+                      ))}
+                    </ScrollView>
                   </View>
                 ) : null}
               </View>
@@ -677,7 +864,7 @@ export default function TaskScreen() {
 
               <TouchableOpacity style={styles.submitBtn} onPress={handleEditSubmit}>
                 <Text style={styles.submitBtnText}>Update Action</Text>
-      </TouchableOpacity>
+              </TouchableOpacity>
             </View>
           </ScrollView>
         </View>
@@ -975,62 +1162,67 @@ const styles = StyleSheet.create({
     gap: 12, // Added gap between buttons for consistent spacing
   },
   updateButton: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center', // Center content horizontally
-    backgroundColor: '#FFF0E6',
+    justifyContent: 'center',
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#f87b1b',
+    paddingVertical: 12,
     borderRadius: 10,
-    paddingVertical: 12, // Increased for better touch target
-    paddingHorizontal: 20, // Increased for better spacing
-    width: '45%',
-    borderWidth: 1, // Added border for better definition
-    borderColor: '#F87B1B', // Border color matching text
+    gap: 6,
   },
   updateButtonText: {
-    fontSize: 14,
+    color: '#f87b1b',
     fontWeight: '600',
-    color: '#F87B1B',
-    marginLeft: 6, // Reduced margin for better alignment
-    textAlign: 'center', // Ensure text is centered
   },
   addMiniButton: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center', // Center content horizontally
-    backgroundColor: '#E0F2FF',
+    justifyContent: 'center',
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#007AFF',
+    paddingVertical: 12,
     borderRadius: 10,
-    paddingVertical: 12, // Increased for better touch target
-    paddingHorizontal: 20, // Increased for better spacing
-    width: '45%',
-    borderWidth: 1, // Added border for better definition
-    borderColor: '#007AFF', // Border color matching text
+    gap: 6,
   },
   addMiniButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
     color: '#007AFF',
-    marginLeft: 6, // Reduced margin for better alignment
-    textAlign: 'center', // Ensure text is centered
+    fontWeight: '600',
   },
   zoneRow: {
-    paddingVertical: 10,
-    paddingHorizontal: 15,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E5EA',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  zoneLogo: {
+    width: 22,
+    height: 22,
+    borderRadius: 4,
   },
   zoneText: {
     fontSize: 16,
     color: '#1C1C1E',
   },
+  zoneSelectedRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    flex: 1,
+  },
   userRow: {
-    paddingVertical: 10,
-    paddingHorizontal: 15,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E5EA',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    flex: 1,
   },
   userText: {
     fontSize: 16,
     color: '#1C1C1E',
+    fontWeight: '500',
   },
   userRole: {
     fontSize: 12,
@@ -1168,5 +1360,92 @@ const styles = StyleSheet.create({
   },
   placeholder: {
     width: 24,
+  },
+  // Sub-actions styles
+  subActionsSection: { 
+    marginTop: 12, 
+    borderTopWidth: 1, 
+    borderTopColor: '#F2F2F7', 
+    paddingTop: 12 
+  },
+  subActionsHeader: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    justifyContent: 'space-between', 
+    paddingVertical: 8 
+  },
+  subActionsInfo: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    gap: 8 
+  },
+  subActionsCount: { 
+    fontSize: 14, 
+    color: '#8E8E93', 
+    fontWeight: '500' 
+  },
+  subActionsList: { 
+    marginTop: 8, 
+    gap: 8 
+  },
+  subActionCard: { 
+    backgroundColor: '#F8F9FA', 
+    borderRadius: 8, 
+    padding: 12, 
+    marginLeft: 16,
+    borderWidth: 1,
+    borderColor: '#E9ECEF'
+  },
+  subActionHeader: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    justifyContent: 'space-between', 
+    marginBottom: 6 
+  },
+  subActionTitle: { 
+    fontSize: 14, 
+    fontWeight: '600', 
+    color: '#1C1C1E', 
+    flex: 1 
+  },
+  subActionStatusPill: { 
+    backgroundColor: '#E9ECEF', 
+    paddingHorizontal: 8, 
+    paddingVertical: 2, 
+    borderRadius: 8 
+  },
+  subActionStatusText: { 
+    fontSize: 11, 
+    color: '#6C757D', 
+    fontWeight: '600' 
+  },
+  subActionDesc: { 
+    fontSize: 13, 
+    color: '#1C1C1E', 
+    marginBottom: 8, 
+    lineHeight: 18 
+  },
+  subActionImage: { 
+    width: '100%', 
+    height: 120, 
+    borderRadius: 6, 
+    marginBottom: 8 
+  },
+  subActionMeta: { 
+    marginTop: 8 
+  },
+  subActionMetaText: { 
+    fontSize: 11, 
+    color: '#8E8E93', 
+    marginBottom: 2 
+  },
+  noSubActions: { 
+    paddingVertical: 16, 
+    alignItems: 'center' 
+  },
+  noSubActionsText: { 
+    fontSize: 14, 
+    color: '#8E8E93', 
+    fontStyle: 'italic' 
   },
 });

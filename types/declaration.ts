@@ -100,6 +100,7 @@ export interface DeclarationAction {
   assigned_lastname?: string | null;
   company_title?: string | null;
   zone_title?: string | null;
+  id_parent_action?: string | null; // For sub-actions
 }
 
 export interface CompanyUser {

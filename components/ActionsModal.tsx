@@ -40,6 +40,16 @@ export default function ActionsModal({ visible, actions, onClose, onCreateAction
   const [showEditExecPicker, setShowEditExecPicker] = useState(false);
   const [showEditZoneDropdown, setShowEditZoneDropdown] = useState(false);
   const [showEditUserDropdown, setShowEditUserDropdown] = useState(false);
+  const [showSubActionForm, setShowSubActionForm] = useState(false);
+  const [subActionForm, setSubActionForm] = useState<CreateActionData>({ id_zone: parentZone?.id });
+  const [subActionPhoto, setSubActionPhoto] = useState<CreateActionData['photo']>();
+  const [showSubActionPlanPicker, setShowSubActionPlanPicker] = useState(false);
+  const [showSubActionExecPicker, setShowSubActionExecPicker] = useState(false);
+  const [showSubActionZoneDropdown, setShowSubActionZoneDropdown] = useState(false);
+  const [showSubActionUserDropdown, setShowSubActionUserDropdown] = useState(false);
+  const [expandedActions, setExpandedActions] = useState<Set<string>>(new Set());
+  const [subActionsMap, setSubActionsMap] = useState<Record<string, DeclarationAction[]>>({});
+  const [loadingSubActions, setLoadingSubActions] = useState<Set<string>>(new Set());
 
   const toISODate = (d: Date) => {
     const year = d.getFullYear();
@@ -75,6 +85,18 @@ export default function ActionsModal({ visible, actions, onClose, onCreateAction
     const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, quality: 0.8 });
     if (!result.canceled && result.assets && result.assets[0]) {
       setEditPhoto({ uri: result.assets[0].uri, type: 'image/jpeg', name: `action_edit_${Date.now()}.jpg` });
+    }
+  };
+
+  const pickSubActionImage = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('Permission required', 'Please allow access to your photos.');
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, quality: 0.8 });
+    if (!result.canceled && result.assets && result.assets[0]) {
+      setSubActionPhoto({ uri: result.assets[0].uri, type: 'image/jpeg', name: `sub_action_${Date.now()}.jpg` });
     }
   };
 
@@ -164,6 +186,109 @@ export default function ActionsModal({ visible, actions, onClose, onCreateAction
     setShowEditForm(false);
   };
 
+  const resetSubActionForm = () => {
+    setSubActionForm({ id_zone: parentZone?.id });
+    setSubActionPhoto(undefined);
+    setShowSubActionForm(false);
+  };
+
+  const handleCreateSubAction = async () => {
+    if (!selectedAction || !token) return;
+    
+    try {
+      const formData = new FormData();
+      if (subActionForm.title) formData.append('title', subActionForm.title);
+      if (subActionForm.description) formData.append('description', subActionForm.description);
+      // Always set status to 2 (pending) for new sub-actions
+      formData.append('status', '2');
+      if (subActionForm.date_planification) formData.append('date_planification', subActionForm.date_planification);
+      if (subActionForm.date_execution) formData.append('date_execution', subActionForm.date_execution);
+      if (subActionForm.sort_order !== undefined) formData.append('sort_order', String(subActionForm.sort_order));
+      if (subActionForm.assigned_to) formData.append('assigned_to', subActionForm.assigned_to);
+      if (subActionForm.id_zone) formData.append('id_zone', subActionForm.id_zone);
+      if (subActionPhoto) {
+        formData.append('photo', {
+          uri: subActionPhoto.uri,
+          type: subActionPhoto.type,
+          name: subActionPhoto.name,
+        } as any);
+      }
+
+      const response = await fetch(`${API_CONFIG.BASE_URL}/declarations/${selectedAction.id_declaration}/actions/${selectedAction.id}/sub-actions`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to create sub-action');
+      }
+
+      Alert.alert('Success', 'Sub-action created successfully');
+      resetSubActionForm();
+      setShowDetailsModal(false);
+      // Refresh sub-actions for the parent action
+      if (selectedAction) {
+        fetchSubActions(selectedAction.id, selectedAction.id_declaration);
+      }
+    } catch (e) {
+      Alert.alert('Error', (e as Error).message || 'Failed to create sub-action');
+    }
+  };
+
+  const fetchSubActions = async (parentActionId: string, declarationId: string) => {
+    if (!token) return;
+    
+    try {
+      setLoadingSubActions(prev => new Set(prev).add(parentActionId));
+      const response = await fetch(`${API_CONFIG.BASE_URL}/declarations/${declarationId}/actions/${parentActionId}/sub-actions`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch sub-actions');
+      }
+
+      const subActions = await response.json();
+      setSubActionsMap(prev => ({
+        ...prev,
+        [parentActionId]: subActions
+      }));
+    } catch (error) {
+      console.error('Error fetching sub-actions:', error);
+    } finally {
+      setLoadingSubActions(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(parentActionId);
+        return newSet;
+      });
+    }
+  };
+
+  const toggleActionExpansion = (actionId: string, declarationId: string) => {
+    const isExpanded = expandedActions.has(actionId);
+    
+    if (isExpanded) {
+      // Collapse
+      setExpandedActions(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(actionId);
+        return newSet;
+      });
+    } else {
+      // Expand and fetch sub-actions if not already loaded
+      setExpandedActions(prev => new Set(prev).add(actionId));
+      if (!subActionsMap[actionId]) {
+        fetchSubActions(actionId, declarationId);
+      }
+    }
+  };
+
   React.useEffect(() => {
     // Build zones list: parent + its children
     const list: Zone[] = [];
@@ -178,10 +303,10 @@ export default function ActionsModal({ visible, actions, onClose, onCreateAction
 
   // Fetch company users when form is shown
   useEffect(() => {
-    if ((showForm || showEditForm) && companyUsers.length === 0) {
+    if ((showForm || showEditForm || showSubActionForm) && companyUsers.length === 0) {
       fetchCompanyUsers();
     }
-  }, [showForm, showEditForm, token]);
+  }, [showForm, showEditForm, showSubActionForm, token]);
 
   const renderZoneOption = (zone: Zone) => {
     const uri = zone.logo ? `${API_CONFIG.BASE_URL}${zone.logo}` : undefined;
@@ -222,11 +347,44 @@ export default function ActionsModal({ visible, actions, onClose, onCreateAction
     );
   };
 
-  const filteredActions = React.useMemo(() => {
+  const { parentActions, subActions } = React.useMemo(() => {
+    if (!actions) return { parentActions: [], subActions: [] };
+    
+    const parentActions: DeclarationAction[] = [];
+    const subActions: DeclarationAction[] = [];
+    
+    actions.forEach(action => {
+      if (action.id_parent_action) {
+        subActions.push(action);
+      } else {
+        parentActions.push(action);
+      }
+    });
+    
+    return { parentActions, subActions };
+  }, [actions]);
+
+  const filteredParentActions = React.useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
-    if (!q || !actions) return actions || [];
-    return actions.filter(a => (a.title || '').toLowerCase().includes(q));
-  }, [actions, searchQuery]);
+    if (!q) return parentActions;
+    return parentActions.filter(a => (a.title || '').toLowerCase().includes(q));
+  }, [parentActions, searchQuery]);
+
+  // Fetch sub-actions for all parent actions when modal opens
+  useEffect(() => {
+    if (visible && parentActions.length > 0 && token) {
+      // Get the declaration ID from the first parent action
+      const declarationId = parentActions[0]?.id_declaration;
+      if (declarationId) {
+        // Fetch sub-actions for all parent actions
+        parentActions.forEach(action => {
+          if (!subActionsMap[action.id]) {
+            fetchSubActions(action.id, declarationId);
+          }
+        });
+      }
+    }
+  }, [visible, parentActions, token]);
 
   return (
     <Modal
@@ -428,72 +586,148 @@ export default function ActionsModal({ visible, actions, onClose, onCreateAction
             </View>
           )}
 
-          {!filteredActions || filteredActions.length === 0 ? (
+          {!filteredParentActions || filteredParentActions.length === 0 ? (
             <View style={styles.emptyState}>
               <Ionicons name="list-outline" size={48} color="#C7C7CC" />
               <Text style={styles.emptyTitle}>{searchQuery ? 'No matches found' : 'No actions have been added for this declaration yet.'}</Text>
             </View>
           ) : (
-                         filteredActions.map((action) => (
-               <TouchableOpacity key={action.id} style={styles.card} onPress={() => handleActionPress(action)} activeOpacity={0.7}>
-                 <View style={styles.cardHeader}>
-                   <Text style={styles.cardTitle}>{action.title || 'Untitled action'}</Text>
-                   <View style={styles.statusPill}>
-                     <Text style={styles.statusText}>{String(action.status ?? 'pending')}</Text>
-                   </View>
-                 </View>
-                 
-                 {action.description ? (
-                   <Text style={styles.cardDesc}>{action.description}</Text>
-                 ) : null}
-                 
-                 {renderPhoto(action.photo)}
-                 
-                 <View style={styles.metaSection}>
-                   {/* User Information */}
-                   <View style={styles.userInfoRow}>
-                     {action.creator_firstname || action.creator_lastname ? (
-                       <View style={styles.userInfoItem}>
-                         <Text style={styles.userInfoLabel}>Created by</Text>
-                         <Text style={styles.userInfoValue}>
-                           {[action.creator_firstname, action.creator_lastname].filter(Boolean).join(' ')}
-                         </Text>
-                       </View>
-                     ) : null}
-                     
-                     {action.assigned_firstname || action.assigned_lastname ? (
-                       <View style={styles.userInfoItem}>
-                         <Text style={styles.userInfoLabel}>Assigned to</Text>
-                         <Text style={styles.userInfoValue}>
-                           {[action.assigned_firstname, action.assigned_lastname].filter(Boolean).join(' ')}
-                         </Text>
-                       </View>
-                     ) : null}
-                   </View>
-                   
-                   {/* Date Information */}
-                   {(action.date_execution || action.date_planification) && (
-                     <View style={styles.dateInfoRow}>
-                       {action.date_execution ? (
-                         <View style={styles.dateInfoItem}>
-                           <Text style={styles.dateInfoLabel}>Execute date</Text>
-                           <Text style={styles.dateInfoValue}>
-                             {new Date(action.date_execution).toLocaleDateString()}
-                           </Text>
-                         </View>
-                       ) : action.date_planification ? (
-                         <View style={styles.dateInfoItem}>
-                           <Text style={styles.dateInfoLabel}>Planned date</Text>
-                           <Text style={styles.dateInfoValue}>
-                             {new Date(action.date_planification).toLocaleDateString()}
-                           </Text>
-                         </View>
-                       ) : null}
-                     </View>
-                   )}
+                         filteredParentActions.map((action: DeclarationAction) => {
+                           const subActionsForThisAction = subActionsMap[action.id] || [];
+                           const hasSubActions = subActionsForThisAction.length > 0;
+                           const isExpanded = expandedActions.has(action.id);
+                           const isLoading = loadingSubActions.has(action.id);
+                           
+                           return (
+                             <View key={action.id} style={styles.card}>
+                               <TouchableOpacity onPress={() => handleActionPress(action)} activeOpacity={0.7}>
+                                 <View style={styles.cardHeader}>
+                                   <Text style={styles.cardTitle}>{action.title || 'Untitled action'}</Text>
+                                   <View style={styles.statusPill}>
+                                     <Text style={styles.statusText}>{String(action.status ?? 'pending')}</Text>
                                    </View>
-                </TouchableOpacity>
-              ))
+                                 </View>
+                                 
+                                 {action.description ? (
+                                   <Text style={styles.cardDesc}>{action.description}</Text>
+                                 ) : null}
+                                 
+                                 {renderPhoto(action.photo)}
+                                 
+                                 <View style={styles.metaSection}>
+                                   {/* User Information */}
+                                   <View style={styles.userInfoRow}>
+                                     {action.creator_firstname || action.creator_lastname ? (
+                                       <View style={styles.userInfoItem}>
+                                         <Text style={styles.userInfoLabel}>Created by</Text>
+                                         <Text style={styles.userInfoValue}>
+                                           {[action.creator_firstname, action.creator_lastname].filter(Boolean).join(' ')}
+                                         </Text>
+                                       </View>
+                                     ) : null}
+                                     
+                                     {action.assigned_firstname || action.assigned_lastname ? (
+                                       <View style={styles.userInfoItem}>
+                                         <Text style={styles.userInfoLabel}>Assigned to</Text>
+                                         <Text style={styles.userInfoValue}>
+                                           {[action.assigned_firstname, action.assigned_lastname].filter(Boolean).join(' ')}
+                                         </Text>
+                                       </View>
+                                     ) : null}
+                                   </View>
+                                   
+                                   {/* Date Information */}
+                                   {(action.date_execution || action.date_planification) && (
+                                     <View style={styles.dateInfoRow}>
+                                       {action.date_execution ? (
+                                         <View style={styles.dateInfoItem}>
+                                           <Text style={styles.dateInfoLabel}>Execute date</Text>
+                                           <Text style={styles.dateInfoValue}>
+                                             {new Date(action.date_execution).toLocaleDateString()}
+                                           </Text>
+                                         </View>
+                                       ) : action.date_planification ? (
+                                         <View style={styles.dateInfoItem}>
+                                           <Text style={styles.dateInfoLabel}>Planned date</Text>
+                                           <Text style={styles.dateInfoValue}>
+                                             {new Date(action.date_planification).toLocaleDateString()}
+                                           </Text>
+                                         </View>
+                                       ) : null}
+                                     </View>
+                                   )}
+                                 </View>
+                               </TouchableOpacity>
+                               
+                                                               {/* Sub-actions section */}
+                                {(hasSubActions || isLoading) && (
+                                  <View style={styles.subActionsSection}>
+                                    <TouchableOpacity 
+                                      style={styles.subActionsHeader}
+                                      onPress={() => toggleActionExpansion(action.id, action.id_declaration)}
+                                      activeOpacity={0.7}
+                                    >
+                                      <View style={styles.subActionsInfo}>
+                                        <Ionicons 
+                                          name={isExpanded ? 'chevron-up' : 'chevron-down'} 
+                                          size={16} 
+                                          color="#8E8E93" 
+                                        />
+                                        <Text style={styles.subActionsCount}>
+                                          {isLoading ? 'Loading...' : `${subActionsForThisAction.length} sub-action${subActionsForThisAction.length !== 1 ? 's' : ''}`}
+                                        </Text>
+                                      </View>
+                                    </TouchableOpacity>
+                                   
+                                   {isExpanded && subActionsForThisAction.length > 0 && (
+                                     <View style={styles.subActionsList}>
+                                       {subActionsForThisAction.map((subAction) => (
+                                         <TouchableOpacity 
+                                           key={subAction.id} 
+                                           style={styles.subActionCard}
+                                           onPress={() => handleActionPress(subAction)}
+                                           activeOpacity={0.7}
+                                         >
+                                           <View style={styles.subActionHeader}>
+                                             <Text style={styles.subActionTitle}>{subAction.title || 'Untitled sub-action'}</Text>
+                                             <View style={styles.subActionStatusPill}>
+                                               <Text style={styles.subActionStatusText}>{String(subAction.status ?? 'pending')}</Text>
+                                             </View>
+                                           </View>
+                                           
+                                           {subAction.description ? (
+                                             <Text style={styles.subActionDesc}>{subAction.description}</Text>
+                                           ) : null}
+                                           
+                                           {renderPhoto(subAction.photo)}
+                                           
+                                           <View style={styles.subActionMeta}>
+                                             {subAction.creator_firstname || subAction.creator_lastname ? (
+                                               <Text style={styles.subActionMetaText}>
+                                                 By: {[subAction.creator_firstname, subAction.creator_lastname].filter(Boolean).join(' ')}
+                                               </Text>
+                                             ) : null}
+                                             {subAction.date_planification && (
+                                               <Text style={styles.subActionMetaText}>
+                                                 Planned: {new Date(subAction.date_planification).toLocaleDateString()}
+                                               </Text>
+                                             )}
+                                           </View>
+                                         </TouchableOpacity>
+                                       ))}
+                                     </View>
+                                   )}
+                                   
+                                   {isExpanded && subActionsForThisAction.length === 0 && !isLoading && (
+                                     <View style={styles.noSubActions}>
+                                       <Text style={styles.noSubActionsText}>No sub-actions found</Text>
+                                     </View>
+                                   )}
+                                 </View>
+                               )}
+                             </View>
+                           );
+                         })
           )}
                  </ScrollView>
        </View>
@@ -574,6 +808,14 @@ export default function ActionsModal({ visible, actions, onClose, onCreateAction
                     <Text style={styles.detailLabel}>Status</Text>
                     <Text style={styles.detailValue}>{String(selectedAction.status ?? 'pending')}</Text>
                   </View>
+                  {!selectedAction.id_parent_action && (
+                    <View style={styles.detailRow}>
+                      <Text style={styles.detailLabel}>Sub-actions</Text>
+                      <Text style={styles.detailValue}>
+                        {subActionsMap[selectedAction.id]?.length || 0} sub-action{(subActionsMap[selectedAction.id]?.length || 0) !== 1 ? 's' : ''}
+                      </Text>
+                    </View>
+                  )}
                 </View>
 
                 <View style={styles.actionsRow}>
@@ -581,12 +823,15 @@ export default function ActionsModal({ visible, actions, onClose, onCreateAction
                     <Ionicons name="create-outline" size={18} color="#f87b1b" />
                     <Text style={styles.updateButtonText}>Update</Text>
                   </TouchableOpacity>
-                  <TouchableOpacity style={styles.addMiniButton} onPress={() => {
-                    Alert.alert('Coming Soon', 'Add mini action functionality will be implemented soon.');
-                  }}>
-                    <Ionicons name="add-circle-outline" size={18} color="#007AFF" />
-                    <Text style={styles.addMiniButtonText}>Add Mini Action</Text>
-                  </TouchableOpacity>
+                  {!selectedAction.id_parent_action && (
+                    <TouchableOpacity style={styles.addMiniButton} onPress={() => {
+                      setShowSubActionForm(true);
+                      setShowDetailsModal(false);
+                    }}>
+                      <Ionicons name="add-circle-outline" size={18} color="#007AFF" />
+                      <Text style={styles.addMiniButtonText}>Add Mini Action</Text>
+                    </TouchableOpacity>
+                  )}
                 </View>
               </View>
             )}
@@ -767,6 +1012,185 @@ export default function ActionsModal({ visible, actions, onClose, onCreateAction
            </ScrollView>
          </View>
        </Modal>
+
+       {/* Sub-Action Creation Modal */}
+       <Modal
+         visible={showSubActionForm}
+         animationType="slide"
+         presentationStyle="pageSheet"
+         onRequestClose={resetSubActionForm}
+       >
+         <View style={styles.container}>
+           <View style={styles.header}>
+             <TouchableOpacity onPress={resetSubActionForm} style={styles.closeButton}>
+               <Ionicons name="close" size={24} color="#1C1C1E" />
+             </TouchableOpacity>
+             <Text style={styles.headerTitle}>Add Mini Action</Text>
+             <View style={styles.placeholder} />
+           </View>
+
+           <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+                           <View style={styles.formCard}>
+                <Text style={styles.formTitle}>New Mini Action</Text>
+                <Text style={styles.subActionParentInfo}>
+                  Parent: {selectedAction?.title || 'Untitled action'}
+                </Text>
+                <Text style={styles.subActionParentInfo}>
+                  This will be a sub-action of the selected parent action
+                </Text>
+               
+               {/* Zone select */}
+               {parentZone ? (
+                 <View style={{ marginBottom: 10 }}>
+                   <Text style={styles.label}>Zone</Text>
+                   <TouchableOpacity
+                     style={styles.selectHeader}
+                     onPress={() => setShowSubActionZoneDropdown((s) => !s)}
+                     activeOpacity={0.7}
+                   >
+                     <View style={styles.selectedPreview}>
+                       {renderZoneOption(zones.find(zz => zz.id === subActionForm.id_zone) || parentZone)}
+                     </View>
+                     <Ionicons name={showSubActionZoneDropdown ? 'chevron-up' : 'chevron-down'} size={18} color="#8E8E93" />
+                   </TouchableOpacity>
+
+                   {showSubActionZoneDropdown ? (
+                     <View style={styles.selectBox}>
+                       <ScrollView style={{ maxHeight: 220 }}>
+                         {zones.map((z) => (
+                           <TouchableOpacity
+                             key={z.id}
+                             style={styles.selectItem}
+                             onPress={() => {
+                               setSubActionForm((p) => ({ ...p, id_zone: z.id }));
+                               setShowSubActionZoneDropdown(false);
+                             }}
+                           >
+                             <View style={[styles.selectItemInner, subActionForm.id_zone === z.id && styles.selectItemSelected]}>
+                               {renderZoneOption(z)}
+                               {subActionForm.id_zone === z.id ? <Ionicons name="checkmark" size={18} color="#34C759" /> : null}
+                             </View>
+                           </TouchableOpacity>
+                         ))}
+                       </ScrollView>
+                     </View>
+                   ) : null}
+                 </View>
+               ) : null}
+
+               <TextInput
+                 style={styles.input}
+                 placeholder="Title"
+                 placeholderTextColor="#8E8E93"
+                 value={subActionForm.title}
+                 onChangeText={(t) => setSubActionForm((p) => ({ ...p, title: t }))}
+               />
+               
+               <TextInput
+                 style={[styles.input, styles.textArea]}
+                 placeholder="Description"
+                 placeholderTextColor="#8E8E93"
+                 value={subActionForm.description}
+                 onChangeText={(t) => setSubActionForm((p) => ({ ...p, description: t }))}
+                 multiline
+               />
+               
+               {/* User Assignment */}
+               <View style={{ marginBottom: 10 }}>
+                 <Text style={styles.label}>Assign To</Text>
+                 <TouchableOpacity
+                   style={styles.selectHeader}
+                   onPress={() => setShowSubActionUserDropdown((s) => !s)}
+                   activeOpacity={0.7}
+                 >
+                   <View style={styles.selectedPreview}>
+                     <Text style={[styles.dateText, !subActionForm.assigned_to && styles.placeholderText]}>
+                       {(() => {
+                         if (!subActionForm.assigned_to) return 'Select user';
+                         const user = companyUsers.find(u => u.id === subActionForm.assigned_to);
+                         return user ? `${user.firstname} ${user.lastname}` : 'Select user';
+                       })()}
+                     </Text>
+                   </View>
+                   <Ionicons name={showSubActionUserDropdown ? 'chevron-up' : 'chevron-down'} size={18} color="#8E8E93" />
+                 </TouchableOpacity>
+
+                 {showSubActionUserDropdown ? (
+                   <View style={styles.selectBox}>
+                     <ScrollView style={{ maxHeight: 220 }}>
+                       {companyUsers.map((user) => (
+                         <TouchableOpacity
+                           key={user.id}
+                           style={styles.selectItem}
+                           onPress={() => {
+                             setSubActionForm((p) => ({ ...p, assigned_to: user.id }));
+                             setShowSubActionUserDropdown(false);
+                           }}
+                         >
+                           <View style={[styles.selectItemInner, subActionForm.assigned_to === user.id && styles.selectItemSelected]}>
+                             {renderUserOption(user)}
+                             {subActionForm.assigned_to === user.id ? <Ionicons name="checkmark" size={18} color="#34C759" /> : null}
+                           </View>
+                         </TouchableOpacity>
+                       ))}
+                     </ScrollView>
+                   </View>
+                 ) : null}
+               </View>
+
+               <View style={styles.rowGap}>
+                 {/* Planned date picker */}
+                 <TouchableOpacity style={styles.dateInput} onPress={() => setShowSubActionPlanPicker(true)} activeOpacity={0.7}>
+                   <Ionicons name="calendar-outline" size={18} color="#8E8E93" />
+                   <Text style={[styles.dateText, !subActionForm.date_planification && styles.placeholderText]}>
+                     {subActionForm.date_planification ? formatDisplayDate(subActionForm.date_planification) : 'Planned date'}
+                   </Text>
+                 </TouchableOpacity>
+                 <DateTimePickerModal
+                   isVisible={showSubActionPlanPicker}
+                   mode="date"
+                   date={subActionForm.date_planification ? new Date(subActionForm.date_planification) : new Date()}
+                   onConfirm={(selectedDate) => {
+                     setShowSubActionPlanPicker(false);
+                     if (selectedDate) setSubActionForm((p) => ({ ...p, date_planification: toISODate(selectedDate) }));
+                   }}
+                   onCancel={() => setShowSubActionPlanPicker(false)}
+                 />
+
+                 {/* Execution date picker */}
+                 <TouchableOpacity style={styles.dateInput} onPress={() => setShowSubActionExecPicker(true)} activeOpacity={0.7}>
+                   <Ionicons name="calendar-outline" size={18} color="#8E8E93" />
+                   <Text style={[styles.dateText, !subActionForm.date_execution && styles.placeholderText]}>
+                     {subActionForm.date_execution ? formatDisplayDate(subActionForm.date_execution) : 'Execution date'}
+                   </Text>
+                 </TouchableOpacity>
+                 <DateTimePickerModal
+                   isVisible={showSubActionExecPicker}
+                   mode="date"
+                   date={subActionForm.date_execution ? new Date(subActionForm.date_execution) : new Date()}
+                   onConfirm={(selectedDate) => {
+                     setShowSubActionExecPicker(false);
+                     if (selectedDate) setSubActionForm((p) => ({ ...p, date_execution: toISODate(selectedDate) }));
+                   }}
+                   onCancel={() => setShowSubActionExecPicker(false)}
+                 />
+               </View>
+
+               <View style={styles.row}>
+                 <TouchableOpacity style={styles.photoBtn} onPress={pickSubActionImage}>
+                   <Ionicons name="camera-outline" size={18} color="#8E8E93" />
+                   <Text style={styles.photoBtnText}>{subActionPhoto ? 'Change Photo' : 'Add Photo'}</Text>
+                 </TouchableOpacity>
+                 {subActionPhoto ? <Text style={styles.photoName}>1 photo selected</Text> : null}
+               </View>
+
+               <TouchableOpacity style={styles.submitBtn} onPress={handleCreateSubAction}>
+                 <Text style={styles.submitBtnText}>Create Mini Action</Text>
+               </TouchableOpacity>
+             </View>
+           </ScrollView>
+         </View>
+       </Modal>
      </Modal>
    );
  }
@@ -918,6 +1342,30 @@ const styles = StyleSheet.create({
   detailLabel: { fontSize: 13, color: '#8E8E93', marginRight: 12, flex: 0.9 },
   detailValue: { fontSize: 14, color: '#1C1C1E', fontWeight: '500', flex: 1, textAlign: 'right' },
   actionsRow: { flexDirection: 'row', gap: 12, marginTop: 8 },
+  subActionParentInfo: { fontSize: 12, color: '#8E8E93', marginBottom: 12, fontStyle: 'italic' },
+  // Sub-actions styles
+  subActionsSection: { marginTop: 12, borderTopWidth: 1, borderTopColor: '#F2F2F7', paddingTop: 12 },
+  subActionsHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 8 },
+  subActionsInfo: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  subActionsCount: { fontSize: 14, color: '#8E8E93', fontWeight: '500' },
+  subActionsList: { marginTop: 8, gap: 8 },
+  subActionCard: { 
+    backgroundColor: '#F8F9FA', 
+    borderRadius: 8, 
+    padding: 12, 
+    marginLeft: 16,
+    borderWidth: 1,
+    borderColor: '#E9ECEF'
+  },
+  subActionHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 },
+  subActionTitle: { fontSize: 14, fontWeight: '600', color: '#1C1C1E', flex: 1 },
+  subActionStatusPill: { backgroundColor: '#E9ECEF', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 8 },
+  subActionStatusText: { fontSize: 11, color: '#6C757D', fontWeight: '600' },
+  subActionDesc: { fontSize: 13, color: '#1C1C1E', marginBottom: 8, lineHeight: 18 },
+  subActionMeta: { marginTop: 8 },
+  subActionMetaText: { fontSize: 11, color: '#8E8E93', marginBottom: 2 },
+  noSubActions: { paddingVertical: 16, alignItems: 'center' },
+  noSubActionsText: { fontSize: 14, color: '#8E8E93', fontStyle: 'italic' },
 
 });
 

@@ -2,14 +2,14 @@ import { useAuth } from '@/contexts/AuthContext';
 import { createCalendarEvent } from '@/services/calendarService';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
-    Alert,
-    Image,
-    ScrollView,
-    StyleSheet,
-    Text,
-    View
+  Alert,
+  Image,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import CalendarComp from '../../components/CalendarComp';
@@ -18,13 +18,31 @@ import DayEventsModal from '../../components/DayEventsModal';
 import API_CONFIG from '../config/api';
 
 export default function DashboardScreen() {
-  const { user, token } = useAuth();
+  const { token } = useAuth();
   const router = useRouter();
   const [eventModalVisible, setEventModalVisible] = useState(false);
   const [eventsByDate, setEventsByDate] = useState<Record<string, string[]>>({});
   const [dayModalVisible, setDayModalVisible] = useState(false);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [dayEvents, setDayEvents] = useState<any[]>([]);
+  const [stats, setStats] = useState<{ pending: number; today: number; completed: number; retard: number } | null>(null);
+
+  useEffect(() => {
+    (async () => {
+      if (!token) return;
+      try {
+        const res = await fetch(`${API_CONFIG.BASE_URL}/actions/stats`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Failed to load stats');
+        setStats(data);
+      } catch {
+        // keep UI functional without stats
+        setStats({ pending: 0, today: 0, completed: 0, retard: 0 });
+      }
+    })();
+  }, [token]);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -62,22 +80,29 @@ export default function DashboardScreen() {
           </View>
         </View>
 
-        {/* Quick Stats */}
-        <View style={styles.statsContainer}>
-          <View style={styles.statCard}>
-            <View style={styles.statIcon}>
-              <Ionicons name="checkmark-circle-outline" size={24} color="#34C759" />
+        {/* Quick Stats (framed single row) */}
+        <View style={styles.statsFrame}>
+          <View style={styles.statRowSingle}>
+            <View style={styles.statCell}>
+              <View style={styles.statIcon}><Ionicons name="time-outline" size={24} color="#FF9500" /></View>
+              <Text style={styles.statNumber}>{stats?.pending ?? '—'}</Text>
+              <Text style={styles.statLabel}>Pending</Text>
             </View>
-            <Text style={styles.statNumber}>12</Text>
-            <Text style={styles.statLabel}>Completed Tasks</Text>
-          </View>
-
-          <View style={styles.statCard}>
-            <View style={styles.statIcon}>
-              <Ionicons name="time-outline" size={24} color="#FF9500" />
+            <View style={styles.statCell}>
+              <View style={styles.statIcon}><Ionicons name="calendar-outline" size={24} color="#007AFF" /></View>
+              <Text style={styles.statNumber}>{stats?.today ?? '—'}</Text>
+              <Text style={styles.statLabel}>Today</Text>
             </View>
-            <Text style={styles.statNumber}>5</Text>
-            <Text style={styles.statLabel}>Pending Tasks</Text>
+            <View style={styles.statCell}>
+              <View style={styles.statIcon}><Ionicons name="checkmark-circle-outline" size={24} color="#34C759" /></View>
+              <Text style={styles.statNumber}>{stats?.completed ?? '—'}</Text>
+              <Text style={styles.statLabel}>Completed</Text>
+            </View>
+            <View style={styles.statCell}>
+              <View style={styles.statIcon}><Ionicons name="alert-circle-outline" size={24} color="#FF3B30" /></View>
+              <Text style={styles.statNumber}>{stats?.retard ?? '—'}</Text>
+              <Text style={styles.statLabel}>Retard</Text>
+            </View>
           </View>
         </View>
 
@@ -171,7 +196,7 @@ export default function DashboardScreen() {
         onClose={() => setEventModalVisible(false)}
         onSubmit={async (vals) => {
           if (!token) return;
-          const created = await createCalendarEvent(
+          await createCalendarEvent(
             {
               context: vals.context,
               title: vals.title,
@@ -248,6 +273,36 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     padding: 20,
     gap: 12,
+  },
+  statsFrame: {
+    marginHorizontal: 20,
+    marginTop: 12,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E5E5EA',
+    overflow: 'hidden',
+  },
+  statRowSingle: {
+    flexDirection: 'row',
+  },
+  statGridRow: {
+    flexDirection: 'row',
+  },
+  rowTopDivider: {
+    borderTopWidth: 1,
+    borderTopColor: '#F2F2F7',
+  },
+  statCell: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: 16,
+    paddingHorizontal: 12,
+    gap: 4,
+  },
+  cellRightDivider: {
+    borderRightWidth: 1,
+    borderRightColor: '#F2F2F7',
   },
   statCard: {
     flex: 1,
