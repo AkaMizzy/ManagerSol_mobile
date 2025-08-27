@@ -73,9 +73,11 @@ ManagerSol/                # Mobile app (Expo + TypeScript)
 - Static: `/uploads/**` exposed for images (zones, actions, declarations, chats).
 
 #### Declarations API
-- `POST /declarations` (auth): now requires and persists `title` in addition to `id_declaration_type`, `id_zone`, `description`, optional `severite`. Inserts with user’s `id_company`.
-- `GET /declarations` (auth): returns `d.*` plus `declaration_type_title`, `zone_title`, with photo and chat counts aggregated.
-- `GET /declarations/:id` (auth): returns full details with photos and chats.
+- `POST /declarations` (auth): requires and persists `title`, `id_declaration_type`, `id_zone`, `description`, optional `severite`; also supports `code_declaration`, `id_declarent`, `id_project`, `date_declaration` (DATE), and optional `latitude`/`longitude` (validated: lat −90..90, lng −180..180). Inserts with user’s `id_company`.
+- `GET /declarations` (auth): returns `d.*` plus `declaration_type_title`, `zone_title`, `project_title`, and declarant names; includes aggregated `photo_count` and `chat_count` and a lightweight photos array.
+- `GET /declarations/:id` (auth): returns full details including `photos[]` and `chats[]` (with sender names).
+- UUID handling: database trigger generates UUID; retrieval after insert uses a targeted query (user+title+code+date) instead of LAST_INSERT_ID.
+- Company user check fixed: `users.company_id` is used (not `id_company`).
 
 #### Declaration Actions API
 - Column rename: `id_user_validateur` → `assigned_to` across SELECT/INSERT/UPDATE.
@@ -92,6 +94,9 @@ ManagerSol/                # Mobile app (Expo + TypeScript)
 - `GET /zones` returns `z.*` including `logo` (normalized `'/uploads/zones/...'`).
 - Logos saved consistently on create/update.
 
+#### Projects API
+- `GET /company-projects` (auth): returns `{ id, title, code, status }` for the requester’s company, for declaration project assignment.
+
 ---
 
 ### 4. Mobile App Highlights (Expo + TypeScript)
@@ -104,10 +109,14 @@ ManagerSol/                # Mobile app (Expo + TypeScript)
 - `CreateDeclarationModal.tsx`
   - Adds required `title` input (validated) above declaration type selector.
   - Zone dropdown shows zone name + logo (parent and children when relevant).
+  - Location UX: always-visible mini map preview (non-interactive) centered on Casablanca by default; tapping opens a full OpenStreetMap (Leaflet-in-WebView) picker to select coordinates; preview updates after selection.
 - `DeclarationCard.tsx`
   - Displays `declaration.title` as primary heading; `declaration_type_title` demoted to secondary text.
 - `app/(tabs)/declaration.tsx`
   - Header search bar filters declarations by `title` (case-insensitive); empty state reflects filtering.
+  - Cards are clickable; on press, a new Declaration Details modal opens immediately with list data and hydrates with full details.
+  - New `DeclarationDetailsModal.tsx`: shows title/code/date/severity/type/zone/project/declarant/location, full description, photos gallery, and counts.
+  - Details modal includes an Update button that opens an edit form (prefilled) to update fields (currently severity and description) via `PUT /declarations/:id`, with validation and success closure.
 
 #### Actions (per Declaration)
 - `ActionsModal.tsx`
@@ -152,10 +161,12 @@ ManagerSol/                # Mobile app (Expo + TypeScript)
 
 ### 6. Services (ManagerSol/services/declarationService.ts)
 
-- `createDeclaration(data)`: now sends `title`.
+- `createDeclaration(data)`: now sends `title`, `code_declaration`, `id_declarent`, `id_project`, `date_declaration`, and optional `latitude`/`longitude`.
 - `createAction(declarationId, data)`: sends `assigned_to` and optional `photo` (FormData); supports JSON payload.
 - `updateAction(declarationId, actionId, data)`: `PUT` with support for JSON or FormData to replace/remove photo.
 - `getMyActions()` and `getAssignedActions()` feed the Tasks screen.
+- `getDeclarationById(id)`: used by the details modal to hydrate with full photos and chats.
+- `updateDeclaration(id, data)`: used by the details modal edit form (currently severity and description).
 
 ---
 
@@ -166,6 +177,7 @@ ManagerSol/                # Mobile app (Expo + TypeScript)
 - Primary actions: green CTA `#34C759` for submit/update; secondary actions use bordered buttons colored by purpose (e.g., orange `#f87b1b`).
 - Spacing: container padding 16; card padding 16; consistent gaps between rows.
 - Action details modal: sectioned layout (People, Dates, Context) with uppercase section headers and right-aligned values.
+- Map usage: OpenStreetMap tiles via Leaflet embedded in a WebView; mini-map previews are non-interactive; full map opens on tap.
 
 ---
 
@@ -198,9 +210,9 @@ ManagerSol/                # Mobile app (Expo + TypeScript)
 ### 11. End-to-End Flows (Quick Reference)
 
 Declarations
-1) Create declaration → `POST /declarations` (title + type + zone + description) → card lists with title-first, search by title in header.
-2) Open declaration → `ActionsModal` shows actions; filter by title; create action with zone/assignee/dates/photo.
-3) Tap action → details modal → Update opens edit modal → `PUT /declarations/:id/actions/:actionId`.
+1) Create declaration → `POST /declarations` (title + type + zone + description + code + date + optional project/coordinates) → card lists with title-first, search by title in header.
+2) Tap a declaration card → `DeclarationDetailsModal` opens; hydrates with GET `/declarations/:id`; shows description, photos, context, counts; Update opens inline edit form → `PUT /declarations/:id`.
+3) Open actions for a declaration → `ActionsModal` shows actions; filter by title; create/update actions with zone/assignee/dates/photo.
 
 Tasks
 1) Open Tasks tab → two lists (created-by-me, assigned-to-me) fetched via dedicated endpoints.
