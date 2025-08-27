@@ -241,15 +241,7 @@ export default function ChatModal({ visible, declaration, onClose, onSendMessage
           ) : chatMessages && chatMessages.length > 0 ? (
             chatMessages.map((chatMessage) => {
               const isOwn = isOwnMessage(chatMessage);
-              console.log('🔍 Chat message:', {
-                id: chatMessage.id,
-                title: chatMessage.title,
-                description: chatMessage.description,
-                isOwn: isOwn,
-                firstname: chatMessage.firstname,
-                lastname: chatMessage.lastname,
-                messageType: isOwn ? 'USER MESSAGE (RIGHT)' : 'SUPPORT MESSAGE (LEFT)'
-              });
+              
               
               return (
                 <View

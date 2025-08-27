@@ -15,6 +15,7 @@ import ActionsModal from '../../components/ActionsModal';
 import ChatModal from '../../components/ChatModal';
 import CreateDeclarationModal from '../../components/CreateDeclarationModal';
 import DeclarationCard from '../../components/DeclarationCard';
+import DeclarationDetailsModal from '../../components/DeclarationDetailsModal';
 import LoadingScreen from '../../components/LoadingScreen';
 import { useAuth } from '../../contexts/AuthContext';
 import declarationService from '../../services/declarationService';
@@ -28,6 +29,7 @@ export default function DeclarationScreen() {
   const [chatModalVisible, setChatModalVisible] = useState(false);
   const [selectedDeclaration, setSelectedDeclaration] = useState<Declaration | null>(null);
   const [actionsModalVisible, setActionsModalVisible] = useState(false);
+  const [detailsVisible, setDetailsVisible] = useState(false);
   const [actionsForDeclaration, setActionsForDeclaration] = useState<import('../../types/declaration').DeclarationAction[] | null>(null);
   
   // New state for create declaration modal
@@ -114,9 +116,17 @@ export default function DeclarationScreen() {
     setChatModalVisible(true);
   };
 
-  const handleDeclarationPress = (declaration: Declaration) => {
-    // TODO: Navigate to declaration detail screen
-    console.log('Declaration pressed:', declaration.id);
+  const handleDeclarationPress = async (declaration: Declaration) => {
+    // Open immediately with available data, then hydrate with full details
+    setSelectedDeclaration(declaration);
+    setDetailsVisible(true);
+    if (!token) return;
+    try {
+      const full = await declarationService.getDeclarationById(declaration.id, token);
+      setSelectedDeclaration(full);
+    } catch (e) {
+      // keep lightweight view; optional feedback
+    }
   };
 
   const handleCreateDeclaration = () => {
@@ -383,6 +393,13 @@ export default function DeclarationScreen() {
         }}
         parentZone={selectedDeclaration ? zones.find(z => z.id === selectedDeclaration.id_zone) || null : null}
         childZones={selectedDeclaration ? zones.filter(z => z.id_zone === selectedDeclaration.id_zone) : []}
+      />
+
+      {/* Declaration Details Modal */}
+      <DeclarationDetailsModal
+        visible={detailsVisible}
+        onClose={() => setDetailsVisible(false)}
+        declaration={selectedDeclaration as any}
       />
 
       {/* Create Declaration Modal */}
