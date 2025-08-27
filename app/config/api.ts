@@ -1,6 +1,6 @@
 // API Configuration
 const API_CONFIG = {
-  BASE_URL: 'https://2071414a6ff2.ngrok-free.app',
+  BASE_URL: 'https://3e9efc38556e.ngrok-free.app',
   
   // For web/emulator testing
   // BASE_URL: 'http://localhost:5000',

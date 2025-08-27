@@ -198,7 +198,7 @@ export default function CreateDeclarationModal({
     if (formData.latitude && formData.longitude) {
       return `${formData.latitude.toFixed(6)}, ${formData.longitude.toFixed(6)}`;
     }
-    return 'Open map to select location';
+    return 'Tap map to select location';
   };
 
   // OpenStreetMap HTML with Leaflet
@@ -253,7 +253,7 @@ export default function CreateDeclarationModal({
         let map, marker, selectedLat, selectedLng;
         
         // Initialize map
-        map = L.map('map').setView([40.7128, -74.0060], 13);
+        map = L.map('map').setView([33.5731, -7.5898], 13);
         
         // Add OpenStreetMap tiles
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -326,6 +326,38 @@ export default function CreateDeclarationModal({
     } catch (error) {
       console.error('Error parsing map message:', error);
     }
+  };
+
+  // Mini map HTML for preview
+  const getMiniMapHtml = () => {
+    const lat = formData.latitude ?? 33.5731; // Casablanca default
+    const lng = formData.longitude ?? -7.5898;
+    return `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+        <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+        <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+        <style>
+          html, body, #miniMap { height: 100%; }
+          body { margin: 0; padding: 0; }
+          #miniMap { width: 100%; }
+        </style>
+      </head>
+      <body>
+        <div id="miniMap"></div>
+        <script>
+          const miniMap = L.map('miniMap', { zoomControl: false, attributionControl: false }).setView([${lat}, ${lng}], 14);
+          L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors'
+          }).addTo(miniMap);
+          L.marker([${lat}, ${lng}]).addTo(miniMap);
+          setTimeout(() => { miniMap.invalidateSize(); }, 100);
+        </script>
+      </body>
+      </html>
+    `;
   };
 
   const getSeverityColor = (severity: number) => {
@@ -543,18 +575,30 @@ export default function CreateDeclarationModal({
 
           {/* Location Coordinates */}
           <View style={styles.fieldContainer}>
-            <Text style={styles.fieldLabel}>Location (Optional)</Text>
+            <Text style={styles.fieldLabel}>Location </Text>
             <TouchableOpacity
               style={styles.mapButton}
               onPress={handleLocationToggle}
+              activeOpacity={0.8}
             >
-              <Ionicons name="map-outline" size={18} color="#8E8E93" />
-              <Text style={[
-                styles.mapButtonText,
-                !formData.latitude && !formData.longitude && styles.placeholderText
-              ]}>
-                {getCoordinateDisplay()}
-              </Text>
+              <View style={styles.miniMapPreview}>
+                <WebView
+                  source={{ html: getMiniMapHtml() }}
+                  style={styles.miniMap}
+                  javaScriptEnabled={true}
+                  domStorageEnabled={true}
+                  scrollEnabled={false}
+                  showsHorizontalScrollIndicator={false}
+                  showsVerticalScrollIndicator={false}
+                  bounces={false}
+                  pointerEvents="none"
+                />
+                <View style={styles.miniMapOverlay}>
+                  <Text style={styles.miniMapCoordinates}>
+                    {getCoordinateDisplay()}
+                  </Text>
+                </View>
+              </View>
               <Ionicons
                 name={showLocationInput ? 'chevron-up' : 'chevron-down'}
                 size={20}
@@ -1195,5 +1239,31 @@ const styles = StyleSheet.create({
     color: '#8E8E93',
     textAlign: 'center',
   },
-
+  // Mini map styles
+  miniMapPreview: {
+    flex: 1,
+    height: 60,
+    borderRadius: 8,
+    overflow: 'hidden',
+    position: 'relative',
+  },
+  miniMap: {
+    width: '100%',
+    height: '100%',
+  },
+  miniMapOverlay: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    padding: 4,
+    alignItems: 'center',
+  },
+  miniMapCoordinates: {
+    fontSize: 10,
+    color: '#FFFFFF',
+    fontWeight: '600',
+    textAlign: 'center',
+  },
 });
