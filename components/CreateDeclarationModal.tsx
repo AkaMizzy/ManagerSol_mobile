@@ -64,6 +64,8 @@ export default function CreateDeclarationModal({
   const [showDeclarantDropdown, setShowDeclarantDropdown] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showMap, setShowMap] = useState(false);
+  const [showDeclarantModal, setShowDeclarantModal] = useState(false);
+  const [declarantSearchQuery, setDeclarantSearchQuery] = useState('');
   
   // Photo handling state
   const [selectedPhotos, setSelectedPhotos] = useState<{ uri: string; type: string; name: string }[]>([]);
@@ -188,6 +190,20 @@ export default function CreateDeclarationModal({
     // Then check company users
     const user = companyUsers.find(u => u.id === id);
     return user ? `${user.firstname} ${user.lastname}` : 'Select declarant';
+  };
+
+  const getFilteredDeclarants = () => {
+    const query = declarantSearchQuery.trim().toLowerCase();
+    const allUsers = [
+      { id: currentUser.id, firstname: currentUser.firstname, lastname: currentUser.lastname, isCurrentUser: true },
+      ...companyUsers.filter(user => user.id !== currentUser.id).map(user => ({ ...user, isCurrentUser: false }))
+    ];
+    
+    if (!query) return allUsers;
+    
+    return allUsers.filter(user => 
+      `${user.firstname} ${user.lastname}`.toLowerCase().includes(query)
+    );
   };
 
   const handleLocationToggle = () => {
@@ -594,7 +610,7 @@ export default function CreateDeclarationModal({
             <Text style={styles.fieldLabel}>Declarant *</Text>
             <TouchableOpacity
               style={styles.dropdown}
-              onPress={() => setShowDeclarantDropdown(!showDeclarantDropdown)}
+              onPress={() => setShowDeclarantModal(true)}
             >
               <Text style={[
                 styles.dropdownText,
@@ -603,58 +619,11 @@ export default function CreateDeclarationModal({
                 {getDeclarantName(formData.id_declarent || '')}
               </Text>
               <Ionicons
-                name={showDeclarantDropdown ? 'chevron-up' : 'chevron-down'}
+                name="chevron-down"
                 size={20}
                 color="#8E8E93"
               />
             </TouchableOpacity>
-            {showDeclarantDropdown && (
-              <View style={styles.dropdownList}>
-                <ScrollView 
-                  showsVerticalScrollIndicator={false}
-                  nestedScrollEnabled={true}
-                >
-                  <TouchableOpacity
-                    style={styles.dropdownItem}
-                    onPress={() => {
-                      updateFormData('id_declarent', undefined);
-                      setShowDeclarantDropdown(false);
-                    }}
-                  >
-                    <Text style={styles.dropdownItemText}>No declarant</Text>
-                  </TouchableOpacity>
-                  {/* Current user first */}
-                  <TouchableOpacity
-                    style={styles.dropdownItem}
-                    onPress={() => {
-                      updateFormData('id_declarent', currentUser.id);
-                      setShowDeclarantDropdown(false);
-                    }}
-                  >
-                    <Text style={styles.dropdownItemText}>{`${currentUser.firstname} ${currentUser.lastname}`} (You)</Text>
-                  </TouchableOpacity>
-                  
-                  {/* Other company users (excluding current user) */}
-                  {companyUsers
-                    .filter(user => user.id !== currentUser.id)
-                    .map((user, index) => (
-                      <TouchableOpacity
-                        key={user.id}
-                        style={[
-                          styles.dropdownItem,
-                          index === companyUsers.filter(u => u.id !== currentUser.id).length - 1 && styles.dropdownItemLast
-                        ]}
-                        onPress={() => {
-                          updateFormData('id_declarent', user.id);
-                          setShowDeclarantDropdown(false);
-                        }}
-                      >
-                        <Text style={styles.dropdownItemText}>{`${user.firstname} ${user.lastname}`}</Text>
-                      </TouchableOpacity>
-                    ))}
-                </ScrollView>
-              </View>
-            )}
           </View>
 
           {/* Declaration Type */}
@@ -932,6 +901,110 @@ export default function CreateDeclarationModal({
           </TouchableOpacity>
         </View>
       </SafeAreaView>
+
+      {/* Declarant Selection Modal */}
+      <Modal
+        visible={showDeclarantModal}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setShowDeclarantModal(false)}
+      >
+        <SafeAreaView style={styles.modalContainer}>
+          {/* Header */}
+          <View style={styles.modalHeader}>
+            <TouchableOpacity 
+              onPress={() => {
+                setShowDeclarantModal(false);
+                setDeclarantSearchQuery('');
+              }} 
+              style={styles.modalCloseButton}
+            >
+              <Ionicons name="close" size={24} color="#1C1C1E" />
+            </TouchableOpacity>
+            <Text style={styles.modalHeaderTitle}>Select Declarant</Text>
+            <View style={styles.modalPlaceholder} />
+          </View>
+
+          {/* Search Bar */}
+          <View style={styles.modalSearchContainer}>
+            <View style={styles.modalSearchBar}>
+              <Ionicons name="search" size={18} color="#8E8E93" />
+              <TextInput
+                placeholder="Search declarants..."
+                placeholderTextColor="#8E8E93"
+                value={declarantSearchQuery}
+                onChangeText={setDeclarantSearchQuery}
+                style={styles.modalSearchInput}
+              />
+              {declarantSearchQuery.length > 0 && (
+                <TouchableOpacity onPress={() => setDeclarantSearchQuery('')}>
+                  <Ionicons name="close-circle" size={18} color="#C7C7CC" />
+                </TouchableOpacity>
+              )}
+            </View>
+          </View>
+
+          {/* Declarant List */}
+          <ScrollView style={styles.modalContent} showsVerticalScrollIndicator={false}>
+            {/* No declarant option */}
+            <TouchableOpacity
+              style={styles.modalDeclarantItem}
+              onPress={() => {
+                updateFormData('id_declarent', undefined);
+                setShowDeclarantModal(false);
+                setDeclarantSearchQuery('');
+              }}
+            >
+              <View style={styles.modalDeclarantInfo}>
+                <Text style={styles.modalDeclarantName}>No declarant</Text>
+              </View>
+              {!formData.id_declarent && (
+                <Ionicons name="checkmark" size={20} color="#007AFF" />
+              )}
+            </TouchableOpacity>
+
+            {/* Current user */}
+            <TouchableOpacity
+              style={styles.modalDeclarantItem}
+              onPress={() => {
+                updateFormData('id_declarent', currentUser.id);
+                setShowDeclarantModal(false);
+                setDeclarantSearchQuery('');
+              }}
+            >
+              <View style={styles.modalDeclarantInfo}>
+                <Text style={styles.modalDeclarantName}>{`${currentUser.firstname} ${currentUser.lastname}`}</Text>
+                <Text style={styles.modalDeclarantSubtitle}>(You)</Text>
+              </View>
+              {formData.id_declarent === currentUser.id && (
+                <Ionicons name="checkmark" size={20} color="#007AFF" />
+              )}
+            </TouchableOpacity>
+
+            {/* Other company users */}
+            {getFilteredDeclarants()
+              .filter(user => !user.isCurrentUser)
+              .map((user) => (
+                <TouchableOpacity
+                  key={user.id}
+                  style={styles.modalDeclarantItem}
+                  onPress={() => {
+                    updateFormData('id_declarent', user.id);
+                    setShowDeclarantModal(false);
+                    setDeclarantSearchQuery('');
+                  }}
+                >
+                  <View style={styles.modalDeclarantInfo}>
+                    <Text style={styles.modalDeclarantName}>{`${user.firstname} ${user.lastname}`}</Text>
+                  </View>
+                  {formData.id_declarent === user.id && (
+                    <Ionicons name="checkmark" size={20} color="#007AFF" />
+                  )}
+                </TouchableOpacity>
+              ))}
+          </ScrollView>
+        </SafeAreaView>
+      </Modal>
     </Modal>
   );
 }
@@ -1266,5 +1339,80 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontWeight: '600',
     textAlign: 'center',
+  },
+  // Modal styles
+  modalContainer: {
+    flex: 1,
+    backgroundColor: '#F2F2F7',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 16,
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E5EA',
+  },
+  modalCloseButton: {
+    padding: 8,
+  },
+  modalHeaderTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#1C1C1E',
+  },
+  modalPlaceholder: {
+    width: 40,
+  },
+  modalSearchContainer: {
+    padding: 16,
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E5EA',
+  },
+  modalSearchBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: '#F2F2F7',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  modalSearchInput: {
+    fontSize: 16,
+    color: '#1C1C1E',
+    flex: 1,
+    paddingVertical: 2,
+  },
+  modalContent: {
+    flex: 1,
+    padding: 16,
+  },
+  modalDeclarantItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: '#E5E5EA',
+  },
+  modalDeclarantInfo: {
+    flex: 1,
+  },
+  modalDeclarantName: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#1C1C1E',
+  },
+  modalDeclarantSubtitle: {
+    fontSize: 14,
+    color: '#8E8E93',
+    marginTop: 2,
   },
 });

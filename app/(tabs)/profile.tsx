@@ -10,6 +10,7 @@ import {
     View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import AppHeader from '../../components/AppHeader';
 
 export default function ProfileScreen() {
   const { user, logout, isAuthenticated } = useAuth();
@@ -47,6 +48,9 @@ export default function ProfileScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
+      {/* App Header */}
+      <AppHeader showNotifications={false} />
+      
       <View style={styles.content}>
         {/* Header Card */}
         <View style={styles.headerCard}>

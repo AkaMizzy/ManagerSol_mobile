@@ -1,10 +1,12 @@
 import React from 'react';
 import { StyleSheet, Text } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import AppHeader from '../../components/AppHeader';
 
 export default function EchantillonScreen() {
   return (
     <SafeAreaView style={styles.container}>
+      <AppHeader />
       <Text style={styles.text}>Echantillon Page</Text>
     </SafeAreaView>
   );

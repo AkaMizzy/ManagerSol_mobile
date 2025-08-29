@@ -1,18 +1,19 @@
 import { Ionicons } from '@expo/vector-icons';
 import React, { useCallback, useEffect, useState } from 'react';
 import {
-  Alert,
-  RefreshControl,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View
+    Alert,
+    RefreshControl,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View
 } from 'react-native';
 import DateTimePickerModal from 'react-native-modal-datetime-picker';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import ActionsModal from '../../components/ActionsModal';
+import AppHeader from '../../components/AppHeader';
 import ChatModal from '../../components/ChatModal';
 import CreateDeclarationModal from '../../components/CreateDeclarationModal';
 import DeclarationCard from '../../components/DeclarationCard';
@@ -163,8 +164,28 @@ export default function DeclarationScreen() {
       // Refresh declarations list
       await loadDeclarations();
       
-      // Show success message
-      Alert.alert('Success', 'Declaration created successfully!');
+      // Show success message and redirect to Action Modal
+      Alert.alert(
+        'Success', 
+        'Declaration created successfully!',
+        [
+          {
+            text: 'Okay',
+            onPress: () => {
+              // Find the newly created declaration from the refreshed list
+              // We'll use the first declaration since it should be the newest
+              if (declarations.length > 0) {
+                const newestDeclaration = declarations[0]; // Assuming newest is first after refresh
+                setSelectedDeclaration(newestDeclaration);
+                // Open the Action Modal
+                setActionsModalVisible(true);
+                // Load actions for the new declaration
+                handleViewActions(newestDeclaration);
+              }
+            }
+          }
+        ]
+      );
     } catch (error) {
       console.error('Failed to create declaration:', error);
       throw error; // Re-throw to let the modal handle the error
@@ -306,6 +327,9 @@ export default function DeclarationScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
+      {/* App Header */}
+      <AppHeader />
+      
       {/* Enhanced Header */}
       <View style={styles.header}>
         <View style={styles.headerTop}>
@@ -316,7 +340,8 @@ export default function DeclarationScreen() {
             </Text>
           </View>
           <TouchableOpacity style={styles.addButton} onPress={handleCreateDeclaration}>
-            <Ionicons name="add" size={24} color="#1C1C1E" />
+            <Ionicons name="add-circle" size={20} color="#f87b1b" />
+            <Text style={styles.addButtonText}>Create</Text>
           </TouchableOpacity>
         </View>
         
@@ -518,7 +543,7 @@ const styles = StyleSheet.create({
   header: {
     backgroundColor: '#FFFFFF',
     paddingHorizontal: 20,
-    paddingVertical: 16,
+    paddingVertical: 12,
     borderBottomWidth: 1,
     borderBottomColor: '#E5E5EA',
   },
@@ -526,7 +551,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: 16,
+    marginBottom: 12,
   },
   headerLeft: {
     flex: 1,
@@ -549,7 +574,7 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
   },
   title: {
-    fontSize: 28,
+    fontSize: 20,
     fontWeight: '700',
     color: '#1C1C1E',
     marginBottom: 4,
@@ -560,13 +585,29 @@ const styles = StyleSheet.create({
     lineHeight: 22,
   },
   addButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: '#F2F2F7',
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#f87b1b',
+    borderRadius: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
     marginLeft: 12,
+    shadowColor: '#f87b1b',
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.15,
+    shadowRadius: 3,
+    elevation: 2,
+  },
+  addButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#f87b1b',
+    marginLeft: 6,
   },
   filterContainer: {
     marginTop: 8,

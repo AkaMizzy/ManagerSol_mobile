@@ -16,6 +16,7 @@ import {
 import DateTimePickerModal from 'react-native-modal-datetime-picker';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import API_CONFIG from '../../app/config/api';
+import AppHeader from '../../components/AppHeader';
 import { useAuth } from '../../contexts/AuthContext';
 import declarationService from '../../services/declarationService';
 import { CompanyUser, CreateActionData, DeclarationAction, Zone } from '../../types/declaration';
@@ -534,6 +535,9 @@ export default function TaskScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
+      {/* App Header */}
+      <AppHeader />
+      
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Tasks</Text>

@@ -5,13 +5,13 @@ import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
   Alert,
-  Image,
   ScrollView,
   StyleSheet,
   Text,
   View
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import AppHeader from '../../components/AppHeader';
 import CalendarComp from '../../components/CalendarComp';
 import CreateCalendarEventModal from '../../components/CreateCalendarEventModal';
 import DayEventsModal from '../../components/DayEventsModal';
@@ -48,37 +48,7 @@ export default function DashboardScreen() {
     <SafeAreaView style={styles.container}>
       <ScrollView style={styles.scrollView}>
         {/* Header */}
-        <View style={styles.header}>
-          <View style={styles.headerRow}>
-            <View style={styles.headerLeft}>
-              <View style={styles.brandRow}>
-                <Image
-                  source={require('../../assets/images/icon.png')}
-                  style={styles.logo}
-                  resizeMode="contain"
-                />
-                <Text style={styles.appName}>QualiSol</Text>
-              </View>
-            </View>
-            {/* Center username removed to prioritize brand space */}
-            <View style={styles.headerRight}>
-              <Text
-                accessibilityRole="button"
-                style={styles.iconButton}
-                onPress={() => {}}
-              >
-                <Ionicons name="notifications-outline" size={22} color="#1C1C1E" />
-              </Text>
-              <Text
-                accessibilityRole="button"
-                style={styles.iconButton}
-                onPress={() => router.push('/(tabs)/profile')}
-              >
-                <Ionicons name="person-circle-outline" size={24} color="#1C1C1E" />
-              </Text>
-            </View>
-          </View>
-        </View>
+        <AppHeader />
 
         {/* Quick Stats (framed single row) */}
         <View style={styles.kpiContainer}>
@@ -259,49 +229,7 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingBottom: 100, // Add space for tab bar
   },
-  header: {
-    paddingHorizontal: 20,
-    paddingVertical: 14,
-    backgroundColor: '#FFFFFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E5EA',
-  },
-  headerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  headerLeft: { flex: 1 },
-  greetingSection: {
-    marginTop: 8,
-  },
-  greetingText: {
-    fontSize: 14,
-    color: '#8E8E93',
-    fontWeight: '500',
-    marginBottom: 2,
-  },
-  welcomeText: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#1C1C1E',
-  },
-  headerRight: { flex: 1, flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center', gap: 12 },
-  appName: { fontSize: 24, fontWeight: '800', color: '#11224e' },
-  brandRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  logo: { width: 45, height: 45 },
-  userChip: { fontSize: 13, color: '#8E8E93', fontWeight: '600', maxWidth: '90%' },
-  iconButton: { paddingHorizontal: 8, paddingVertical: 4 },
-  greeting: {
-    fontSize: 16,
-    color: '#8E8E93',
-    marginBottom: 4,
-  },
-  userName: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#1C1C1E',
-  },
+
   statsContainer: {
     flexDirection: 'row',
     padding: 20,
