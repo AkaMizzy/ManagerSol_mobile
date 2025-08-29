@@ -1,15 +1,16 @@
 import { Ionicons } from '@expo/vector-icons';
 import React, { useCallback, useEffect, useState } from 'react';
 import {
-    Alert,
-    RefreshControl,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View
+  Alert,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View
 } from 'react-native';
+import DateTimePickerModal from 'react-native-modal-datetime-picker';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import ActionsModal from '../../components/ActionsModal';
 import ChatModal from '../../components/ChatModal';
@@ -41,9 +42,10 @@ export default function DeclarationScreen() {
   const [isCreating, setIsCreating] = useState(false);
   
   // Filter state
-  const [sortBy, setSortBy] = useState<'date' | 'severity'>('date');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedSeverity, setSelectedSeverity] = useState<number | null>(null);
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [showDatePicker, setShowDatePicker] = useState(false);
 
   // Load declarations and required data on component mount
   useEffect(() => {
@@ -86,17 +88,7 @@ export default function DeclarationScreen() {
         throw new Error('No authentication token available');
       }
       const data = await declarationService.getDeclarations(token);
-      console.log('🔍 Loaded declarations:', data.length);
-      data.forEach((declaration, index) => {
-        console.log(`🔍 Declaration ${index + 1}:`, {
-          id: declaration.id,
-          title: declaration.declaration_type_title,
-          photos: declaration.photos?.length || 0,
-          photo_count: declaration.photo_count,
-          hasPhotosArray: !!declaration.photos,
-          firstPhoto: declaration.photos?.[0]?.photo
-        });
-      });
+      
       setDeclarations(data);
     } catch (error) {
       console.error('Failed to load declarations:', error);
@@ -247,7 +239,7 @@ export default function DeclarationScreen() {
     return { totalDeclarations, highPriorityCount };
   };
 
-  // Filter by title and severity, then sort based on current filter
+  // Filter by title, severity, and date
   const getSortedDeclarations = () => {
     let filtered = [...declarations];
     
@@ -262,13 +254,21 @@ export default function DeclarationScreen() {
       filtered = filtered.filter(d => d.severite === selectedSeverity);
     }
     
-    // Sort based on current sort option
-    const sorted = [...filtered];
-    if (sortBy === 'date') {
-      return sorted.sort((a, b) => new Date(b.date_declaration).getTime() - new Date(a.date_declaration).getTime());
-    } else {
-      return sorted.sort((a, b) => b.severite - a.severite);
+    // Filter by date if selected
+    if (selectedDate) {
+      // Format date as YYYY-MM-DD in local timezone
+      const year = selectedDate.getFullYear();
+      const month = String(selectedDate.getMonth() + 1).padStart(2, '0');
+      const day = String(selectedDate.getDate()).padStart(2, '0');
+      const selectedDateStr = `${year}-${month}-${day}`;
+      
+      filtered = filtered.filter(d => {
+        return d.date_declaration === selectedDateStr;
+      });
     }
+    
+    // Sort by date (newest first)
+    return filtered.sort((a, b) => new Date(b.date_declaration).getTime() - new Date(a.date_declaration).getTime());
   };
 
   if (loading) {
@@ -289,6 +289,19 @@ export default function DeclarationScreen() {
     if (severity >= 7) return 'High';
     if (severity >= 5) return 'Medium';
     return 'Low';
+  };
+
+  // Date helper functions
+  const formatDisplayDate = (date: Date) => {
+    return date.toLocaleDateString('en-US', { 
+      year: 'numeric', 
+      month: 'short', 
+      day: 'numeric' 
+    });
+  };
+
+  const clearDateFilter = () => {
+    setSelectedDate(null);
   };
 
   return (
@@ -332,23 +345,28 @@ export default function DeclarationScreen() {
             ) : null}
           </View>
 
-          <View style={styles.segmentedControl}>
-            <TouchableOpacity
-              style={[styles.filterButton, sortBy === 'date' && styles.filterButtonActive]}
-              onPress={() => setSortBy('date')}
-            >
-              <Text style={[styles.filterButtonText, sortBy === 'date' && styles.filterButtonTextActive]}>
-                By Date
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.filterButton, sortBy === 'severity' && styles.filterButtonActive]}
-              onPress={() => setSortBy('severity')}
-            >
-              <Text style={[styles.filterButtonText, sortBy === 'severity' && styles.filterButtonTextActive]}>
-                By Severity
-              </Text>
-            </TouchableOpacity>
+          {/* Date Filter */}
+          <View style={styles.dateFilterContainer}>
+            <View style={styles.dateFilterRow}>
+              <Text style={styles.dateFilterLabel}>Date:</Text>
+              <TouchableOpacity
+                style={styles.datePickerButton}
+                onPress={() => setShowDatePicker(true)}
+              >
+                <Ionicons name="calendar-outline" size={16} color="#8E8E93" />
+                <Text style={styles.datePickerText}>
+                  {selectedDate ? formatDisplayDate(selectedDate) : 'Select date'}
+                </Text>
+              </TouchableOpacity>
+              {selectedDate && (
+                <TouchableOpacity
+                  style={styles.clearDateButton}
+                  onPress={clearDateFilter}
+                >
+                  <Ionicons name="close-circle" size={14} color="#8E8E93" />
+                </TouchableOpacity>
+              )}
+            </View>
           </View>
 
           {/* Compact Severity Filter */}
@@ -461,6 +479,19 @@ export default function DeclarationScreen() {
         declaration={selectedDeclaration as any}
       />
 
+      {/* Date Picker Modal */}
+      <DateTimePickerModal
+        isVisible={showDatePicker}
+        mode="date"
+        date={selectedDate || new Date()}
+        maximumDate={new Date()} // Cannot select future dates
+        onConfirm={(date) => {
+          setShowDatePicker(false);
+          setSelectedDate(date);
+        }}
+        onCancel={() => setShowDatePicker(false)}
+      />
+
       {/* Create Declaration Modal */}
       {user && (
         <CreateDeclarationModal
@@ -540,36 +571,6 @@ const styles = StyleSheet.create({
   filterContainer: {
     marginTop: 8,
   },
-  segmentedControl: {
-    flexDirection: 'row',
-    backgroundColor: '#F2F2F7',
-    borderRadius: 8,
-    padding: 2,
-  },
-  filterButton: {
-    flex: 1,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 6,
-    alignItems: 'center',
-  },
-  filterButtonActive: {
-    backgroundColor: '#FFFFFF',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
-  },
-  filterButtonText: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#8E8E93',
-  },
-  filterButtonTextActive: {
-    color: '#007AFF',
-    fontWeight: '600',
-  },
   scrollView: {
     flex: 1,
   },
@@ -613,6 +614,40 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: '#007AFF',
+  },
+  // Date filter styles
+  dateFilterContainer: {
+    marginTop: 8,
+  },
+  dateFilterRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  dateFilterLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#1C1C1E',
+    minWidth: 40,
+  },
+  datePickerButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E5E5EA',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    flex: 1,
+  },
+  datePickerText: {
+    fontSize: 14,
+    color: '#1C1C1E',
+  },
+  clearDateButton: {
+    padding: 2,
   },
   // Compact severity filter styles
   compactSeverityFilter: {

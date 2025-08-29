@@ -61,8 +61,6 @@ class DeclarationService {
       }),
     });
 
-    console.log('🔍 Declaration created, response:', response);
-
     // If there are photos, upload them
     if (data.photos && data.photos.length > 0) {
       const declarationId = response.declarationId;
