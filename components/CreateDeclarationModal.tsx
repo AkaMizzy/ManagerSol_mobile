@@ -480,6 +480,19 @@ export default function CreateDeclarationModal({
 
         {/* Form */}
         <ScrollView style={styles.form} showsVerticalScrollIndicator={false}>
+          {/* Declaration Code */}
+          <View style={styles.fieldContainer}>
+            <Text style={styles.fieldLabel}>Code *</Text>
+            <TextInput
+              style={[styles.textInput, errors.code_declaration && styles.textAreaError]}
+              placeholder="Enter declaration code"
+              placeholderTextColor="#8E8E93"
+              value={formData.code_declaration}
+              onChangeText={(value) => updateFormData('code_declaration', value)}
+            />
+            {errors.code_declaration ? <Text style={styles.errorText}>{errors.code_declaration}</Text> : null}
+          </View>
+
           {/* Title */}
           <View style={styles.fieldContainer}>
             <Text style={styles.fieldLabel}>Title *</Text>
@@ -493,18 +506,89 @@ export default function CreateDeclarationModal({
             {errors.title ? <Text style={styles.errorText}>{errors.title}</Text> : null}
           </View>
 
-          {/* Declaration Code */}
+          {/* Project */}
           <View style={styles.fieldContainer}>
-            <Text style={styles.fieldLabel}>Declaration Code *</Text>
-            <TextInput
-              style={[styles.textInput, errors.code_declaration && styles.textAreaError]}
-              placeholder="Enter declaration code"
-              placeholderTextColor="#8E8E93"
-              value={formData.code_declaration}
-              onChangeText={(value) => updateFormData('code_declaration', value)}
-            />
-            {errors.code_declaration ? <Text style={styles.errorText}>{errors.code_declaration}</Text> : null}
+            <Text style={styles.fieldLabel}>Project *</Text>
+            <TouchableOpacity
+              style={styles.dropdown}
+              onPress={() => setShowProjectDropdown(!showProjectDropdown)}
+            >
+              <Text style={[
+                styles.dropdownText,
+                !formData.id_project && styles.placeholderText
+              ]}>
+                {getProjectTitle(formData.id_project || '')}
+              </Text>
+              <Ionicons
+                name={showProjectDropdown ? 'chevron-up' : 'chevron-down'}
+                size={20}
+                color="#8E8E93"
+              />
+            </TouchableOpacity>
+            {showProjectDropdown && (
+              <View style={styles.dropdownList}>
+                <ScrollView 
+                  showsVerticalScrollIndicator={false}
+                  nestedScrollEnabled={true}
+                >
+                  <TouchableOpacity
+                    style={styles.dropdownItem}
+                    onPress={() => {
+                      updateFormData('id_project', undefined);
+                      setShowProjectDropdown(false);
+                    }}
+                  >
+                    <Text style={styles.dropdownItemText}>No project</Text>
+                  </TouchableOpacity>
+                  {projects.map((project, index) => (
+                    <TouchableOpacity
+                      key={project.id}
+                      style={[
+                        styles.dropdownItem,
+                        index === projects.length - 1 && styles.dropdownItemLast
+                      ]}
+                      onPress={() => {
+                        updateFormData('id_project', project.id);
+                        setShowProjectDropdown(false);
+                      }}
+                    >
+                      <Text style={styles.dropdownItemText}>{project.title}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </View>
+            )}
           </View>
+
+          {/* Declaration Date */}
+          <View style={styles.fieldContainer}>
+            <Text style={styles.fieldLabel}>Date *</Text>
+            <TouchableOpacity
+              style={[styles.dropdown, errors.date_declaration && styles.dropdownError]}
+              onPress={() => setShowDatePicker(true)}
+            >
+              <Ionicons name="calendar-outline" size={18} color="#8E8E93" />
+              <Text style={[
+                styles.dropdownText,
+                !formData.date_declaration && styles.placeholderText
+              ]}>
+                {formData.date_declaration ? formatDisplayDate(formData.date_declaration) : 'Select declaration date'}
+              </Text>
+            </TouchableOpacity>
+            <DateTimePickerModal
+              isVisible={showDatePicker}
+              mode="date"
+              date={formData.date_declaration ? new Date(formData.date_declaration) : new Date()}
+              maximumDate={new Date()} // Cannot select future dates
+              onConfirm={(selectedDate) => {
+                setShowDatePicker(false);
+                if (selectedDate) updateFormData('date_declaration', toISODate(selectedDate));
+              }}
+              onCancel={() => setShowDatePicker(false)}
+            />
+            {errors.date_declaration ? <Text style={styles.errorText}>{errors.date_declaration}</Text> : null}
+          </View>
+
           {/* Declarant */}
           <View style={styles.fieldContainer}>
             <Text style={styles.fieldLabel}>Declarant *</Text>
@@ -573,94 +657,9 @@ export default function CreateDeclarationModal({
             )}
           </View>
 
-          {/* Location Coordinates */}
-          <View style={styles.fieldContainer}>
-            <Text style={styles.fieldLabel}>Location </Text>
-            <TouchableOpacity
-              style={styles.mapButton}
-              onPress={handleLocationToggle}
-              activeOpacity={0.8}
-            >
-              <View style={styles.miniMapPreview}>
-                <WebView
-                  source={{ html: getMiniMapHtml() }}
-                  style={styles.miniMap}
-                  javaScriptEnabled={true}
-                  domStorageEnabled={true}
-                  scrollEnabled={false}
-                  showsHorizontalScrollIndicator={false}
-                  showsVerticalScrollIndicator={false}
-                  bounces={false}
-                  pointerEvents="none"
-                />
-                <View style={styles.miniMapOverlay}>
-                  <Text style={styles.miniMapCoordinates}>
-                    {getCoordinateDisplay()}
-                  </Text>
-                </View>
-              </View>
-              <Ionicons
-                name={showLocationInput ? 'chevron-up' : 'chevron-down'}
-                size={20}
-                color="#8E8E93"
-              />
-            </TouchableOpacity>
-            
-            {showLocationInput && (
-              <View style={styles.mapContainer}>
-                <WebView
-                  source={{ html: mapHtml }}
-                  style={styles.map}
-                  onMessage={handleMapMessage}
-                  javaScriptEnabled={true}
-                  domStorageEnabled={true}
-                  startInLoadingState={true}
-                  showsHorizontalScrollIndicator={false}
-                  showsVerticalScrollIndicator={false}
-                  scrollEnabled={true}
-                  bounces={false}
-                />
-                <View style={styles.mapInstructions}>
-                  <Text style={styles.mapInstructionsText}>
-                    Tap anywhere on the map to select location, then tap &quot;Select This Location&quot;
-                  </Text>
-                </View>
-              </View>
-            )}
-          </View>
-
-          {/* Declaration Date */}
-          <View style={styles.fieldContainer}>
-            <Text style={styles.fieldLabel}>Declaration Date *</Text>
-            <TouchableOpacity
-              style={[styles.dropdown, errors.date_declaration && styles.dropdownError]}
-              onPress={() => setShowDatePicker(true)}
-            >
-              <Ionicons name="calendar-outline" size={18} color="#8E8E93" />
-              <Text style={[
-                styles.dropdownText,
-                !formData.date_declaration && styles.placeholderText
-              ]}>
-                {formData.date_declaration ? formatDisplayDate(formData.date_declaration) : 'Select declaration date'}
-              </Text>
-            </TouchableOpacity>
-            <DateTimePickerModal
-              isVisible={showDatePicker}
-              mode="date"
-              date={formData.date_declaration ? new Date(formData.date_declaration) : new Date()}
-              maximumDate={new Date()} // Cannot select future dates
-              onConfirm={(selectedDate) => {
-                setShowDatePicker(false);
-                if (selectedDate) updateFormData('date_declaration', toISODate(selectedDate));
-              }}
-              onCancel={() => setShowDatePicker(false)}
-            />
-            {errors.date_declaration ? <Text style={styles.errorText}>{errors.date_declaration}</Text> : null}
-          </View>
-
           {/* Declaration Type */}
           <View style={styles.fieldContainer}>
-            <Text style={styles.fieldLabel}>Declaration Type *</Text>
+            <Text style={styles.fieldLabel}>Type *</Text>
             <TouchableOpacity
               style={[styles.dropdown, errors.id_declaration_type && styles.dropdownError]}
               onPress={() => setShowTypeDropdown(!showTypeDropdown)}
@@ -738,60 +737,6 @@ export default function CreateDeclarationModal({
             )}
           </View>
 
-          {/* Project */}
-          <View style={styles.fieldContainer}>
-            <Text style={styles.fieldLabel}>Project *</Text>
-            <TouchableOpacity
-              style={styles.dropdown}
-              onPress={() => setShowProjectDropdown(!showProjectDropdown)}
-            >
-              <Text style={[
-                styles.dropdownText,
-                !formData.id_project && styles.placeholderText
-              ]}>
-                {getProjectTitle(formData.id_project || '')}
-              </Text>
-              <Ionicons
-                name={showProjectDropdown ? 'chevron-up' : 'chevron-down'}
-                size={20}
-                color="#8E8E93"
-              />
-            </TouchableOpacity>
-            {showProjectDropdown && (
-              <View style={styles.dropdownList}>
-                <ScrollView 
-                  showsVerticalScrollIndicator={false}
-                  nestedScrollEnabled={true}
-                >
-                  <TouchableOpacity
-                    style={styles.dropdownItem}
-                    onPress={() => {
-                      updateFormData('id_project', undefined);
-                      setShowProjectDropdown(false);
-                    }}
-                  >
-                    <Text style={styles.dropdownItemText}>No project</Text>
-                  </TouchableOpacity>
-                  {projects.map((project, index) => (
-                    <TouchableOpacity
-                      key={project.id}
-                      style={[
-                        styles.dropdownItem,
-                        index === projects.length - 1 && styles.dropdownItemLast
-                      ]}
-                      onPress={() => {
-                        updateFormData('id_project', project.id);
-                        setShowProjectDropdown(false);
-                      }}
-                    >
-                      <Text style={styles.dropdownItemText}>{project.title}</Text>
-                    </TouchableOpacity>
-                  ))}
-                </ScrollView>
-              </View>
-            )}
-          </View>
-
           {/* Zone */}
           <View style={styles.fieldContainer}>
             <Text style={styles.fieldLabel}>Zone *</Text>
@@ -849,6 +794,62 @@ export default function CreateDeclarationModal({
             )}
             {errors.id_zone && (
               <Text style={styles.errorText}>{errors.id_zone}</Text>
+            )}
+          </View>
+
+          {/* Location Coordinates */}
+          <View style={styles.fieldContainer}>
+            <Text style={styles.fieldLabel}>Location </Text>
+            <TouchableOpacity
+              style={styles.mapButton}
+              onPress={handleLocationToggle}
+              activeOpacity={0.8}
+            >
+              <View style={styles.miniMapPreview}>
+                <WebView
+                  source={{ html: getMiniMapHtml() }}
+                  style={styles.miniMap}
+                  javaScriptEnabled={true}
+                  domStorageEnabled={true}
+                  scrollEnabled={false}
+                  showsHorizontalScrollIndicator={false}
+                  showsVerticalScrollIndicator={false}
+                  bounces={false}
+                  pointerEvents="none"
+                />
+                <View style={styles.miniMapOverlay}>
+                  <Text style={styles.miniMapCoordinates}>
+                    {getCoordinateDisplay()}
+                  </Text>
+                </View>
+              </View>
+              <Ionicons
+                name={showLocationInput ? 'chevron-up' : 'chevron-down'}
+                size={20}
+                color="#8E8E93"
+              />
+            </TouchableOpacity>
+            
+            {showLocationInput && (
+              <View style={styles.mapContainer}>
+                <WebView
+                  source={{ html: mapHtml }}
+                  style={styles.map}
+                  onMessage={handleMapMessage}
+                  javaScriptEnabled={true}
+                  domStorageEnabled={true}
+                  startInLoadingState={true}
+                  showsHorizontalScrollIndicator={false}
+                  showsVerticalScrollIndicator={false}
+                  scrollEnabled={true}
+                  bounces={false}
+                />
+                <View style={styles.mapInstructions}>
+                  <Text style={styles.mapInstructionsText}>
+                    Tap anywhere on the map to select location, then tap &quot;Select This Location&quot;
+                  </Text>
+                </View>
+              </View>
             )}
           </View>
 
