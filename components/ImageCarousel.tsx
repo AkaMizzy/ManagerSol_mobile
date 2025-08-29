@@ -2,19 +2,19 @@ import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import React, { useState } from 'react';
 import {
-    Dimensions,
-    Modal,
-    SafeAreaView,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  Dimensions,
+  Modal,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import API_CONFIG from '../app/config/api';
 
 interface ImageCarouselProps {
-  images: Array<{ id: string; photo: string; uploaded_at: string }>;
+  images: { id: string; photo: string; uploaded_at: string }[];
   style?: any;
 }
 
@@ -67,8 +67,7 @@ export default function ImageCarousel({ images, style }: ImageCarouselProps) {
             style={styles.image}
             contentFit="cover"
             transition={300}
-            onLoad={() => console.log('✅ Carousel image loaded:', `${API_CONFIG.BASE_URL}${images[currentIndex].photo}`)}
-            onError={(error) => console.error('❌ Carousel image failed:', error)}
+
           />
         </TouchableOpacity>
         

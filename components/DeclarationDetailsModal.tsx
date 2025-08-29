@@ -604,7 +604,7 @@ export default function DeclarationDetailsModal({ visible, onClose, declaration 
                         bounces={false}
                       />
                       <View style={styles.mapInstructions}>
-                        <Text style={styles.mapInstructionsText}>Tap anywhere on the map to select location, then tap "Select This Location"</Text>
+                        <Text style={styles.mapInstructionsText}>Tap anywhere on the map to select location, then tap `Select This Location`</Text>
                       </View>
                     </View>
                   )}

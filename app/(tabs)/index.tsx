@@ -18,14 +18,14 @@ import DayEventsModal from '../../components/DayEventsModal';
 import API_CONFIG from '../config/api';
 
 export default function DashboardScreen() {
-  const { token } = useAuth();
+  const { token, user } = useAuth();
   const router = useRouter();
   const [eventModalVisible, setEventModalVisible] = useState(false);
   const [eventsByDate, setEventsByDate] = useState<Record<string, string[]>>({});
   const [dayModalVisible, setDayModalVisible] = useState(false);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [dayEvents, setDayEvents] = useState<any[]>([]);
-  const [stats, setStats] = useState<{ pending: number; today: number; completed: number; retard: number } | null>(null);
+  const [stats, setStats] = useState<{ pending: number; today: number; completed: number; retard: number; canceled: number } | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -39,7 +39,7 @@ export default function DashboardScreen() {
         setStats(data);
       } catch {
         // keep UI functional without stats
-        setStats({ pending: 0, today: 0, completed: 0, retard: 0 });
+        setStats({ pending: 0, today: 0, completed: 0, retard: 0, canceled: 0 });
       }
     })();
   }, [token]);
@@ -57,7 +57,7 @@ export default function DashboardScreen() {
                   style={styles.logo}
                   resizeMode="contain"
                 />
-                <Text style={styles.appName}>TrackSol</Text>
+                <Text style={styles.appName}>QualiSol</Text>
               </View>
             </View>
             {/* Center username removed to prioritize brand space */}
@@ -81,27 +81,46 @@ export default function DashboardScreen() {
         </View>
 
         {/* Quick Stats (framed single row) */}
-        <View style={styles.statsFrame}>
-          <View style={styles.statRowSingle}>
-            <View style={styles.statCell}>
-              <View style={styles.statIcon}><Ionicons name="time-outline" size={24} color="#FF9500" /></View>
-              <Text style={styles.statNumber}>{stats?.pending ?? '—'}</Text>
-              <Text style={styles.statLabel}>Pending</Text>
+        <View style={styles.kpiContainer}>
+          <View style={styles.kpiRow}>
+            <View style={styles.kpiCard}>
+              <View style={styles.kpiIconContainer}>
+                <Ionicons name="time-outline" size={20} color="#FF9500" />
+              </View>
+              <Text style={styles.kpiNumber}>{stats?.pending ?? '—'}</Text>
+              <Text style={styles.kpiLabel}>Pending</Text>
             </View>
-            <View style={styles.statCell}>
-              <View style={styles.statIcon}><Ionicons name="calendar-outline" size={24} color="#007AFF" /></View>
-              <Text style={styles.statNumber}>{stats?.today ?? '—'}</Text>
-              <Text style={styles.statLabel}>Today</Text>
+            
+            <View style={styles.kpiCard}>
+              <View style={styles.kpiIconContainer}>
+                <Ionicons name="calendar-outline" size={20} color="#007AFF" />
+              </View>
+              <Text style={styles.kpiNumber}>{stats?.today ?? '—'}</Text>
+              <Text style={styles.kpiLabel}>Today</Text>
             </View>
-            <View style={styles.statCell}>
-              <View style={styles.statIcon}><Ionicons name="checkmark-circle-outline" size={24} color="#34C759" /></View>
-              <Text style={styles.statNumber}>{stats?.completed ?? '—'}</Text>
-              <Text style={styles.statLabel}>Completed</Text>
+            
+            <View style={styles.kpiCard}>
+              <View style={styles.kpiIconContainer}>
+                <Ionicons name="checkmark-circle-outline" size={20} color="#34C759" />
+              </View>
+              <Text style={styles.kpiNumber}>{stats?.completed ?? '—'}</Text>
+              <Text style={styles.kpiLabel}>Completed</Text>
             </View>
-            <View style={styles.statCell}>
-              <View style={styles.statIcon}><Ionicons name="alert-circle-outline" size={24} color="#FF3B30" /></View>
-              <Text style={styles.statNumber}>{stats?.retard ?? '—'}</Text>
-              <Text style={styles.statLabel}>Retard</Text>
+            
+            <View style={styles.kpiCard}>
+              <View style={styles.kpiIconContainer}>
+                <Ionicons name="alert-circle-outline" size={20} color="#FF3B30" />
+              </View>
+              <Text style={styles.kpiNumber}>{stats?.retard ?? '—'}</Text>
+              <Text style={styles.kpiLabel}>Overdue</Text>
+            </View>
+            
+            <View style={styles.kpiCard}>
+              <View style={styles.kpiIconContainer}>
+                <Ionicons name="close-circle-outline" size={20} color="#8E8E93" />
+              </View>
+              <Text style={styles.kpiNumber}>{stats?.canceled ?? '—'}</Text>
+              <Text style={styles.kpiLabel}>Canceled</Text>
             </View>
           </View>
         </View>
@@ -253,10 +272,24 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   headerLeft: { flex: 1 },
+  greetingSection: {
+    marginTop: 8,
+  },
+  greetingText: {
+    fontSize: 14,
+    color: '#8E8E93',
+    fontWeight: '500',
+    marginBottom: 2,
+  },
+  welcomeText: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#1C1C1E',
+  },
   headerRight: { flex: 1, flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center', gap: 12 },
   appName: { fontSize: 24, fontWeight: '800', color: '#11224e' },
   brandRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  logo: { width: 36, height: 36 },
+  logo: { width: 45, height: 45 },
   userChip: { fontSize: 13, color: '#8E8E93', fontWeight: '600', maxWidth: '90%' },
   iconButton: { paddingHorizontal: 8, paddingVertical: 4 },
   greeting: {
@@ -400,5 +433,51 @@ const styles = StyleSheet.create({
   activityTime: {
     fontSize: 12,
     color: '#8E8E93',
+  },
+  kpiContainer: {
+    marginHorizontal: 20,
+    marginTop: 12,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E5E5EA',
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  kpiRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    paddingVertical: 16,
+  },
+  kpiCard: {
+    alignItems: 'center',
+    flex: 1,
+  },
+  kpiIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#F8F9FA',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: '#E9ECEF',
+  },
+  kpiNumber: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#1C1C1E',
+    marginBottom: 4,
+  },
+  kpiLabel: {
+    fontSize: 12,
+    color: '#8E8E93',
+    textAlign: 'center',
+    fontWeight: '500',
   },
 });

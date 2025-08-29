@@ -1,14 +1,14 @@
 import { Ionicons } from '@expo/vector-icons';
 import React, { useCallback, useEffect, useState } from 'react';
 import {
-  Alert,
-  RefreshControl,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View
+    Alert,
+    RefreshControl,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import ActionsModal from '../../components/ActionsModal';
@@ -43,6 +43,7 @@ export default function DeclarationScreen() {
   // Filter state
   const [sortBy, setSortBy] = useState<'date' | 'severity'>('date');
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedSeverity, setSelectedSeverity] = useState<number | null>(null);
 
   // Load declarations and required data on component mount
   useEffect(() => {
@@ -246,12 +247,22 @@ export default function DeclarationScreen() {
     return { totalDeclarations, highPriorityCount };
   };
 
-  // Filter by title, then sort based on current filter
+  // Filter by title and severity, then sort based on current filter
   const getSortedDeclarations = () => {
+    let filtered = [...declarations];
+    
+    // Filter by search query
     const query = searchQuery.trim().toLowerCase();
-    const filtered = query
-      ? declarations.filter(d => (d.title || '').toLowerCase().includes(query))
-      : [...declarations];
+    if (query) {
+      filtered = filtered.filter(d => (d.title || '').toLowerCase().includes(query));
+    }
+    
+    // Filter by severity if selected
+    if (selectedSeverity !== null) {
+      filtered = filtered.filter(d => d.severite === selectedSeverity);
+    }
+    
+    // Sort based on current sort option
     const sorted = [...filtered];
     if (sortBy === 'date') {
       return sorted.sort((a, b) => new Date(b.date_declaration).getTime() - new Date(a.date_declaration).getTime());
@@ -266,6 +277,19 @@ export default function DeclarationScreen() {
 
   const stats = getStatistics();
   const sortedDeclarations = getSortedDeclarations();
+
+  // Severity helper functions
+  const getSeverityColor = (severity: number) => {
+    if (severity >= 7) return '#FF3B30'; // High - Red
+    if (severity >= 5) return '#FF9500'; // Medium - Orange
+    return '#34C759'; // Low - Green
+  };
+
+  const getSeverityText = (severity: number) => {
+    if (severity >= 7) return 'High';
+    if (severity >= 5) return 'Medium';
+    return 'Low';
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -325,6 +349,41 @@ export default function DeclarationScreen() {
                 By Severity
               </Text>
             </TouchableOpacity>
+          </View>
+
+          {/* Compact Severity Filter */}
+          <View style={styles.compactSeverityFilter}>
+            <View style={styles.severityFilterRow}>
+              <Text style={styles.severityFilterLabel}>Severity:</Text>
+              <View style={styles.severityDots}>
+                {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((value) => (
+                  <TouchableOpacity
+                    key={value}
+                    style={[
+                      styles.compactSeverityDot,
+                      selectedSeverity === value && [styles.compactSeverityDotActive, { backgroundColor: getSeverityColor(value) }],
+                    ]}
+                    onPress={() => setSelectedSeverity(selectedSeverity === value ? null : value)}
+                    activeOpacity={0.7}
+                  />
+                ))}
+              </View>
+              {selectedSeverity !== null && (
+                <TouchableOpacity
+                  style={styles.clearSeverityButton}
+                  onPress={() => setSelectedSeverity(null)}
+                >
+                  <Ionicons name="close-circle" size={14} color="#8E8E93" />
+                </TouchableOpacity>
+              )}
+            </View>
+            {selectedSeverity !== null && (
+              <View style={styles.severityIndicator}>
+                <View style={[styles.severityIndicatorBadge, { backgroundColor: getSeverityColor(selectedSeverity) }]}>
+                  <Text style={styles.severityIndicatorText}>{selectedSeverity} - {getSeverityText(selectedSeverity)}</Text>
+                </View>
+              </View>
+            )}
           </View>
         </View>
       </View>
@@ -554,5 +613,54 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: '#007AFF',
+  },
+  // Compact severity filter styles
+  compactSeverityFilter: {
+    marginTop: 8,
+  },
+  severityFilterRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  severityFilterLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#1C1C1E',
+    minWidth: 60,
+  },
+  severityDots: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    flex: 1,
+  },
+  compactSeverityDot: {
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: '#E5E5EA',
+    borderWidth: 1,
+    borderColor: '#E5E5EA',
+  },
+  compactSeverityDotActive: {
+    borderColor: '#007AFF',
+  },
+  clearSeverityButton: {
+    padding: 2,
+  },
+  severityIndicator: {
+    marginTop: 6,
+  },
+  severityIndicatorBadge: {
+    alignSelf: 'flex-start',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  severityIndicatorText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#FFFFFF',
   },
 });
