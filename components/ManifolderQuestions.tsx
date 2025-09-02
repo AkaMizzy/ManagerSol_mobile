@@ -11,6 +11,7 @@ import {
     Text,
     View,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import QuestionAccordion from './QuestionAccordion';
 
 interface ManifolderQuestionsProps {
@@ -203,10 +204,10 @@ export default function ManifolderQuestions({
 
   if (isLoading) {
     return (
-      <View style={styles.loadingContainer}>
+      <SafeAreaView style={styles.loadingContainer} edges={['bottom']}>
         <ActivityIndicator size="large" color="#11224e" />
         <Text style={styles.loadingText}>Loading questions...</Text>
-      </View>
+      </SafeAreaView>
     );
   }
 
@@ -214,7 +215,7 @@ export default function ManifolderQuestions({
 
   if (supportedQuestions.length === 0) {
     return (
-      <View style={styles.emptyContainer}>
+      <SafeAreaView style={styles.emptyContainer} edges={['bottom']}>
         <View style={styles.questionIcon}>
           <Text style={styles.questionIconText}>?</Text>
         </View>
@@ -222,12 +223,12 @@ export default function ManifolderQuestions({
         <Text style={styles.emptyDescription}>
           There are no questions configured for this manifolder type yet.
         </Text>
-      </View>
+      </SafeAreaView>
     );
   }
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['bottom']}>
       {/* Header Section */}
       <View style={styles.header}>
         <View style={styles.headerContent}>
@@ -244,7 +245,11 @@ export default function ManifolderQuestions({
       </View>
 
       {/* Questions List */}
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+      <ScrollView 
+        style={styles.scrollView} 
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
         <View style={styles.questionsContainer}>
           {supportedQuestions.map((question) => (
             <QuestionAccordion
@@ -281,7 +286,7 @@ export default function ManifolderQuestions({
           </Pressable>
         </View>
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 }
 
@@ -363,6 +368,9 @@ const styles = StyleSheet.create({
   scrollView: {
     flex: 1,
   },
+  scrollContent: {
+    paddingBottom: 100, // Extra padding to ensure submit button is visible above tab bar
+  },
   questionsContainer: {
     padding: 16,
     paddingBottom: 8,
@@ -370,6 +378,7 @@ const styles = StyleSheet.create({
   submitContainer: {
     padding: 16,
     paddingTop: 8,
+    paddingBottom: 20, // Extra bottom padding for tab bar clearance
   },
   submitButton: {
     backgroundColor: '#34C759',

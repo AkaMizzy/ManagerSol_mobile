@@ -18,7 +18,7 @@ interface FileUploaderProps {
   onFileSelect: (file: { uri: string; name: string; type: string }) => void;
   onFileRemove: () => void;
   placeholder?: string;
-  acceptedTypes?: ('image' | 'document')[];
+  acceptedTypes?: ('image' | 'document' | 'video')[];
   maxSize?: number; // in MB
 }
 
@@ -27,7 +27,7 @@ export default function FileUploader({
   onFileSelect,
   onFileRemove,
   placeholder = 'Select a file',
-  acceptedTypes = ['image', 'document'],
+  acceptedTypes = ['image', 'document', 'video'],
   maxSize = 25,
 }: FileUploaderProps) {
   const [showOptions, setShowOptions] = useState(false);
@@ -87,6 +87,66 @@ export default function FileUploader({
     setShowOptions(false);
   };
 
+  const handleVideoPicker = async () => {
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Videos,
+        allowsEditing: true,
+        aspect: [16, 9],
+        quality: 0.8,
+        videoMaxDuration: 300, // 5 minutes max
+      });
+
+      if (!result.canceled && result.assets[0]) {
+        const asset = result.assets[0];
+        const fileName = asset.fileName || `video_${Date.now()}.mp4`;
+        const fileType = asset.type || 'video/mp4';
+        
+        onFileSelect({
+          uri: asset.uri,
+          name: fileName,
+          type: fileType,
+        });
+      }
+    } catch (error) {
+      Alert.alert('Error', 'Failed to pick video');
+    }
+    setShowOptions(false);
+  };
+
+  const handleVideoRecording = async () => {
+    try {
+      const { status } = await ImagePicker.requestCameraPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission needed', 'Camera permission is required to record videos');
+        setShowOptions(false);
+        return;
+      }
+
+      const result = await ImagePicker.launchCameraAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Videos,
+        allowsEditing: true,
+        aspect: [16, 9],
+        quality: 0.8,
+        videoMaxDuration: 300, // 5 minutes max
+      });
+
+      if (!result.canceled && result.assets[0]) {
+        const asset = result.assets[0];
+        const fileName = `recorded_video_${Date.now()}.mp4`;
+        
+        onFileSelect({
+          uri: asset.uri,
+          name: fileName,
+          type: 'video/mp4',
+        });
+      }
+    } catch (error) {
+      Alert.alert('Error', 'Failed to record video');
+    }
+    setShowOptions(false);
+  };
+
   const handleCameraCapture = async () => {
     try {
       const { status } = await ImagePicker.requestCameraPermissionsAsync();
@@ -123,6 +183,7 @@ export default function FileUploader({
     
     const mimeType = value.mimetype;
     if (mimeType.startsWith('image/')) return 'image-outline';
+    if (mimeType.startsWith('video/')) return 'videocam-outline';
     if (mimeType === 'application/pdf') return 'document-text-outline';
     if (mimeType.includes('word') || mimeType.includes('document')) return 'document-outline';
     if (mimeType.includes('excel') || mimeType.includes('spreadsheet')) return 'grid-outline';
@@ -136,19 +197,24 @@ export default function FileUploader({
   };
 
   const isImage = value?.mimetype.startsWith('image/');
+  const isVideo = value?.mimetype.startsWith('video/');
 
   return (
     <View style={styles.container}>
       {/* File Display */}
-      {value ? (
-        <View style={styles.fileContainer}>
-          {isImage ? (
-            <Image source={{ uri: value.path }} style={styles.imagePreview} />
-          ) : (
-            <View style={styles.documentPreview}>
-              <Ionicons name={getFileIcon()} size={32} color="#007AFF" />
-            </View>
-          )}
+             {value ? (
+         <View style={styles.fileContainer}>
+           {isImage ? (
+             <Image source={{ uri: value.path }} style={styles.imagePreview} />
+           ) : isVideo ? (
+             <View style={styles.videoPreview}>
+               <Ionicons name="videocam-outline" size={32} color="#007AFF" />
+             </View>
+           ) : (
+             <View style={styles.documentPreview}>
+               <Ionicons name={getFileIcon()} size={32} color="#007AFF" />
+             </View>
+           )}
           
           <View style={styles.fileInfo}>
             <Text style={styles.fileName} numberOfLines={2}>
@@ -184,28 +250,42 @@ export default function FileUploader({
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Select File</Text>
             
-            <View style={styles.optionsContainer}>
-              {acceptedTypes.includes('image') && (
-                <>
-                  <Pressable style={styles.optionButton} onPress={handleImagePicker}>
-                    <Ionicons name="images-outline" size={24} color="#007AFF" />
-                    <Text style={styles.optionText}>Choose from Gallery</Text>
-                  </Pressable>
-                  
-                  <Pressable style={styles.optionButton} onPress={handleCameraCapture}>
-                    <Ionicons name="camera-outline" size={24} color="#007AFF" />
-                    <Text style={styles.optionText}>Take Photo</Text>
-                  </Pressable>
-                </>
-              )}
-              
-              {acceptedTypes.includes('document') && (
-                <Pressable style={styles.optionButton} onPress={handleDocumentPicker}>
-                  <Ionicons name="document-outline" size={24} color="#007AFF" />
-                  <Text style={styles.optionText}>Choose Document</Text>
-                </Pressable>
-              )}
-            </View>
+                         <View style={styles.optionsContainer}>
+               {acceptedTypes.includes('image') && (
+                 <>
+                   <Pressable style={styles.optionButton} onPress={handleImagePicker}>
+                     <Ionicons name="images-outline" size={24} color="#007AFF" />
+                     <Text style={styles.optionText}>Choose from Gallery</Text>
+                   </Pressable>
+                   
+                   <Pressable style={styles.optionButton} onPress={handleCameraCapture}>
+                     <Ionicons name="camera-outline" size={24} color="#007AFF" />
+                     <Text style={styles.optionText}>Take Photo</Text>
+                   </Pressable>
+                 </>
+               )}
+               
+               {acceptedTypes.includes('video') && (
+                 <>
+                   <Pressable style={styles.optionButton} onPress={handleVideoPicker}>
+                     <Ionicons name="videocam-outline" size={24} color="#007AFF" />
+                     <Text style={styles.optionText}>Choose Video</Text>
+                   </Pressable>
+                   
+                   <Pressable style={styles.optionButton} onPress={handleVideoRecording}>
+                     <Ionicons name="videocam" size={24} color="#007AFF" />
+                     <Text style={styles.optionText}>Record Video</Text>
+                   </Pressable>
+                 </>
+               )}
+               
+               {acceptedTypes.includes('document') && (
+                 <Pressable style={styles.optionButton} onPress={handleDocumentPicker}>
+                   <Ionicons name="document-outline" size={24} color="#007AFF" />
+                   <Text style={styles.optionText}>Choose Document</Text>
+                 </Pressable>
+               )}
+             </View>
             
             <Pressable
               style={styles.cancelButton}
@@ -240,15 +320,24 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     marginRight: 12,
   },
-  documentPreview: {
-    width: 48,
-    height: 48,
-    borderRadius: 6,
-    backgroundColor: '#F2F2F7',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 12,
-  },
+     documentPreview: {
+     width: 48,
+     height: 48,
+     borderRadius: 6,
+     backgroundColor: '#F2F2F7',
+     alignItems: 'center',
+     justifyContent: 'center',
+     marginRight: 12,
+   },
+   videoPreview: {
+     width: 48,
+     height: 48,
+     borderRadius: 6,
+     backgroundColor: '#F2F2F7',
+     alignItems: 'center',
+     justifyContent: 'center',
+     marginRight: 12,
+   },
   fileInfo: {
     flex: 1,
   },

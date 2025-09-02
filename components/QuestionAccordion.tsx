@@ -160,16 +160,16 @@ export default function QuestionAccordion({
           />
         );
 
-      case 'video':
-        return (
-          <FileUploader
-            value={value}
-            onFileSelect={(file) => handleValueChange(file)}
-            onFileRemove={() => handleValueChange(null)}
-            placeholder={question.placeholder || 'Select a video...'}
-            acceptedTypes={['image']} // For now, using image picker for video too
-          />
-        );
+             case 'video':
+         return (
+           <FileUploader
+             value={value}
+             onFileSelect={(file) => handleValueChange(file)}
+             onFileRemove={() => handleValueChange(null)}
+             placeholder={question.placeholder || 'Select a video...'}
+             acceptedTypes={['video']}
+           />
+         );
 
       default:
         return (

@@ -3,6 +3,7 @@ import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import React from 'react';
 import { Image, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
 export function CustomTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
 
@@ -10,8 +11,8 @@ export function CustomTabBar({ state, descriptors, navigation }: BottomTabBarPro
     <View style={[
       styles.container,
       {
-        paddingBottom: Platform.OS === 'android' ? Math.max(insets.bottom, 16) : 20,
-        paddingTop: Platform.OS === 'android' ? 8 : 12,
+        paddingBottom: Platform.OS === 'android' ? Math.max(insets.bottom, 12) : 16,
+        paddingTop: Platform.OS === 'android' ? 6 : 8,
       }
     ]}>
       {state.routes.filter(r => r.name !== 'profile').map((route, index) => {
@@ -45,7 +46,7 @@ export function CustomTabBar({ state, descriptors, navigation }: BottomTabBarPro
               return (
                 <Ionicons
                   name="home-outline"
-                  size={24}
+                  size={20}
                   color={isFocused ? '#F87B1B' : '#8E8E93'}
                 />
               );
@@ -68,7 +69,7 @@ export function CustomTabBar({ state, descriptors, navigation }: BottomTabBarPro
             case 'manifolder':
               return (
                 <Image
-                  source={require('../assets/icons/audit_zone.png')}
+                  source={require('../assets/icons/manifolder.png')}
                   style={[styles.customIcon, { opacity }]}
                   resizeMode="contain"
                 />
@@ -101,7 +102,7 @@ export function CustomTabBar({ state, descriptors, navigation }: BottomTabBarPro
               return (
                 <Ionicons
                   name="help-outline"
-                  size={24}
+                  size={20}
                   color={isFocused ? '#F87B1B' : '#8E8E93'}
                 />
               );
@@ -121,7 +122,7 @@ export function CustomTabBar({ state, descriptors, navigation }: BottomTabBarPro
             <View style={styles.iconContainer}>
               {renderIcon(route.name)}
             </View>
-            <Text style={[styles.tabLabel, isFocused && styles.activeTabLabel]}>
+            <Text style={[styles.tabLabel, isFocused && styles.activeTabLabel]} numberOfLines={1}>
               {label}
             </Text>
             {isFocused && <View style={styles.activeIndicator} />}
@@ -156,27 +157,29 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: Platform.OS === 'android' ? 8 : 8,
+    paddingVertical: Platform.OS === 'android' ? 6 : 6,
     position: 'relative',
-    minHeight: Platform.OS === 'android' ? 56 : 48,
+    minHeight: Platform.OS === 'android' ? 48 : 44,
+    paddingHorizontal: 2, // Reduced horizontal padding for 7 tabs
   },
   iconContainer: {
-    marginBottom: Platform.OS === 'android' ? 4 : 6,
+    marginBottom: Platform.OS === 'android' ? 2 : 3,
     alignItems: 'center',
     justifyContent: 'center',
-    width: 32,
-    height: 32,
+    width: 28,
+    height: 28,
   },
   customIcon: {
-    width: 24,
-    height: 24,
+    width: 20,
+    height: 20,
   },
   tabLabel: {
-    fontSize: 12,
+    fontSize: 10,
     fontWeight: '500',
     color: '#8E8E93',
     textAlign: 'center',
-    marginBottom: Platform.OS === 'android' ? 2 : 0,
+    marginBottom: Platform.OS === 'android' ? 1 : 0,
+    lineHeight: 12,
   },
   activeTabLabel: {
     color: '#F87B1B',
@@ -184,8 +187,8 @@ const styles = StyleSheet.create({
   },
   activeIndicator: {
     position: 'absolute',
-    bottom: Platform.OS === 'android' ? 6 : 0,
-    width: 20,
+    bottom: Platform.OS === 'android' ? 4 : 0,
+    width: 16,
     height: 2,
     backgroundColor: '#F87B1B',
     borderRadius: 1,
