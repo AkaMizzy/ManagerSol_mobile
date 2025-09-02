@@ -70,6 +70,7 @@ export interface Zone {
   logo?: string | null;
   id_zone?: string | null; // parent zone id
   level?: number | null;
+  id_project?: string | null;
 }
 
 export interface Project {

@@ -1,13 +1,9 @@
-import { Ionicons } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
 import React from 'react';
 
 import { CustomTabBar } from '@/components/CustomTabBar';
-import { useColorScheme } from '@/hooks/useColorScheme';
 
 export default function TabLayout() {
-  const colorScheme = useColorScheme();
-
   return (
     <Tabs
       screenOptions={{
@@ -42,6 +38,13 @@ export default function TabLayout() {
         name="tasks"
         options={{
           title: 'Tasks',
+          
+        }}
+      />
+      <Tabs.Screen
+        name="manifolder"
+        options={{
+          title: 'Manifolder',
           
         }}
       />

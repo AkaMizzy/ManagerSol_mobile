@@ -65,6 +65,14 @@ export function CustomTabBar({ state, descriptors, navigation }: BottomTabBarPro
                   resizeMode="contain"
                 />
               );
+            case 'manifolder':
+              return (
+                <Image
+                  source={require('../assets/icons/audit_zone.png')}
+                  style={[styles.customIcon, { opacity }]}
+                  resizeMode="contain"
+                />
+              );
             case 'audit':
               return (
                 <Image
