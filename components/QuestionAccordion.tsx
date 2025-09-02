@@ -1,15 +1,16 @@
 import { ManifolderQuestion, QuestionType } from '@/types/manifolder';
 import React, { useState } from 'react';
 import {
-    Animated,
-    Pressable,
-    StyleSheet,
-    Switch,
-    Text,
-    TextInput,
-    View,
+  Animated,
+  Pressable,
+  StyleSheet,
+  Switch,
+  Text,
+  TextInput,
+  View,
 } from 'react-native';
 import DateTimePickerModal from 'react-native-modal-datetime-picker';
+import FileUploader from './FileUploader';
 import MapSelector from './MapSelector';
 
 interface QuestionAccordionProps {
@@ -137,18 +138,51 @@ export default function QuestionAccordion({
            />
          );
 
+      case 'file':
+        return (
+          <FileUploader
+            value={value}
+            onFileSelect={(file) => handleValueChange(file)}
+            onFileRemove={() => handleValueChange(null)}
+            placeholder={question.placeholder || 'Select a document...'}
+            acceptedTypes={['document']}
+          />
+        );
+
+      case 'photo':
+        return (
+          <FileUploader
+            value={value}
+            onFileSelect={(file) => handleValueChange(file)}
+            onFileRemove={() => handleValueChange(null)}
+            placeholder={question.placeholder || 'Select an image...'}
+            acceptedTypes={['image']}
+          />
+        );
+
+      case 'video':
+        return (
+          <FileUploader
+            value={value}
+            onFileSelect={(file) => handleValueChange(file)}
+            onFileRemove={() => handleValueChange(null)}
+            placeholder={question.placeholder || 'Select a video...'}
+            acceptedTypes={['image']} // For now, using image picker for video too
+          />
+        );
+
       default:
         return (
           <View style={styles.unsupportedContainer}>
             <Text style={styles.unsupportedText}>
-              Question type "{question.type}" is not supported yet
+              Question type &quot;{question.type}&quot; is not supported yet
             </Text>
           </View>
         );
     }
   };
 
-  const getSupportedTypes = (): QuestionType[] => ['text', 'number', 'date', 'boolean', 'GPS'];
+  const getSupportedTypes = (): QuestionType[] => ['text', 'number', 'date', 'boolean', 'GPS', 'file', 'photo', 'video'];
   const isSupported = getSupportedTypes().includes(question.type);
 
   if (!isSupported) {

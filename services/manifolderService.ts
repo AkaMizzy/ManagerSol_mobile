@@ -75,6 +75,53 @@ class ManifolderService {
       body: JSON.stringify(payload),
     });
   }
+
+  // File upload method for manifolder questions
+  async uploadManifolderFile(manifolderId: string, questionId: string, file: File | { uri: string; name: string; type: string }, token: string): Promise<{ message: string; file: any; }> {
+    if (!token) throw new Error('Authentication token required');
+    
+    const formData = new FormData();
+    formData.append('manifolderId', manifolderId);
+    formData.append('questionId', questionId);
+    
+    // Handle both web File objects and React Native file objects
+    if ('uri' in file) {
+      // React Native file object
+      formData.append('file', {
+        uri: file.uri,
+        name: file.name,
+        type: file.type,
+      } as any);
+    } else {
+      // Web File object
+      formData.append('file', file);
+    }
+
+    const response = await fetch(`${this.baseUrl}/manifolder-details/upload-file`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        // Don't set Content-Type header for FormData, let the browser set it
+      },
+      body: formData,
+    });
+
+    if (!response.ok) {
+      let msg = 'File upload failed';
+      try { 
+        const j = await response.json(); 
+        msg = j.error || msg; 
+      } catch {}
+      throw new Error(msg);
+    }
+
+    return response.json();
+  }
+
+  // Get file URL for serving uploaded files
+  getFileUrl(filename: string): string {
+    return `${this.baseUrl}/manifolder-details/file/${filename}`;
+  }
 }
 
 export default new ManifolderService();

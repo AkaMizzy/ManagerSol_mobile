@@ -53,6 +53,15 @@ export default function ManifolderQuestions({
                latitude: parseFloat(answer.value.latitude),
                longitude: parseFloat(answer.value.longitude)
              };
+           } else if (['file', 'photo', 'video'].includes(answer.questionType) && answer.value) {
+             // Handle file answers - they come as file paths from backend
+             existingAnswers[answer.questionId] = {
+               filename: answer.value.split('/').pop() || '',
+               originalName: answer.value.split('/').pop() || '',
+               path: answer.value,
+               size: 0, // Backend doesn't provide size, so we'll set to 0
+               mimetype: 'application/octet-stream' // Default mimetype
+             };
            } else {
              existingAnswers[answer.questionId] = answer.value;
            }
@@ -88,6 +97,22 @@ export default function ManifolderQuestions({
     }));
   };
 
+  const handleFileUpload = async (questionId: string, file: { uri: string; name: string; type: string }) => {
+    if (!token || !manifolderId) return;
+
+    try {
+      const response = await manifolderService.uploadManifolderFile(manifolderId, questionId, file, token);
+      
+      // Update the answer with the uploaded file info
+      setAnswers(prev => ({
+        ...prev,
+        [questionId]: response.file,
+      }));
+    } catch (error: any) {
+      Alert.alert('Upload Error', error.message || 'Failed to upload file');
+    }
+  };
+
   const handleSubmitAnswers = async () => {
     if (!token || !manifolderId) return;
 
@@ -105,6 +130,10 @@ export default function ManifolderQuestions({
            if (typeof value === 'object' && value.latitude !== undefined && value.longitude !== undefined) {
              return value.latitude !== null && value.longitude !== null;
            }
+           // For file answers, check if file object exists with path
+           if (typeof value === 'object' && value.path !== undefined) {
+             return value.path !== null && value.path !== '';
+           }
            return true;
          })
          .map(([questionId, value]) => {
@@ -114,6 +143,13 @@ export default function ManifolderQuestions({
                questionId,
                latitude: value.latitude,
                longitude: value.longitude,
+             };
+           }
+           // Handle file answers - they're already uploaded, so we don't need to include them in submission
+           if (typeof value === 'object' && value.path !== undefined) {
+             return {
+               questionId,
+               value: value.path, // Just send the file path
              };
            }
            // Handle regular answers
@@ -152,12 +188,16 @@ export default function ManifolderQuestions({
        if (typeof value === 'object' && value.latitude !== undefined && value.longitude !== undefined) {
          return value.latitude !== null && value.longitude !== null;
        }
+       // For file answers, check if file object exists with path
+       if (typeof value === 'object' && value.path !== undefined) {
+         return value.path !== null && value.path !== '';
+       }
        return true;
      }).length;
    };
 
      const getSupportedQuestions = () => {
-     const supportedTypes = ['text', 'number', 'date', 'boolean', 'GPS'];
+     const supportedTypes = ['text', 'number', 'date', 'boolean', 'GPS', 'file', 'photo', 'video'];
      return questions.filter(q => supportedTypes.includes(q.type));
    };
 
@@ -211,7 +251,14 @@ export default function ManifolderQuestions({
               key={question.id}
               question={question}
               value={answers[question.id]}
-              onValueChange={handleAnswerChange}
+              onValueChange={(questionId, value) => {
+                // Check if this is a file upload (has uri, name, type properties)
+                if (value && typeof value === 'object' && value.uri && value.name && value.type) {
+                  handleFileUpload(questionId, value);
+                } else {
+                  handleAnswerChange(questionId, value);
+                }
+              }}
               isExpanded={expandedQuestions.has(question.id)}
               onToggleExpand={handleQuestionToggle}
             />

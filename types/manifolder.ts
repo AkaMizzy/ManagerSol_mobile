@@ -66,4 +66,10 @@ export interface ManifolderAnswerWithDetails {
   updatedAt: string;
 }
 
-
+export interface UploadedFile {
+  filename: string;
+  originalName: string;
+  path: string;
+  size: number;
+  mimetype: string;
+}
