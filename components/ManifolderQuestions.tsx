@@ -54,7 +54,7 @@ export default function ManifolderQuestions({
                latitude: parseFloat(answer.value.latitude),
                longitude: parseFloat(answer.value.longitude)
              };
-           } else if (['file', 'photo', 'video'].includes(answer.questionType) && answer.value) {
+                       } else if (['file', 'photo', 'video', 'voice'].includes(answer.questionType) && answer.value) {
              // Handle file answers - they come as file paths from backend
              existingAnswers[answer.questionId] = {
                filename: answer.value.split('/').pop() || '',
@@ -197,10 +197,10 @@ export default function ManifolderQuestions({
      }).length;
    };
 
-     const getSupportedQuestions = () => {
-     const supportedTypes = ['text', 'number', 'date', 'boolean', 'GPS', 'file', 'photo', 'video'];
-     return questions.filter(q => supportedTypes.includes(q.type));
-   };
+           const getSupportedQuestions = () => {
+        const supportedTypes = ['text', 'number', 'date', 'boolean', 'GPS', 'file', 'photo', 'video', 'voice'];
+        return questions.filter(q => supportedTypes.includes(q.type));
+      };
 
   if (isLoading) {
     return (

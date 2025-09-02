@@ -12,6 +12,7 @@ import {
 import DateTimePickerModal from 'react-native-modal-datetime-picker';
 import FileUploader from './FileUploader';
 import MapSelector from './MapSelector';
+import VoiceRecorder from './VoiceRecorder';
 
 interface QuestionAccordionProps {
   question: ManifolderQuestion;
@@ -171,6 +172,17 @@ export default function QuestionAccordion({
            />
          );
 
+       case 'voice':
+         return (
+           <VoiceRecorder
+             value={value}
+             onFileSelect={(file) => handleValueChange(file)}
+             onFileRemove={() => handleValueChange(null)}
+             placeholder={question.placeholder || 'Record voice message...'}
+             maxDuration={300} // 5 minutes
+           />
+         );
+
       default:
         return (
           <View style={styles.unsupportedContainer}>
@@ -182,7 +194,7 @@ export default function QuestionAccordion({
     }
   };
 
-  const getSupportedTypes = (): QuestionType[] => ['text', 'number', 'date', 'boolean', 'GPS', 'file', 'photo', 'video'];
+  const getSupportedTypes = (): QuestionType[] => ['text', 'number', 'date', 'boolean', 'GPS', 'file', 'photo', 'video', 'voice'];
   const isSupported = getSupportedTypes().includes(question.type);
 
   if (!isSupported) {
