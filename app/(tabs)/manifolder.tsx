@@ -1,9 +1,10 @@
 import API_CONFIG from '@/app/config/api';
 import AppHeader from '@/components/AppHeader';
+import ManifolderQuestions from '@/components/ManifolderQuestions';
 import { useAuth } from '@/contexts/AuthContext';
 import manifolderService from '@/services/manifolderService';
 import { Project, Zone } from '@/types/declaration';
-import { ManifolderType } from '@/types/manifolder';
+import { ManifolderListItem, ManifolderType } from '@/types/manifolder';
 import { Image } from 'expo-image';
 import React, { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Alert, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
@@ -30,6 +31,11 @@ export default function ManifolderTab() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [zones, setZones] = useState<Zone[]>([]);
   const [types, setTypes] = useState<ManifolderType[]>([]);
+  const [manifolders, setManifolders] = useState<ManifolderListItem[]>([]);
+  
+  // View states
+  const [currentView, setCurrentView] = useState<'list' | 'questions'>('list');
+  const [selectedManifoler, setSelectedManifolder] = useState<string | null>(null);
 
   const [projectId, setProjectId] = useState<string>('');
   const [zoneId, setZoneId] = useState<string>('');
@@ -65,15 +71,17 @@ export default function ManifolderTab() {
     async function load() {
       try {
         setIsLoading(true);
-        const [prj, zn, tp] = await Promise.all([
+        const [prj, zn, tp, mf] = await Promise.all([
           manifolderService.getCompanyProjects(token!),
           manifolderService.getZones(token!),
           manifolderService.getManifolderTypes(token!),
+          manifolderService.getManifolders({}, token!),
         ]);
         if (!mounted) return;
         setProjects(prj);
         setZones(zn);
         setTypes(tp);
+        setManifolders(mf);
       } catch (e: any) {
         Alert.alert('Error', e.message || 'Failed to load data');
       } finally {
@@ -106,12 +114,73 @@ export default function ManifolderTab() {
       setHeurD(null);
       setHeurF(null);
       setIsModalVisible(false);
+      
+      // Reload manifolders list
+      try {
+        const updatedManifolders = await manifolderService.getManifolders({}, token!);
+        setManifolders(updatedManifolders);
+      } catch (e) {
+        console.log('Failed to reload manifolders');
+      }
     } catch (e: any) {
       Alert.alert('Error', e.message || 'Failed to create manifolder');
     } finally {
       setSubmitting(false);
     }
   }
+
+  const handleManifolderSelect = (manifolderId: string) => {
+    setSelectedManifolder(manifolderId);
+    setCurrentView('questions');
+  };
+
+  const handleBackToList = () => {
+    setCurrentView('list');
+    setSelectedManifolder(null);
+  };
+
+  const handleQuestionsComplete = () => {
+    Alert.alert(
+      'Success!',
+      'Your answers have been submitted successfully.',
+      [{ text: 'OK', onPress: handleBackToList }]
+    );
+  };
+
+  const renderManifolderList = () => (
+    <View style={styles.body}>
+      <Pressable onPress={() => setIsModalVisible(true)} style={styles.primaryCta} accessibilityRole="button">
+        <Text style={styles.primaryCtaText}>Create Manifolder</Text>
+      </Pressable>
+      
+      {manifolders.length > 0 && (
+        <View style={styles.manifoldersSection}>
+          <Text style={styles.sectionTitle}>Recent Manifolders</Text>
+          <ScrollView style={styles.manifoldersList} showsVerticalScrollIndicator={false}>
+            {manifolders.slice(0, 10).map((manifolder) => (
+              <Pressable
+                key={manifolder.id}
+                style={styles.manifolderCard}
+                onPress={() => handleManifolderSelect(manifolder.id)}
+              >
+                <View style={styles.manifolderCardContent}>
+                  <View style={styles.manifolderInfo}>
+                    <Text style={styles.manifolderCode}>{manifolder.code_formatted}</Text>
+                    <Text style={styles.manifolderProject}>{manifolder.project_title}</Text>
+                    <Text style={styles.manifolderZone}>{manifolder.zone_title}</Text>
+                    <Text style={styles.manifolderDate}>{manifolder.date}</Text>
+                  </View>
+                  <View style={styles.chevronContainer}>
+                    <Text style={styles.chevron}>▶</Text>
+                  </View>
+                </View>
+              </Pressable>
+            ))}
+          </ScrollView>
+        </View>
+      )}
+    </View>
+  );
 
   if (isLoading) {
     return (
@@ -126,14 +195,26 @@ export default function ManifolderTab() {
       <AppHeader />
 
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Manifolder</Text>
+        <View style={styles.headerContent}>
+          {currentView === 'questions' && (
+            <Pressable onPress={handleBackToList} style={styles.backButton}>
+              <Text style={styles.backButtonText}>←</Text>
+            </Pressable>
+          )}
+          <Text style={styles.headerTitle}>
+            {currentView === 'questions' ? 'Questions' : 'Manifolder'}
+          </Text>
+        </View>
       </View>
 
-      <View style={styles.body}>
-        <Pressable onPress={() => setIsModalVisible(true)} style={styles.primaryCta} accessibilityRole="button">
-          <Text style={styles.primaryCtaText}>Create Manifolder</Text>
-        </Pressable>
-      </View>
+      {currentView === 'list' ? renderManifolderList() : (
+        selectedManifoler && (
+          <ManifolderQuestions
+            manifolderId={selectedManifoler}
+            onComplete={handleQuestionsComplete}
+          />
+        )
+      )}
 
       <Modal
         visible={isModalVisible}
@@ -324,10 +405,24 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#E5E5EA',
   },
+  headerContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  backButton: {
+    marginRight: 12,
+    padding: 8,
+  },
+  backButtonText: {
+    fontSize: 24,
+    color: '#007AFF',
+    fontWeight: '600',
+  },
   headerTitle: {
     fontSize: 28,
     fontWeight: '700',
     color: '#1C1C1E',
+    flex: 1,
   },
   body: {
     flex: 1,
@@ -487,6 +582,69 @@ const styles = StyleSheet.create({
     width: 24,
     height: 24,
     borderRadius: 4,
+  },
+  // New styles for manifolder list
+  manifoldersSection: {
+    marginTop: 24,
+    flex: 1,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#1C1C1E',
+    marginBottom: 12,
+  },
+  manifoldersList: {
+    flex: 1,
+  },
+  manifolderCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    marginBottom: 8,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  manifolderCardContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+  },
+  manifolderInfo: {
+    flex: 1,
+  },
+  manifolderCode: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#11224e',
+    marginBottom: 4,
+  },
+  manifolderProject: {
+    fontSize: 14,
+    color: '#1C1C1E',
+    marginBottom: 2,
+  },
+  manifolderZone: {
+    fontSize: 14,
+    color: '#8E8E93',
+    marginBottom: 2,
+  },
+  manifolderDate: {
+    fontSize: 12,
+    color: '#8E8E93',
+  },
+  chevronContainer: {
+    padding: 4,
+  },
+  chevron: {
+    fontSize: 16,
+    color: '#8E8E93',
+    fontWeight: '600',
   },
 });
 

@@ -1,6 +1,6 @@
 import API_CONFIG from '@/app/config/api';
 import { Project, Zone } from '@/types/declaration';
-import { CreateManifolderData, ManifolderListItem, ManifolderType } from '@/types/manifolder';
+import { CreateManifolderData, ManifolderAnswer, ManifolderAnswerWithDetails, ManifolderListItem, ManifolderQuestion, ManifolderType } from '@/types/manifolder';
 
 class ManifolderService {
   private baseUrl = API_CONFIG.BASE_URL;
@@ -51,6 +51,29 @@ class ManifolderService {
     if (params.id_zone) search.append('id_zone', params.id_zone);
     const q = search.toString();
     return this.request<ManifolderListItem[]>(`/manifolders${q ? `?${q}` : ''}`, token);
+  }
+
+  // Question-related methods for manifolder detail workflow
+  getManifolderQuestions(manifolderId: string, token: string): Promise<{ manifolderId: string; questions: ManifolderQuestion[]; }> {
+    return this.request(`/manifolder-details/questions/${manifolderId}`, token);
+  }
+
+  submitManifolderAnswers(payload: { manifolderId: string; answers: ManifolderAnswer[]; }, token: string): Promise<{ message: string; manifolderId: string; answersProcessed: number; }> {
+    return this.request('/manifolder-details/answers', token, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  }
+
+  getManifolderAnswers(manifolderId: string, token: string): Promise<{ manifolderId: string; answers: ManifolderAnswerWithDetails[]; }> {
+    return this.request(`/manifolder-details/answers/${manifolderId}`, token);
+  }
+
+  updateManifolderAnswer(answerId: string, payload: { value?: any; latitude?: number; longitude?: number; }, token: string): Promise<{ message: string; answerId: string; }> {
+    return this.request(`/manifolder-details/answers/${answerId}`, token, {
+      method: 'PUT',
+      body: JSON.stringify(payload),
+    });
   }
 }
 

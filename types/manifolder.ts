@@ -31,4 +31,39 @@ export interface ManifolderListItem {
   code_formatted: string;
 }
 
+// Question types for manifolder detail workflow
+export type QuestionType = 'text' | 'number' | 'date' | 'boolean' | 'file' | 'photo' | 'video' | 'GPS' | 'voice';
+
+export interface ManifolderQuestion {
+  id: string;
+  title: string;
+  description?: string | null;
+  type: QuestionType;
+  context: string;
+  created_at: string;
+  updated_at: string;
+  // Added for frontend compatibility (set by backend as defaults)
+  required: boolean;
+  options?: any | null;
+  placeholder?: string | null;
+}
+
+export interface ManifolderAnswer {
+  questionId: string;
+  value?: any;
+  latitude?: number;
+  longitude?: number;
+}
+
+export interface ManifolderAnswerWithDetails {
+  id: string;
+  questionId: string;
+  questionTitle: string;
+  questionType: QuestionType;
+  questionDescription?: string | null;
+  value: any;
+  createdAt: string;
+  updatedAt: string;
+}
+
 
