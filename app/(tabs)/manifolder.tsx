@@ -7,7 +7,7 @@ import { Project, Zone } from '@/types/declaration';
 import { ManifolderListItem, ManifolderType } from '@/types/manifolder';
 import { Image } from 'expo-image';
 import React, { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Alert, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import DateTimePickerModal from 'react-native-modal-datetime-picker';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -43,6 +43,8 @@ export default function ManifolderTab() {
   const [date, setDate] = useState<Date>(new Date());
   const [heurD, setHeurD] = useState<Date | null>(null);
   const [heurF, setHeurF] = useState<Date | null>(null);
+  const [title, setTitle] = useState<string>('');
+  const [description, setDescription] = useState<string>('');
 
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showTimeD, setShowTimeD] = useState(false);
@@ -93,27 +95,31 @@ export default function ManifolderTab() {
   }, [token]);
 
   async function handleSubmit() {
-    if (!projectId || !zoneId || !typeId) {
-      Alert.alert('Validation', 'Please select Project, Zone and Type');
+    if (!projectId || !zoneId || !typeId || !title.trim()) {
+      Alert.alert('Validation', 'Please select Project, Zone, Type and enter a Title');
       return;
     }
     try {
       setSubmitting(true);
-      await manifolderService.createManifolder({
+      const result = await manifolderService.createManifolder({
         id_project: projectId,
         id_zone: zoneId,
         id_type: typeId,
         date: formatDate(date),
         heur_d: heurD ? formatTime(heurD) : undefined,
         heur_f: heurF ? formatTime(heurF) : undefined,
+        title: title.trim(),
+        description: description.trim() || undefined,
       }, token!);
-      Alert.alert('Success', 'Manifolder created');
-      // Reset only times and type/zone; keep project for continuity
+      
+      // Close modal and reset form
+      setIsModalVisible(false);
       setZoneId('');
       setTypeId('');
       setHeurD(null);
       setHeurF(null);
-      setIsModalVisible(false);
+      setTitle('');
+      setDescription('');
       
       // Reload manifolders list
       try {
@@ -121,6 +127,24 @@ export default function ManifolderTab() {
         setManifolders(updatedManifolders);
       } catch (e) {
         console.log('Failed to reload manifolders');
+      }
+      
+      // Automatically navigate to questions view for the newly created manifolder
+      if (result.manifolderId) {
+        setSelectedManifolder(result.manifolderId);
+        setCurrentView('questions');
+        
+        // Show success message with option to go back to list
+        Alert.alert(
+          'Manifolder Created Successfully!',
+          `Manifolder ${result.code_formatted} has been created. You can now answer the questions.`,
+          [
+            { text: 'Back to List', onPress: handleBackToList },
+            { text: 'Continue', style: 'default' }
+          ]
+        );
+      } else {
+        Alert.alert('Success', 'Manifolder created successfully');
       }
     } catch (e: any) {
       Alert.alert('Error', e.message || 'Failed to create manifolder');
@@ -165,6 +189,7 @@ export default function ManifolderTab() {
               >
                 <View style={styles.manifolderCardContent}>
                   <View style={styles.manifolderInfo}>
+                    <Text style={styles.manifolderTitle}>{manifolder.title}</Text>
                     <Text style={styles.manifolderCode}>{manifolder.code_formatted}</Text>
                     <Text style={styles.manifolderProject}>{manifolder.project_title}</Text>
                     <Text style={styles.manifolderZone}>{manifolder.zone_title}</Text>
@@ -229,6 +254,14 @@ export default function ManifolderTab() {
           <View style={styles.modalCard}>
             <Text style={styles.modalTitle}>Create Manifolder</Text>
             <ScrollView contentContainerStyle={styles.modalContent} showsVerticalScrollIndicator={false}>
+            <Text style={styles.label}>Title *</Text>
+              <TextInput
+                style={styles.textInput}
+                value={title}
+                onChangeText={setTitle}
+                placeholder="Enter manifolder title..."
+                maxLength={100}
+              />
               <Text style={styles.label}>Project</Text>
               <View style={styles.dropdownContainer}>
                 <Pressable style={styles.selectHeader} onPress={() => setShowProjectDropdown((s) => !s)}>
@@ -330,6 +363,10 @@ export default function ManifolderTab() {
                 ) : null}
               </View>
 
+              
+
+              
+
               <Text style={styles.label}>Date</Text>
               <Pressable onPress={() => setShowDatePicker(true)} style={styles.inputBox}>
                 <Text style={styles.inputText}>{formatDate(date)}</Text>
@@ -376,6 +413,16 @@ export default function ManifolderTab() {
                   }}
                   onCancel={() => setShowTimeF(false)}
                 />
+                <Text style={styles.label}>Description</Text>
+              <TextInput
+                style={styles.textInput}
+                value={description}
+                onChangeText={setDescription}
+                placeholder="Enter description (optional)..."
+                maxLength={255}
+                multiline
+                numberOfLines={3}
+              />
 
               <View style={styles.modalActions}>
                 <Pressable style={styles.secondaryBtn} onPress={() => setIsModalVisible(false)}>
@@ -502,6 +549,17 @@ const styles = StyleSheet.create({
   inputText: {
     color: '#111',
   },
+  textInput: {
+    borderWidth: 1,
+    borderColor: '#E5E5EA',
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    fontSize: 16,
+    color: '#1C1C1E',
+    backgroundColor: '#FFFFFF',
+    minHeight: 44,
+  },
   backdrop: {
     position: 'absolute',
     top: 0,
@@ -618,10 +676,15 @@ const styles = StyleSheet.create({
   manifolderInfo: {
     flex: 1,
   },
-  manifolderCode: {
-    fontSize: 16,
+  manifolderTitle: {
+    fontSize: 18,
     fontWeight: '700',
     color: '#11224e',
+    marginBottom: 4,
+  },
+  manifolderCode: {
+    fontSize: 12,
+    color: '#8E8E93',
     marginBottom: 4,
   },
   manifolderProject: {

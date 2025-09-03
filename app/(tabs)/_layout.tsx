@@ -44,7 +44,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="manifolder"
         options={{
-          title: 'Manifolder',
+          title: 'Manifold',
           
         }}
       />

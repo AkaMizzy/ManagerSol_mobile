@@ -198,7 +198,7 @@ export default function ManifolderQuestions({
    };
 
            const getSupportedQuestions = () => {
-        const supportedTypes = ['text', 'number', 'date', 'boolean', 'GPS', 'file', 'photo', 'video', 'voice'];
+        const supportedTypes = ['text', 'number', 'date', 'boolean', 'GPS', 'file', 'photo', 'video', 'voice', 'taux'];
         return questions.filter(q => supportedTypes.includes(q.type));
       };
 

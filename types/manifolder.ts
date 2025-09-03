@@ -11,6 +11,8 @@ export interface CreateManifolderData {
   heur_d?: string; // HH:MM or HH:MM:SS
   heur_f?: string; // HH:MM or HH:MM:SS
   id_type: string;
+  title: string;
+  description?: string;
 }
 
 export interface ManifolderListItem {
@@ -22,6 +24,8 @@ export interface ManifolderListItem {
   heur_f?: string | null;
   id_type: string;
   id_code: string;
+  title: string;
+  description?: string | null;
   project_title?: string;
   zone_title?: string;
   code_context?: string;
@@ -32,7 +36,7 @@ export interface ManifolderListItem {
 }
 
 // Question types for manifolder detail workflow
-export type QuestionType = 'text' | 'number' | 'date' | 'boolean' | 'file' | 'photo' | 'video' | 'GPS' | 'voice';
+export type QuestionType = 'text' | 'number' | 'date' | 'boolean' | 'file' | 'photo' | 'video' | 'GPS' | 'voice' | 'taux';
 
 export interface ManifolderQuestion {
   id: string;

@@ -1,13 +1,13 @@
 import { ManifolderQuestion, QuestionType } from '@/types/manifolder';
 import React, { useState } from 'react';
 import {
-  Animated,
-  Pressable,
-  StyleSheet,
-  Switch,
-  Text,
-  TextInput,
-  View,
+    Animated,
+    Pressable,
+    StyleSheet,
+    Switch,
+    Text,
+    TextInput,
+    View,
 } from 'react-native';
 import DateTimePickerModal from 'react-native-modal-datetime-picker';
 import FileUploader from './FileUploader';
@@ -77,6 +77,29 @@ export default function QuestionAccordion({
             placeholder={question.placeholder || 'Enter a number...'}
             keyboardType="numeric"
           />
+        );
+
+      case 'taux':
+        return (
+          <View style={styles.tauxContainer}>
+            <TextInput
+              style={styles.tauxInput}
+              value={value?.toString() || ''}
+              onChangeText={(text) => {
+                const numValue = parseFloat(text);
+                if (isNaN(numValue)) {
+                  handleValueChange('');
+                } else if (numValue >= 0 && numValue <= 100) {
+                  handleValueChange(numValue);
+                }
+                // If value is outside range, don't update (silently ignore)
+              }}
+              placeholder={question.placeholder || 'Enter percentage (0-100)...'}
+              keyboardType="numeric"
+              maxLength={5} // Allow up to 100.0
+            />
+            <Text style={styles.tauxUnit}>%</Text>
+          </View>
         );
 
       case 'boolean':
@@ -194,7 +217,7 @@ export default function QuestionAccordion({
     }
   };
 
-  const getSupportedTypes = (): QuestionType[] => ['text', 'number', 'date', 'boolean', 'GPS', 'file', 'photo', 'video', 'voice'];
+  const getSupportedTypes = (): QuestionType[] => ['text', 'number', 'date', 'boolean', 'GPS', 'file', 'photo', 'video', 'voice', 'taux'];
   const isSupported = getSupportedTypes().includes(question.type);
 
   if (!isSupported) {
@@ -378,5 +401,28 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#8E8E93',
     fontStyle: 'italic',
+  },
+  tauxContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  tauxInput: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: '#E5E5EA',
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    fontSize: 16,
+    color: '#1C1C1E',
+    backgroundColor: '#FAFAFA',
+    minHeight: 44,
+    marginRight: 8,
+  },
+  tauxUnit: {
+    fontSize: 16,
+    color: '#8E8E93',
+    fontWeight: '500',
+    minWidth: 20,
   },
 });
