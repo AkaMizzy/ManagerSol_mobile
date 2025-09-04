@@ -179,7 +179,7 @@ export default function ManifolderTab() {
       
       {manifolders.length > 0 && (
         <View style={styles.manifoldersSection}>
-          <Text style={styles.sectionTitle}>Recent Manifolders</Text>
+          <Text style={styles.sectionTitle}>Recent Manifolds</Text>
           <ScrollView style={styles.manifoldersList} showsVerticalScrollIndicator={false}>
             {manifolders.slice(0, 10).map((manifolder) => (
               <Pressable
