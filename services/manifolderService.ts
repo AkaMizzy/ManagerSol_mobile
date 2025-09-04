@@ -53,6 +53,11 @@ class ManifolderService {
     return this.request<ManifolderListItem[]>(`/manifolders${q ? `?${q}` : ''}`, token);
   }
 
+  // Get single manifolder by ID
+  getManifolderById(manifolderId: string, token: string): Promise<ManifolderListItem> {
+    return this.request<ManifolderListItem>(`/manifolders/${manifolderId}`, token);
+  }
+
   // Question-related methods for manifolder detail workflow
   getManifolderQuestions(manifolderId: string, token: string): Promise<{ manifolderId: string; questions: ManifolderQuestion[]; }> {
     return this.request(`/manifolder-details/questions/${manifolderId}`, token);

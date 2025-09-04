@@ -1,5 +1,6 @@
 import API_CONFIG from '@/app/config/api';
 import AppHeader from '@/components/AppHeader';
+import ManifoldDetails from '@/components/ManifoldDetails';
 import ManifolderQuestions from '@/components/ManifolderQuestions';
 import { useAuth } from '@/contexts/AuthContext';
 import manifolderService from '@/services/manifolderService';
@@ -34,8 +35,9 @@ export default function ManifolderTab() {
   const [manifolders, setManifolders] = useState<ManifolderListItem[]>([]);
   
   // View states
-  const [currentView, setCurrentView] = useState<'list' | 'questions'>('list');
+  const [currentView, setCurrentView] = useState<'list' | 'questions' | 'details'>('list');
   const [selectedManifoler, setSelectedManifolder] = useState<string | null>(null);
+  const [selectedManifolderData, setSelectedManifolderData] = useState<ManifolderListItem | undefined>(undefined);
 
   const [projectId, setProjectId] = useState<string>('');
   const [zoneId, setZoneId] = useState<string>('');
@@ -153,14 +155,20 @@ export default function ManifolderTab() {
     }
   }
 
-  const handleManifolderSelect = (manifolderId: string) => {
+  const handleManifolderSelect = (manifolderId: string, manifolderData?: ManifolderListItem) => {
     setSelectedManifolder(manifolderId);
-    setCurrentView('questions');
+    setSelectedManifolderData(manifolderData);
+    setCurrentView('details');
   };
 
   const handleBackToList = () => {
     setCurrentView('list');
     setSelectedManifolder(null);
+    setSelectedManifolderData(undefined);
+  };
+
+  const handleGoToQuestions = () => {
+    setCurrentView('questions');
   };
 
   const handleQuestionsComplete = () => {
@@ -185,7 +193,7 @@ export default function ManifolderTab() {
               <Pressable
                 key={manifolder.id}
                 style={styles.manifolderCard}
-                onPress={() => handleManifolderSelect(manifolder.id)}
+                onPress={() => handleManifolderSelect(manifolder.id, manifolder)}
               >
                 <View style={styles.manifolderCardContent}>
                   <View style={styles.manifolderInfo}>
@@ -221,18 +229,27 @@ export default function ManifolderTab() {
 
       <View style={styles.header}>
         <View style={styles.headerContent}>
-          {currentView === 'questions' && (
+          {(currentView === 'questions' || currentView === 'details') && (
             <Pressable onPress={handleBackToList} style={styles.backButton}>
               <Text style={styles.backButtonText}>←</Text>
             </Pressable>
           )}
           <Text style={styles.headerTitle}>
-            {currentView === 'questions' ? 'Questions' : 'Manifolder'}
+            {currentView === 'questions' ? 'Questions' : currentView === 'details' ? 'Details' : 'Manifolder'}
           </Text>
         </View>
       </View>
 
-      {currentView === 'list' ? renderManifolderList() : (
+      {currentView === 'list' ? renderManifolderList() : currentView === 'details' ? (
+        selectedManifoler && (
+          <ManifoldDetails
+            manifolderId={selectedManifoler}
+            manifolderData={selectedManifolderData}
+            onBack={handleBackToList}
+            onGoToQuestions={handleGoToQuestions}
+          />
+        )
+      ) : (
         selectedManifoler && (
           <ManifolderQuestions
             manifolderId={selectedManifoler}

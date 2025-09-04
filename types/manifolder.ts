@@ -28,6 +28,9 @@ export interface ManifolderListItem {
   description?: string | null;
   project_title?: string;
   zone_title?: string;
+  zone_logo?: string | null;
+  type_title?: string;
+  type_description?: string | null;
   code_context?: string;
   code_prefix?: string;
   code_suffix?: string;
