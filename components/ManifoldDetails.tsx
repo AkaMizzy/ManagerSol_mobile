@@ -8,8 +8,11 @@ import React, { useEffect, useState } from 'react';
 import {
     ActivityIndicator,
     Alert,
+    Linking,
+    Platform,
     Pressable,
     ScrollView,
+    Share,
     StyleSheet,
     Text,
     View,
@@ -80,6 +83,76 @@ export default function ManifoldDetails({
     return timeString;
   };
 
+  const generatePDF = async () => {
+    try {
+      setIsLoading(true);
+      
+      // Generate PDF from backend
+      const response = await fetch(`${API_CONFIG.BASE_URL}/manifolder-details/generate-pdf/${manifolderId}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+      
+      if (!response.ok) {
+        let msg = 'PDF generation failed';
+        try { 
+          const j = await response.json(); 
+          msg = j.error || msg; 
+        } catch {}
+        throw new Error(msg);
+      }
+      
+      const result = await response.json();
+      
+      // Handle PDF opening based on platform
+      if (Platform.OS === 'web') {
+        // Web: Open PDF in new tab
+        const pdfUrl = `${API_CONFIG.BASE_URL}${result.fileUrl}`;
+        window.open(pdfUrl, '_blank');
+        Alert.alert('Success', 'PDF opened in new tab!');
+      } else {
+        // Mobile: Try to open PDF directly with device's default PDF viewer
+        const pdfUrl = `${API_CONFIG.BASE_URL}${result.fileUrl}`;
+        
+        try {
+          // Try to open with device's default PDF viewer
+          const supported = await Linking.canOpenURL(pdfUrl);
+          
+          if (supported) {
+            await Linking.openURL(pdfUrl);
+            Alert.alert('Success', 'PDF opened successfully!');
+          } else {
+            // Fallback to share if direct opening fails
+            await Share.share({
+              url: pdfUrl,
+              title: `Manifolder ${manifolder?.code_formatted || manifolderId}`,
+              message: `Manifolder PDF Report: ${manifolder?.code_formatted || manifolderId}`,
+            });
+            Alert.alert('Success', 'PDF shared successfully!');
+          }
+        } catch (openError) {
+          // If direct opening fails, fallback to share
+          try {
+            await Share.share({
+              url: pdfUrl,
+              title: `Manifolder ${manifolder?.code_formatted || manifolderId}`,
+              message: `Manifolder PDF Report: ${manifolder?.code_formatted || manifolderId}`,
+            });
+            Alert.alert('Success', 'PDF shared successfully!');
+          } catch (shareError) {
+            Alert.alert('Error', 'Failed to open or share PDF. Please try again.');
+          }
+        }
+      }
+      
+    } catch (error: any) {
+      Alert.alert('Error', error.message || 'Failed to generate PDF');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <View style={styles.container}>
@@ -110,6 +183,11 @@ export default function ManifoldDetails({
   return (
     <View style={styles.container}>
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+        {/* Floating Back Button */}
+        <Pressable style={styles.floatingBackButton} onPress={onBack}>
+          <Ionicons name="arrow-back" size={24} color="#007AFF" />
+        </Pressable>
+
         {/* Status Badge */}
         <View style={styles.statusContainer}>
           <View style={styles.statusBadge}>
@@ -218,6 +296,11 @@ export default function ManifoldDetails({
               </Pressable>
             )}
             
+            <Pressable style={styles.actionButton} onPress={generatePDF}>
+              <Ionicons name="document-text-outline" size={20} color="#007AFF" />
+              <Text style={styles.actionButtonText}>Generate PDF</Text>
+            </Pressable>
+            
             <Pressable style={styles.actionButton}>
               <Ionicons name="create-outline" size={20} color="#007AFF" />
               <Text style={styles.actionButtonText}>Edit Manifolder</Text>
@@ -285,6 +368,23 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     padding: 16,
+  },
+  floatingBackButton: {
+    position: 'absolute',
+    top: 16,
+    left: 16,
+    zIndex: 10,
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    borderRadius: 20,
+    padding: 8,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
   statusContainer: {
     marginBottom: 16,

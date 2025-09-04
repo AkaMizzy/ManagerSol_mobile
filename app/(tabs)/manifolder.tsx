@@ -227,18 +227,20 @@ export default function ManifolderTab() {
     <SafeAreaView style={styles.container}>
       <AppHeader />
 
-      <View style={styles.header}>
-        <View style={styles.headerContent}>
-          {(currentView === 'questions' || currentView === 'details') && (
-            <Pressable onPress={handleBackToList} style={styles.backButton}>
-              <Text style={styles.backButtonText}>←</Text>
-            </Pressable>
-          )}
-          <Text style={styles.headerTitle}>
-            {currentView === 'questions' ? 'Questions' : currentView === 'details' ? 'Details' : 'Manifolder'}
-          </Text>
+      {currentView !== 'details' && (
+        <View style={styles.header}>
+          <View style={styles.headerContent}>
+            {currentView === 'questions' && (
+              <Pressable onPress={handleBackToList} style={styles.backButton}>
+                <Text style={styles.backButtonText}>←</Text>
+              </Pressable>
+            )}
+            <Text style={styles.headerTitle}>
+              {currentView === 'questions' ? 'Questions' : 'Manifolder'}
+            </Text>
+          </View>
         </View>
-      </View>
+      )}
 
       {currentView === 'list' ? renderManifolderList() : currentView === 'details' ? (
         selectedManifoler && (
@@ -472,6 +474,9 @@ const styles = StyleSheet.create({
   headerContent: {
     flexDirection: 'row',
     alignItems: 'center',
+  },
+  headerContentDetails: {
+    justifyContent: 'flex-start',
   },
   backButton: {
     marginRight: 12,
