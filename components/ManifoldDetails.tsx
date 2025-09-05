@@ -43,6 +43,9 @@ export default function ManifoldDetails({
   const [isLoading, setIsLoading] = useState(!manifolderData);
   const [manifolder, setManifolder] = useState<ManifolderDetailData | null>(manifolderData || null);
   const [error, setError] = useState<string | null>(null);
+  const [pdfExists, setPdfExists] = useState(false);
+  const [pdfUrl, setPdfUrl] = useState<string | null>(null);
+  const [isCheckingPdf, setIsCheckingPdf] = useState(false);
 
   useEffect(() => {
     if (manifolderData) {
@@ -67,6 +70,41 @@ export default function ManifoldDetails({
       setIsLoading(false);
     }
   };
+
+  const checkPDFStatus = async () => {
+    try {
+      setIsCheckingPdf(true);
+      
+      // Check if PDF exists by trying to fetch the latest PDF for this manifolder
+      const response = await fetch(`${API_CONFIG.BASE_URL}/manifolder-details/check-pdf/${manifolderId}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+      
+      if (response.ok) {
+        const result = await response.json();
+        setPdfExists(result.exists);
+        setPdfUrl(result.fileUrl || null);
+      } else {
+        setPdfExists(false);
+        setPdfUrl(null);
+      }
+    } catch (error) {
+      // If check fails, assume no PDF exists
+      setPdfExists(false);
+      setPdfUrl(null);
+    } finally {
+      setIsCheckingPdf(false);
+    }
+  };
+
+  useEffect(() => {
+    // Check PDF status when manifolder loads
+    if (manifolder) {
+      checkPDFStatus();
+    }
+  }, [manifolder]);
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -104,6 +142,10 @@ export default function ManifoldDetails({
       }
       
       const result = await response.json();
+      
+      // Update PDF status after successful generation
+      setPdfExists(true);
+      setPdfUrl(result.fileUrl);
       
       // Handle PDF opening based on platform
       if (Platform.OS === 'web') {
@@ -150,6 +192,58 @@ export default function ManifoldDetails({
       Alert.alert('Error', error.message || 'Failed to generate PDF');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const viewPDF = async () => {
+    if (!pdfUrl) {
+      Alert.alert('Error', 'PDF URL not found');
+      return;
+    }
+
+    try {
+      const fullPdfUrl = `${API_CONFIG.BASE_URL}${pdfUrl}`;
+      
+      // Handle PDF opening based on platform
+      if (Platform.OS === 'web') {
+        // Web: Open PDF in new tab
+        window.open(fullPdfUrl, '_blank');
+        Alert.alert('Success', 'PDF opened in new tab!');
+      } else {
+        // Mobile: Try to open PDF directly with device's default PDF viewer
+        try {
+          // Try to open with device's default PDF viewer
+          const supported = await Linking.canOpenURL(fullPdfUrl);
+          
+          if (supported) {
+            await Linking.openURL(fullPdfUrl);
+            Alert.alert('Success', 'PDF opened successfully!');
+          } else {
+            // Fallback to share if direct opening fails
+            await Share.share({
+              url: fullPdfUrl,
+              title: `Manifolder ${manifolder?.code_formatted || manifolderId}`,
+              message: `Manifolder PDF Report: ${manifolder?.code_formatted || manifolderId}`,
+            });
+            Alert.alert('Success', 'PDF shared successfully!');
+          }
+        } catch (openError) {
+          // If direct opening fails, fallback to share
+          try {
+            await Share.share({
+              url: fullPdfUrl,
+              title: `Manifolder ${manifolder?.code_formatted || manifolderId}`,
+              message: `Manifolder PDF Report: ${manifolder?.code_formatted || manifolderId}`,
+            });
+            Alert.alert('Success', 'PDF shared successfully!');
+          } catch (shareError) {
+            Alert.alert('Error', 'Failed to open or share PDF. Please try again.');
+          }
+        }
+      }
+      
+    } catch (error: any) {
+      Alert.alert('Error', error.message || 'Failed to open PDF');
     }
   };
 
@@ -296,9 +390,22 @@ export default function ManifoldDetails({
               </Pressable>
             )}
             
-            <Pressable style={styles.actionButton} onPress={generatePDF}>
-              <Ionicons name="document-text-outline" size={20} color="#007AFF" />
-              <Text style={styles.actionButtonText}>Generate PDF</Text>
+            <Pressable 
+              style={styles.actionButton} 
+              onPress={pdfExists ? viewPDF : generatePDF}
+              disabled={isCheckingPdf}
+            >
+              <Ionicons 
+                name={pdfExists ? "eye-outline" : "document-text-outline"} 
+                size={20} 
+                color="#007AFF" 
+              />
+              <Text style={styles.actionButtonText}>
+                {isCheckingPdf ? 'Checking...' : pdfExists ? 'View PDF' : 'Generate PDF'}
+              </Text>
+              {pdfExists && (
+                <Ionicons name="checkmark-circle" size={16} color="#34C759" style={{ marginLeft: 8 }} />
+              )}
             </Pressable>
             
             <Pressable style={styles.actionButton}>

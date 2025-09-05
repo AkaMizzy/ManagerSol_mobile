@@ -26,6 +26,7 @@ export default function ManifolderQuestions({
   const { token } = useAuth();
   const [questions, setQuestions] = useState<ManifolderQuestion[]>([]);
   const [answers, setAnswers] = useState<Record<string, any>>({});
+  const [quantities, setQuantities] = useState<Record<string, number>>({});
   const [expandedQuestions, setExpandedQuestions] = useState<Set<string>>(new Set());
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -43,10 +44,11 @@ export default function ManifolderQuestions({
       const response = await manifolderService.getManifolderQuestions(manifolderId, token);
       setQuestions(response.questions);
       
-             // Try to load existing answers
+                      // Try to load existing answers
        try {
          const answersResponse = await manifolderService.getManifolderAnswers(manifolderId, token);
          const existingAnswers: Record<string, any> = {};
+         const existingQuantities: Record<string, number> = {};
          answersResponse.answers.forEach(answer => {
            // Handle GPS answers - they come with latitude/longitude from backend
            if (answer.questionType === 'GPS' && typeof answer.value === 'object' && answer.value.latitude && answer.value.longitude) {
@@ -54,7 +56,7 @@ export default function ManifolderQuestions({
                latitude: parseFloat(answer.value.latitude),
                longitude: parseFloat(answer.value.longitude)
              };
-                       } else if (['file', 'photo', 'video', 'voice'].includes(answer.questionType) && answer.value) {
+           } else if (['file', 'photo', 'video', 'voice'].includes(answer.questionType) && answer.value) {
              // Handle file answers - they come as file paths from backend
              existingAnswers[answer.questionId] = {
                filename: answer.value.split('/').pop() || '',
@@ -66,8 +68,14 @@ export default function ManifolderQuestions({
            } else {
              existingAnswers[answer.questionId] = answer.value;
            }
+           
+           // Store quantity if available
+           if (answer.quantity !== undefined && answer.quantity !== null) {
+             existingQuantities[answer.questionId] = answer.quantity;
+           }
          });
          setAnswers(existingAnswers);
+         setQuantities(existingQuantities);
        } catch {
          // If no existing answers, that's fine
          console.log('No existing answers found');
@@ -91,11 +99,18 @@ export default function ManifolderQuestions({
     });
   };
 
-  const handleAnswerChange = (questionId: string, value: any) => {
+  const handleAnswerChange = (questionId: string, value: any, quantity?: number) => {
     setAnswers(prev => ({
       ...prev,
       [questionId]: value,
     }));
+    
+    if (quantity !== undefined) {
+      setQuantities(prev => ({
+        ...prev,
+        [questionId]: quantity,
+      }));
+    }
   };
 
   const handleFileUpload = async (questionId: string, file: { uri: string; name: string; type: string }) => {
@@ -144,6 +159,7 @@ export default function ManifolderQuestions({
                questionId,
                latitude: value.latitude,
                longitude: value.longitude,
+               quantity: quantities[questionId],
              };
            }
            // Handle file answers - they're already uploaded, so we don't need to include them in submission
@@ -151,12 +167,14 @@ export default function ManifolderQuestions({
              return {
                questionId,
                value: value.path, // Just send the file path
+               quantity: quantities[questionId],
              };
            }
            // Handle regular answers
            return {
              questionId,
              value,
+             quantity: quantities[questionId],
            };
          });
 
@@ -256,12 +274,13 @@ export default function ManifolderQuestions({
               key={question.id}
               question={question}
               value={answers[question.id]}
-              onValueChange={(questionId, value) => {
+              quantity={quantities[question.id]}
+              onValueChange={(questionId, value, quantity) => {
                 // Check if this is a file upload (has uri, name, type properties)
                 if (value && typeof value === 'object' && value.uri && value.name && value.type) {
                   handleFileUpload(questionId, value);
                 } else {
-                  handleAnswerChange(questionId, value);
+                  handleAnswerChange(questionId, value, quantity);
                 }
               }}
               isExpanded={expandedQuestions.has(question.id)}

@@ -74,7 +74,7 @@ class ManifolderService {
     return this.request(`/manifolder-details/answers/${manifolderId}`, token);
   }
 
-  updateManifolderAnswer(answerId: string, payload: { value?: any; latitude?: number; longitude?: number; }, token: string): Promise<{ message: string; answerId: string; }> {
+  updateManifolderAnswer(answerId: string, payload: { value?: any; latitude?: number; longitude?: number; quantity?: number; }, token: string): Promise<{ message: string; answerId: string; }> {
     return this.request(`/manifolder-details/answers/${answerId}`, token, {
       method: 'PUT',
       body: JSON.stringify(payload),

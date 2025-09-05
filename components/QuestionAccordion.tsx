@@ -3,13 +3,13 @@ import { ManifolderQuestion, QuestionType } from '@/types/manifolder';
 import { Ionicons } from '@expo/vector-icons';
 import React, { useState } from 'react';
 import {
-    Animated,
-    Pressable,
-    StyleSheet,
-    Switch,
-    Text,
-    TextInput,
-    View,
+  Animated,
+  Pressable,
+  StyleSheet,
+  Switch,
+  Text,
+  TextInput,
+  View,
 } from 'react-native';
 import DateTimePickerModal from 'react-native-modal-datetime-picker';
 import FileUploader from './FileUploader';
@@ -20,7 +20,8 @@ import VoiceRecorder from './VoiceRecorder';
 interface QuestionAccordionProps {
   question: ManifolderQuestion;
   value?: any;
-  onValueChange: (questionId: string, value: any) => void;
+  quantity?: number;
+  onValueChange: (questionId: string, value: any, quantity?: number) => void;
   isExpanded?: boolean;
   onToggleExpand: (questionId: string) => void;
 }
@@ -28,6 +29,7 @@ interface QuestionAccordionProps {
 export default function QuestionAccordion({
   question,
   value,
+  quantity,
   onValueChange,
   isExpanded = false,
   onToggleExpand,
@@ -44,8 +46,8 @@ export default function QuestionAccordion({
     }).start();
   }, [isExpanded]);
 
-  const handleValueChange = (newValue: any) => {
-    onValueChange(question.id, newValue);
+  const handleValueChange = (newValue: any, newQuantity?: number) => {
+    onValueChange(question.id, newValue, newQuantity);
   };
 
   const formatDate = (date: Date) => {
@@ -370,6 +372,29 @@ export default function QuestionAccordion({
             
             <View style={styles.inputContainer}>
               {renderInput()}
+              
+              {/* Quantity Input - Only show if question has quantity enabled */}
+              {question.quantity && (
+                <View style={styles.quantityContainer}>
+                  <Text style={styles.quantityLabel}>Quantity:</Text>
+                  <TextInput
+                    style={styles.quantityInput}
+                    value={quantity?.toString() || ''}
+                    onChangeText={(text) => {
+                      const numValue = parseInt(text);
+                      if (text === '') {
+                        handleValueChange(value, undefined);
+                      } else if (!isNaN(numValue) && numValue >= 0) {
+                        handleValueChange(value, numValue);
+                      }
+                      // If value is invalid, don't update (silently ignore)
+                    }}
+                    placeholder="Enter quantity..."
+                    keyboardType="numeric"
+                    maxLength={10}
+                  />
+                </View>
+              )}
             </View>
           </Animated.View>
         )}
@@ -536,5 +561,29 @@ const styles = StyleSheet.create({
     color: '#8E8E93',
     fontWeight: '500',
     minWidth: 20,
+  },
+  quantityContainer: {
+    marginTop: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  quantityLabel: {
+    fontSize: 16,
+    color: '#1C1C1E',
+    fontWeight: '500',
+    marginRight: 12,
+    minWidth: 70,
+  },
+  quantityInput: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: '#E5E5EA',
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    fontSize: 16,
+    color: '#1C1C1E',
+    backgroundColor: '#FAFAFA',
+    minHeight: 44,
   },
 });

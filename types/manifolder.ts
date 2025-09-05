@@ -47,6 +47,7 @@ export interface ManifolderQuestion {
   description?: string | null;
   type: QuestionType;
   context: string;
+  quantity?: boolean;
   created_at: string;
   updated_at: string;
   // Added for frontend compatibility (set by backend as defaults)
@@ -60,6 +61,7 @@ export interface ManifolderAnswer {
   value?: any;
   latitude?: number;
   longitude?: number;
+  quantity?: number;
 }
 
 export interface ManifolderAnswerWithDetails {
@@ -68,7 +70,9 @@ export interface ManifolderAnswerWithDetails {
   questionTitle: string;
   questionType: QuestionType;
   questionDescription?: string | null;
+  questionQuantity?: boolean;
   value: any;
+  quantity?: number;
   createdAt: string;
   updatedAt: string;
 }

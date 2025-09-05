@@ -236,7 +236,7 @@ export default function ManifolderTab() {
               </Pressable>
             )}
             <Text style={styles.headerTitle}>
-              {currentView === 'questions' ? 'Questions' : 'Manifolder'}
+              {currentView === 'questions' ? 'Questions' : 'Manifold'}
             </Text>
           </View>
         </View>
