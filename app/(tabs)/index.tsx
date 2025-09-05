@@ -48,7 +48,7 @@ export default function DashboardScreen() {
     <SafeAreaView style={styles.container}>
       <ScrollView style={styles.scrollView}>
         {/* Header */}
-        <AppHeader />
+        <AppHeader user={user || undefined} />
 
         {/* Quick Stats (framed single row) */}
         <View style={styles.kpiContainer}>

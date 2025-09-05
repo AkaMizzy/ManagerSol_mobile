@@ -49,7 +49,7 @@ export default function ProfileScreen() {
   return (
     <SafeAreaView style={styles.container}>
       {/* App Header */}
-      <AppHeader showNotifications={false} />
+      <AppHeader showNotifications={false} user={user || undefined} />
       
       <View style={styles.content}>
         {/* Header Card */}

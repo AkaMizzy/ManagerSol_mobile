@@ -1,20 +1,21 @@
-import React from 'react';
-import { StyleSheet, Text } from 'react-native';
+import { StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AppHeader from '../../components/AppHeader';
+import ComingSoonScreen from '../../components/ComingSoonScreen';
+import { useAuth } from '../../contexts/AuthContext';
 
 export default function InventaireScreen() {
+  const { user } = useAuth();
   return (
     <SafeAreaView style={styles.container}>
-      <AppHeader />
-      <Text style={styles.text}>Inventaire Page</Text>
+      <AppHeader user={user || undefined} />
+      <ComingSoonScreen pageName="Inventaire" />
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#F2F2F7' },
-  text: { fontSize: 18, color: '#1C1C1E', fontWeight: '600' },
+  container: { flex: 1, backgroundColor: '#F8FAFC' },
 });
 
 

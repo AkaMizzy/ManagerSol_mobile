@@ -1,6 +1,6 @@
 import API_CONFIG from '@/app/config/api';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import React, { createContext, ReactNode, useContext, useEffect, useState } from 'react';
+import { createContext, ReactNode, useContext, useEffect, useState } from 'react';
 
 // Types
 interface User {
@@ -17,12 +17,14 @@ interface AuthState {
   token: string | null;
   isLoading: boolean;
   isAuthenticated: boolean;
+  isPostLoginLoading: boolean;
 }
 
 interface AuthContextType extends AuthState {
   login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => Promise<void>;
   updateUser: (userData: Partial<User>) => void;
+  completePostLoginLoading: () => void;
 }
 
 // Storage keys
@@ -41,6 +43,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     token: null,
     isLoading: true,
     isAuthenticated: false,
+    isPostLoginLoading: false,
   });
 
   // Initialize auth state from storage
@@ -64,6 +67,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           token,
           isLoading: false,
           isAuthenticated: true,
+          isPostLoginLoading: false,
         });
       } else {
         setAuthState({
@@ -71,6 +75,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           token: null,
           isLoading: false,
           isAuthenticated: false,
+          isPostLoginLoading: false,
         });
       }
     } catch (error) {
@@ -80,6 +85,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         token: null,
         isLoading: false,
         isAuthenticated: false,
+        isPostLoginLoading: false,
       });
     }
   };
@@ -112,6 +118,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             token: data.token,
             isLoading: false,
             isAuthenticated: true,
+            isPostLoginLoading: true,
           });
 
           console.log('Auth state updated successfully:', {
@@ -150,6 +157,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         token: null,
         isLoading: false,
         isAuthenticated: false,
+        isPostLoginLoading: false,
       });
       
       console.log('AuthContext: State updated to logged out');
@@ -165,6 +173,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Update storage
       AsyncStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(updatedUser));
     }
+  };
+
+  const completePostLoginLoading = () => {
+    setAuthState(prev => ({ ...prev, isPostLoginLoading: false }));
   };
 
   const clearStorage = async () => {
@@ -185,6 +197,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     login,
     logout,
     updateUser,
+    completePostLoginLoading,
   };
 
   return (

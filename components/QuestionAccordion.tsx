@@ -119,6 +119,40 @@ export default function QuestionAccordion({
     }
   };
 
+  // Get hardcoded options for list questions based on question title and context
+  const getListOptions = (question: ManifolderQuestion): string[] => {
+    const interventionValues = {
+      satisfaction: ["satisfait", "peu_satisfait", "non_satisfait"],
+      piece: ["model", "serie", "mark", "situation"]
+    };
+    
+    const suiviValues = {
+      equipe: ["maçons", "ferrailleurs", "coffreurs"],
+      engins_utilises: ["bétonnière", "grue", "vibrateur", "coffrage_métallique"],
+      meteo: ["soleil", "risque_pluie", "beau_temps"]
+    };
+
+    // Normalize question title to match the keys
+    const normalizedTitle = question.title.toLowerCase().replace(/[^a-z0-9]/g, '_');
+    
+    // Check intervention context
+    if (question.context === 'intervention') {
+      if (interventionValues[normalizedTitle as keyof typeof interventionValues]) {
+        return interventionValues[normalizedTitle as keyof typeof interventionValues];
+      }
+    }
+    
+    // Check suivi context
+    if (question.context === 'suivi') {
+      if (suiviValues[normalizedTitle as keyof typeof suiviValues]) {
+        return suiviValues[normalizedTitle as keyof typeof suiviValues];
+      }
+    }
+    
+    // Fallback: return empty array if no match found
+    return [];
+  };
+
   const renderInput = () => {
     switch (question.type) {
       case 'text':
@@ -274,6 +308,37 @@ export default function QuestionAccordion({
            />
          );
 
+      case 'list':
+        return (
+          <View style={styles.listContainer}>
+            {getListOptions(question).map((option: string, index: number) => (
+              <Pressable
+                key={index}
+                style={[
+                  styles.listOption,
+                  value === option && styles.listOptionSelected
+                ]}
+                onPress={() => handleValueChange(option)}
+              >
+                <Text style={[
+                  styles.listOptionText,
+                  value === option && styles.listOptionTextSelected
+                ]}>
+                  {option}
+                </Text>
+                {value === option && (
+                  <Ionicons 
+                    name="checkmark-circle" 
+                    size={20} 
+                    color="#007AFF" 
+                    style={styles.listOptionIcon}
+                  />
+                )}
+              </Pressable>
+            ))}
+          </View>
+        );
+
       default:
         return (
           <View style={styles.unsupportedContainer}>
@@ -285,7 +350,7 @@ export default function QuestionAccordion({
     }
   };
 
-  const getSupportedTypes = (): QuestionType[] => ['text', 'number', 'date', 'boolean', 'GPS', 'file', 'photo', 'video', 'voice', 'taux'];
+  const getSupportedTypes = (): QuestionType[] => ['text', 'number', 'date', 'boolean', 'GPS', 'file', 'photo', 'video', 'voice', 'taux', 'list'];
   const isSupported = getSupportedTypes().includes(question.type);
 
   if (!isSupported) {
@@ -585,5 +650,43 @@ const styles = StyleSheet.create({
     color: '#1C1C1E',
     backgroundColor: '#FAFAFA',
     minHeight: 44,
+  },
+  listContainer: {
+    gap: 8,
+  },
+  listOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderWidth: 1,
+    borderColor: '#E5E5EA',
+    borderRadius: 10,
+    backgroundColor: '#FAFAFA',
+    minHeight: 44,
+  },
+  listOptionSelected: {
+    borderColor: '#007AFF',
+    backgroundColor: '#F0F8FF',
+  },
+  listOptionText: {
+    fontSize: 16,
+    color: '#1C1C1E',
+    flex: 1,
+  },
+  listOptionTextSelected: {
+    color: '#007AFF',
+    fontWeight: '500',
+  },
+  listOptionIcon: {
+    marginLeft: 8,
+  },
+  noOptionsText: {
+    fontSize: 14,
+    color: '#8E8E93',
+    fontStyle: 'italic',
+    textAlign: 'center',
+    paddingVertical: 20,
   },
 });

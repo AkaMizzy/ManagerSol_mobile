@@ -2,11 +2,11 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React from 'react';
 import {
-    Image,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View
+  Image,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View
 } from 'react-native';
 
 interface AppHeaderProps {
@@ -14,13 +14,18 @@ interface AppHeaderProps {
   showProfile?: boolean;
   onNotificationPress?: () => void;
   onProfilePress?: () => void;
+  user?: {
+    firstname?: string;
+    lastname?: string;
+  };
 }
 
 export default function AppHeader({
   showNotifications = true,
   showProfile = true,
   onNotificationPress,
-  onProfilePress
+  onProfilePress,
+  user
 }: AppHeaderProps) {
   const router = useRouter();
 
@@ -41,16 +46,26 @@ export default function AppHeader({
   return (
     <View style={styles.header}>
       <View style={styles.headerRow}>
+        {/* Left side - App Icon */}
         <View style={styles.headerLeft}>
-          <View style={styles.brandRow}>
-            <Image
-              source={require('../assets/images/icon.png')}
-              style={styles.logo}
-              resizeMode="contain"
-            />
-            <Text style={styles.appName}>QualiSol</Text>
-          </View>
+          <Image
+            source={require('../assets/images/icon.png')}
+            style={styles.logo}
+            resizeMode="contain"
+          />
         </View>
+        
+        {/* Center - User Name */}
+        <View style={styles.headerCenter}>
+          <Text style={styles.userName}>
+            {user?.firstname && user?.lastname 
+              ? `${user.firstname} ${user.lastname}`
+              : 'QualiSol'
+            }
+          </Text>
+        </View>
+        
+        {/* Right side - Action Icons */}
         <View style={styles.headerRight}>
           {showNotifications && (
             <TouchableOpacity
@@ -90,28 +105,30 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   headerLeft: { 
-    flex: 1 
+    width: 45,
+    alignItems: 'flex-start'
+  },
+  headerCenter: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center'
   },
   headerRight: { 
-    flex: 1, 
+    width: 80,
     flexDirection: 'row', 
     justifyContent: 'flex-end', 
     alignItems: 'center', 
     gap: 12 
   },
-  appName: { 
-    fontSize: 24, 
-    fontWeight: '800', 
-    color: '#11224e' 
-  },
-  brandRow: { 
-    flexDirection: 'row', 
-    alignItems: 'center', 
-    gap: 8 
+  userName: { 
+    fontSize: 20, 
+    fontWeight: '700', 
+    color: '#11224e',
+    textAlign: 'center'
   },
   logo: { 
-    width: 45, 
-    height: 45 
+    width: 50, 
+    height: 50 
   },
   iconButton: { 
     paddingHorizontal: 8, 

@@ -290,6 +290,36 @@ export default function ManifoldDetails({
           <Text style={styles.manifolderCode}>{manifolder.code_formatted}</Text>
         </View>
 
+        {/* Primary Actions */}
+        <View style={styles.primaryActionsCard}>
+          <View style={styles.primaryActionsContainer}>
+            {onGoToQuestions && (
+              <Pressable style={styles.primaryActionButton} onPress={onGoToQuestions}>
+                <Ionicons name="list-outline" size={20} color="#FFFFFF" />
+                <Text style={styles.primaryActionButtonText}>Go to Questions</Text>
+              </Pressable>
+            )}
+            
+            <Pressable 
+              style={styles.primaryActionButton} 
+              onPress={pdfExists ? viewPDF : generatePDF}
+              disabled={isCheckingPdf}
+            >
+              <Ionicons 
+                name={pdfExists ? "eye-outline" : "document-text-outline"} 
+                size={20} 
+                color="#FFFFFF" 
+              />
+              <Text style={styles.primaryActionButtonText}>
+                {isCheckingPdf ? 'Checking...' : pdfExists ? 'View PDF' : 'Generate PDF'}
+              </Text>
+              {pdfExists && (
+                <Ionicons name="checkmark-circle" size={16} color="#34C759" style={{ marginLeft: 6 }} />
+              )}
+            </Pressable>
+          </View>
+        </View>
+
         {/* Main Info Card */}
         <View style={styles.card}>
           <View style={styles.cardHeader}>
@@ -375,39 +405,14 @@ export default function ManifoldDetails({
         {/* Code Information Card */}
         
 
-        {/* Actions Card */}
+        {/* Secondary Actions Card */}
         <View style={styles.card}>
           <View style={styles.cardHeader}>
             <Ionicons name="settings-outline" size={24} color="#11224e" />
-            <Text style={styles.cardTitle}>Actions</Text>
+            <Text style={styles.cardTitle}>More Actions</Text>
           </View>
           
           <View style={styles.actionsContainer}>
-            {onGoToQuestions && (
-              <Pressable style={styles.actionButton} onPress={onGoToQuestions}>
-                <Ionicons name="list-outline" size={20} color="#007AFF" />
-                <Text style={styles.actionButtonText}>Go to Questions</Text>
-              </Pressable>
-            )}
-            
-            <Pressable 
-              style={styles.actionButton} 
-              onPress={pdfExists ? viewPDF : generatePDF}
-              disabled={isCheckingPdf}
-            >
-              <Ionicons 
-                name={pdfExists ? "eye-outline" : "document-text-outline"} 
-                size={20} 
-                color="#007AFF" 
-              />
-              <Text style={styles.actionButtonText}>
-                {isCheckingPdf ? 'Checking...' : pdfExists ? 'View PDF' : 'Generate PDF'}
-              </Text>
-              {pdfExists && (
-                <Ionicons name="checkmark-circle" size={16} color="#34C759" style={{ marginLeft: 8 }} />
-              )}
-            </Pressable>
-            
             <Pressable style={styles.actionButton}>
               <Ionicons name="create-outline" size={20} color="#007AFF" />
               <Text style={styles.actionButtonText}>Edit Manifolder</Text>
@@ -514,6 +519,49 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#11224e',
     fontFamily: 'monospace',
+  },
+  primaryActionsCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 20,
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  primaryActionsContainer: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  primaryActionButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    backgroundColor: '#007AFF',
+    borderRadius: 10,
+    shadowColor: '#007AFF',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  primaryActionButtonText: {
+    marginLeft: 6,
+    fontSize: 14,
+    color: '#FFFFFF',
+    fontWeight: '600',
+    flexShrink: 1,
   },
   card: {
     backgroundColor: '#FFFFFF',

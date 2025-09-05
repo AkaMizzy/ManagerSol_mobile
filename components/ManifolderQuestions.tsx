@@ -3,13 +3,13 @@ import manifolderService from '@/services/manifolderService';
 import { ManifolderAnswer, ManifolderQuestion } from '@/types/manifolder';
 import React, { useEffect, useState } from 'react';
 import {
-    ActivityIndicator,
-    Alert,
-    Pressable,
-    ScrollView,
-    StyleSheet,
-    Text,
-    View,
+  ActivityIndicator,
+  Alert,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import QuestionAccordion from './QuestionAccordion';
@@ -25,6 +25,7 @@ export default function ManifolderQuestions({
 }: ManifolderQuestionsProps) {
   const { token } = useAuth();
   const [questions, setQuestions] = useState<ManifolderQuestion[]>([]);
+  const [manifolderType, setManifolderType] = useState<string>('');
   const [answers, setAnswers] = useState<Record<string, any>>({});
   const [quantities, setQuantities] = useState<Record<string, number>>({});
   const [expandedQuestions, setExpandedQuestions] = useState<Set<string>>(new Set());
@@ -43,6 +44,7 @@ export default function ManifolderQuestions({
       setIsLoading(true);
       const response = await manifolderService.getManifolderQuestions(manifolderId, token);
       setQuestions(response.questions);
+      setManifolderType(response.manifolderType);
       
                       // Try to load existing answers
        try {
@@ -216,9 +218,22 @@ export default function ManifolderQuestions({
    };
 
            const getSupportedQuestions = () => {
-        const supportedTypes = ['text', 'number', 'date', 'boolean', 'GPS', 'file', 'photo', 'video', 'voice', 'taux'];
+        const supportedTypes = ['text', 'number', 'date', 'boolean', 'GPS', 'file', 'photo', 'video', 'voice', 'taux', 'list'];
         return questions.filter(q => supportedTypes.includes(q.type));
       };
+
+  const formatManifolderType = (type: string) => {
+    switch (type) {
+      case 'manifolder':
+        return 'Manifolder';
+      case 'intervention':
+        return 'Intervention';
+      case 'suivi':
+        return 'Suivi';
+      default:
+        return type.charAt(0).toUpperCase() + type.slice(1);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -239,7 +254,10 @@ export default function ManifolderQuestions({
         </View>
         <Text style={styles.emptyTitle}>No Questions Available</Text>
         <Text style={styles.emptyDescription}>
-          There are no questions configured for this manifolder type yet.
+          {manifolderType 
+            ? `There are no questions configured for ${formatManifolderType(manifolderType)} type yet.`
+            : 'There are no questions configured for this manifolder type yet.'
+          }
         </Text>
       </SafeAreaView>
     );
@@ -256,6 +274,7 @@ export default function ManifolderQuestions({
           <View style={styles.headerText}>
             <Text style={styles.headerTitle}>Questions</Text>
             <Text style={styles.headerSubtitle}>
+              {manifolderType && `${formatManifolderType(manifolderType)} • `}
               {getAnsweredCount()} of {supportedQuestions.length} answered
             </Text>
           </View>

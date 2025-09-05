@@ -1,11 +1,10 @@
 import { useAuth } from '@/contexts/AuthContext';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
-import { router } from 'expo-router';
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
+  Dimensions,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -16,11 +15,21 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import CustomAlert from '../../components/CustomAlert';
 
 interface LoginForm {
   email: string;
   password: string;
 }
+
+interface AlertState {
+  visible: boolean;
+  type: 'success' | 'error';
+  title: string;
+  message: string;
+}
+
+const { width, height } = Dimensions.get('window');
 
 export default function LoginScreen() {
   const { login, isLoading, isAuthenticated } = useAuth();
@@ -29,12 +38,18 @@ export default function LoginScreen() {
     password: '',
   });
   const [showPassword, setShowPassword] = useState(false);
+  const [focusedField, setFocusedField] = useState<string | null>(null);
+  const [alert, setAlert] = useState<AlertState>({
+    visible: false,
+    type: 'error',
+    title: '',
+    message: '',
+  });
 
-  // Watch for authentication changes and navigate automatically
+  // Watch for authentication changes - navigation will be handled by AuthWrapper
   useEffect(() => {
     if (isAuthenticated) {
-      console.log('Login screen detected authentication, navigating to tabs...');
-      router.replace('/(tabs)');
+      console.log('Login successful, post-login loading will begin...');
     }
   }, [isAuthenticated]);
 
@@ -42,9 +57,30 @@ export default function LoginScreen() {
     setForm(prev => ({ ...prev, [field]: value }));
   };
 
+  const handleInputFocus = (field: string) => {
+    setFocusedField(field);
+  };
+
+  const handleInputBlur = () => {
+    setFocusedField(null);
+  };
+
+  const showAlert = (type: 'success' | 'error', title: string, message: string) => {
+    setAlert({
+      visible: true,
+      type,
+      title,
+      message,
+    });
+  };
+
+  const hideAlert = () => {
+    setAlert(prev => ({ ...prev, visible: false }));
+  };
+
   const handleLogin = async () => {
     if (!form.email || !form.password) {
-      Alert.alert('Error', 'Please fill in all fields');
+      showAlert('error', 'Missing Information', 'Please fill in all fields to continue.');
       return;
     }
 
@@ -53,11 +89,12 @@ export default function LoginScreen() {
     console.log('Login result:', result);
     
     if (result.success) {
-      console.log('Login successful, waiting for redirect...');
-      // Navigation will be handled automatically by the useEffect above
+      console.log('Login successful, post-login loading will begin...');
+      showAlert('success', 'Login Successful!', 'Welcome to QualiSol. Redirecting to your workspace...');
+      // Navigation will be handled by AuthWrapper after loading screen
     } else {
       console.log('Login failed:', result.error);
-      Alert.alert('Login Failed', result.error || 'Invalid credentials');
+      showAlert('error', 'Login Failed', result.error || 'Invalid credentials. Please check your email and password.');
     }
   };
 
@@ -71,20 +108,25 @@ export default function LoginScreen() {
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
         >
+          {/* Background Gradient Effect */}
+          <View style={styles.backgroundGradient} />
+          
           {/* Header */}
           <View style={styles.header}>
             <View style={styles.logoContainer}>
-              <View style={styles.logo}> 
-                <Image
-                  source={require('../../assets/images/icon.png')}
-                  style={styles.logoImage}
-                  contentFit="contain"
-                />
+              <View style={styles.logoGradient}>
+                <View style={styles.logo}> 
+                  <Image
+                    source={require('../../assets/images/icon.png')}
+                    style={styles.logoImage}
+                    contentFit="contain"
+                  />
+                </View>
               </View>
             </View>
-            <Text style={styles.title}>TrackSol</Text>
+            <Text style={styles.title}>QualiSol</Text>
             <Text style={styles.subtitle}>
-              Streamlined construction operations for your teams
+              Professional construction management for your teams
             </Text>
           </View>
 
@@ -92,19 +134,25 @@ export default function LoginScreen() {
           <View style={styles.form}>
             {/* Email Input */}
             <View style={styles.inputContainer}>
-              <View style={styles.inputWrapper}>
+              <Text style={styles.inputLabel}>Email Address</Text>
+              <View style={[
+                styles.inputWrapper,
+                focusedField === 'email' && styles.inputWrapperFocused
+              ]}>
                 <Ionicons
                   name="mail-outline"
                   size={20}
-                  color="#8E8E93"
+                  color={focusedField === 'email' ? '#FF6B35' : '#6B7280'}
                   style={styles.inputIcon}
                 />
                 <TextInput
                   style={styles.input}
-                  placeholder="Email address"
-                  placeholderTextColor="#8E8E93"
+                  placeholder="Enter your email"
+                  placeholderTextColor="#9CA3AF"
                   value={form.email}
                   onChangeText={(value) => handleInputChange('email', value)}
+                  onFocus={() => handleInputFocus('email')}
+                  onBlur={handleInputBlur}
                   keyboardType="email-address"
                   autoCapitalize="none"
                   autoCorrect={false}
@@ -114,19 +162,25 @@ export default function LoginScreen() {
 
             {/* Password Input */}
             <View style={styles.inputContainer}>
-              <View style={styles.inputWrapper}>
+              <Text style={styles.inputLabel}>Password</Text>
+              <View style={[
+                styles.inputWrapper,
+                focusedField === 'password' && styles.inputWrapperFocused
+              ]}>
                 <Ionicons
                   name="lock-closed-outline"
                   size={20}
-                  color="#8E8E93"
+                  color={focusedField === 'password' ? '#FF6B35' : '#6B7280'}
                   style={styles.inputIcon}
                 />
                 <TextInput
                   style={styles.input}
-                  placeholder="Password"
-                  placeholderTextColor="#8E8E93"
+                  placeholder="Enter your password"
+                  placeholderTextColor="#9CA3AF"
                   value={form.password}
                   onChangeText={(value) => handleInputChange('password', value)}
+                  onFocus={() => handleInputFocus('password')}
+                  onBlur={handleInputBlur}
                   secureTextEntry={!showPassword}
                   autoCapitalize="none"
                   autoCorrect={false}
@@ -138,7 +192,7 @@ export default function LoginScreen() {
                   <Ionicons
                     name={showPassword ? 'eye-off-outline' : 'eye-outline'}
                     size={20}
-                    color="#8E8E93"
+                    color={focusedField === 'password' ? '#FF6B35' : '#6B7280'}
                   />
                 </TouchableOpacity>
               </View>
@@ -151,7 +205,7 @@ export default function LoginScreen() {
               disabled={isLoading}
             >
               {isLoading ? (
-                <ActivityIndicator color="#FFFFFF" />
+                <ActivityIndicator color="#FFFFFF" size="small" />
               ) : (
                 <Text style={styles.loginButtonText}>Sign In</Text>
               )}
@@ -172,6 +226,16 @@ export default function LoginScreen() {
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
+      
+      {/* Custom Alert */}
+      <CustomAlert
+        visible={alert.visible}
+        type={alert.type}
+        title={alert.title}
+        message={alert.message}
+        onClose={hideAlert}
+        duration={alert.type === 'success' ? 2000 : 4000}
+      />
     </SafeAreaView>
   );
 }
@@ -179,70 +243,112 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#F8FAFC',
   },
   keyboardView: {
     flex: 1,
   },
   scrollContent: {
     flexGrow: 1,
-    paddingHorizontal: 24,
+    paddingHorizontal: 32,
+    minHeight: height,
+  },
+  backgroundGradient: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: '#F8FAFC',
+    opacity: 0.8,
   },
   header: {
     alignItems: 'center',
-    marginTop: 60,
+    marginTop: height * 0.08,
     marginBottom: 48,
   },
   logoContainer: {
-    marginBottom: 24,
-  },
-  logo: {
-    width: 96,
-    height: 96,
-    borderRadius: 20,
-    backgroundColor: '#F2F2F7',
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: '#E5E5EA',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 10,
-    elevation: 3,
-  },
-  logoImage: {
-    width: '80%',
-    height: '80%',
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: '700',
-    color: '#11224e',
-    marginBottom: 6,
-    letterSpacing: 0.2,
-  },
-  subtitle: {
-    fontSize: 14,
-    color: '#8E8E93',
-    textAlign: 'center',
-    lineHeight: 20,
-  },
-  form: {
     marginBottom: 32,
   },
+  logoGradient: {
+    width: 88,
+    height: 88,
+    borderRadius: 22,
+    backgroundColor: '#FF6B35',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#FF6B35',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.3,
+    shadowRadius: 16,
+    elevation: 8,
+  },
+  logo: {
+    width: 72,
+    height: 72,
+    borderRadius: 18,
+    backgroundColor: '#FFFFFF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#1F2937',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  logoImage: {
+    width: '85%',
+    height: '85%',
+  },
+  title: {
+    fontSize: 32,
+    fontWeight: '800',
+    color: '#1F2937',
+    marginBottom: 8,
+    letterSpacing: -0.5,
+  },
+  subtitle: {
+    fontSize: 16,
+    color: '#6B7280',
+    textAlign: 'center',
+    lineHeight: 24,
+    paddingHorizontal: 20,
+  },
+  form: {
+    marginBottom: 40,
+  },
   inputContainer: {
-    marginBottom: 16,
+    marginBottom: 24,
+  },
+  inputLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#1F2937',
+    marginBottom: 8,
+    marginLeft: 4,
   },
   inputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F9FAFB',
-    borderRadius: 12,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
     paddingHorizontal: 16,
-    paddingVertical: 14,
-    borderWidth: 1,
+    paddingVertical: 16,
+    borderWidth: 2,
     borderColor: '#E5E7EB',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  inputWrapperFocused: {
+    borderColor: '#FF6B35',
+    shadowColor: '#FF6B35',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 4,
   },
   inputIcon: {
     marginRight: 12,
@@ -250,42 +356,44 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     fontSize: 16,
-    color: '#1C1C1E',
+    fontWeight: '500',
+    color: '#1F2937',
     paddingVertical: 0,
   },
   eyeIcon: {
     padding: 4,
   },
   loginButton: {
-    backgroundColor: '#11224e',
-    borderRadius: 12,
-    paddingVertical: 16,
+    backgroundColor: '#FF6B35',
+    borderRadius: 16,
+    paddingVertical: 18,
     alignItems: 'center',
-    marginTop: 8,
-    shadowColor: '#11224e',
-    shadowOffset: { width: 0, height: 4 },
+    marginTop: 16,
+    shadowColor: '#FF6B35',
+    shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.25,
-    shadowRadius: 8,
-    elevation: 6,
+    shadowRadius: 12,
+    elevation: 8,
   },
   loginButtonDisabled: {
-    backgroundColor: '#B0B0B0',
+    backgroundColor: '#9CA3AF',
     shadowOpacity: 0,
     elevation: 0,
   },
   loginButtonText: {
     color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 18,
+    fontWeight: '700',
+    letterSpacing: 0.5,
   },
   forgotPassword: {
     alignItems: 'center',
-    marginTop: 16,
+    marginTop: 20,
   },
   forgotPasswordText: {
-    color: '#007AFF',
+    color: '#FF6B35',
     fontSize: 14,
-    fontWeight: '500',
+    fontWeight: '600',
   },
   footer: {
     alignItems: 'center',
@@ -294,12 +402,12 @@ const styles = StyleSheet.create({
   },
   footerText: {
     fontSize: 14,
-    color: '#8E8E93',
+    color: '#6B7280',
     textAlign: 'center',
     lineHeight: 20,
   },
   footerLink: {
-    color: '#007AFF',
-    fontWeight: '500',
+    color: '#FF6B35',
+    fontWeight: '600',
   },
 });

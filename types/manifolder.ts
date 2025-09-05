@@ -39,7 +39,7 @@ export interface ManifolderListItem {
 }
 
 // Question types for manifolder detail workflow
-export type QuestionType = 'text' | 'number' | 'date' | 'boolean' | 'file' | 'photo' | 'video' | 'GPS' | 'voice' | 'taux';
+export type QuestionType = 'text' | 'number' | 'date' | 'boolean' | 'file' | 'photo' | 'video' | 'GPS' | 'voice' | 'taux' | 'list';
 
 export interface ManifolderQuestion {
   id: string;

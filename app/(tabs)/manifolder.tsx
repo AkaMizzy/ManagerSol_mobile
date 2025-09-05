@@ -26,7 +26,7 @@ function formatTime(d: Date) {
 }
 
 export default function ManifolderTab() {
-  const { token } = useAuth();
+  const { token, user } = useAuth();
 
   const [isLoading, setIsLoading] = useState(true);
   const [projects, setProjects] = useState<Project[]>([]);
@@ -181,13 +181,14 @@ export default function ManifolderTab() {
 
   const renderManifolderList = () => (
     <View style={styles.body}>
-      <Pressable onPress={() => setIsModalVisible(true)} style={styles.primaryCta} accessibilityRole="button">
-        <Text style={styles.primaryCtaText}>Create Manifolder</Text>
-      </Pressable>
-      
       {manifolders.length > 0 && (
         <View style={styles.manifoldersSection}>
-          <Text style={styles.sectionTitle}>Recent Manifolds</Text>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Recent Manifolds</Text>
+            <Pressable onPress={() => setIsModalVisible(true)} style={styles.createButton}>
+              <Text style={styles.createButtonText}>+ Create</Text>
+            </Pressable>
+          </View>
           <ScrollView style={styles.manifoldersList} showsVerticalScrollIndicator={false}>
             {manifolders.slice(0, 10).map((manifolder) => (
               <Pressable
@@ -196,15 +197,44 @@ export default function ManifolderTab() {
                 onPress={() => handleManifolderSelect(manifolder.id, manifolder)}
               >
                 <View style={styles.manifolderCardContent}>
-                  <View style={styles.manifolderInfo}>
+                  {/* Card Header */}
+                  <View style={styles.cardHeader}>
                     <Text style={styles.manifolderTitle}>{manifolder.title}</Text>
-                    <Text style={styles.manifolderCode}>{manifolder.code_formatted}</Text>
-                    <Text style={styles.manifolderProject}>{manifolder.project_title}</Text>
-                    <Text style={styles.manifolderZone}>{manifolder.zone_title}</Text>
-                    <Text style={styles.manifolderDate}>{manifolder.date}</Text>
+                    <View style={styles.statusTag}>
+                      <Text style={styles.statusTagText}>{manifolder.code_formatted}</Text>
+                    </View>
                   </View>
-                  <View style={styles.chevronContainer}>
-                    <Text style={styles.chevron}>▶</Text>
+                  
+                  {/* Card Body */}
+                  <View style={styles.cardBody}>
+                    <View style={styles.manifolderDetails}>
+                      <View style={styles.detailItem}>
+                        <Text style={styles.detailIcon}>🏢</Text>
+                        <Text style={styles.detailText} numberOfLines={1}>{manifolder.project_title}</Text>
+                      </View>
+                      <View style={styles.detailSeparator} />
+                      <View style={styles.detailItem}>
+                        <Text style={styles.detailIcon}>📍</Text>
+                        <Text style={styles.detailText} numberOfLines={1}>{manifolder.zone_title}</Text>
+                      </View>
+                      <View style={styles.detailSeparator} />
+                      <View style={styles.detailItem}>
+                        <Text style={styles.detailIcon}>📋</Text>
+                        <Text style={styles.detailText} numberOfLines={1}>{manifolder.type_title}</Text>
+                      </View>
+                    </View>
+                  </View>
+                  
+                  {/* Card Footer */}
+                  <View style={styles.cardFooter}>
+                    <View style={styles.dateContainer}>
+                      <Text style={styles.dateIcon}>📅</Text>
+                      <Text style={styles.manifolderDate}>{manifolder.date}</Text>
+                    </View>
+                    <View style={styles.actionIndicator}>
+                      <Text style={styles.actionText}>View Details</Text>
+                      <Text style={styles.chevron}>▶</Text>
+                    </View>
                   </View>
                 </View>
               </Pressable>
@@ -225,19 +255,15 @@ export default function ManifolderTab() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <AppHeader />
+      <AppHeader user={user || undefined} />
 
-      {currentView !== 'details' && (
+      {currentView === 'questions' && (
         <View style={styles.header}>
           <View style={styles.headerContent}>
-            {currentView === 'questions' && (
-              <Pressable onPress={handleBackToList} style={styles.backButton}>
-                <Text style={styles.backButtonText}>←</Text>
-              </Pressable>
-            )}
-            <Text style={styles.headerTitle}>
-              {currentView === 'questions' ? 'Questions' : 'Manifold'}
-            </Text>
+            <Pressable onPress={handleBackToList} style={styles.backButton}>
+              <Text style={styles.backButtonText}>←</Text>
+            </Pressable>
+            <Text style={styles.headerTitle}>Questions</Text>
           </View>
         </View>
       )}
@@ -273,7 +299,30 @@ export default function ManifolderTab() {
           <View style={styles.modalCard}>
             <Text style={styles.modalTitle}>Create Manifolder</Text>
             <ScrollView contentContainerStyle={styles.modalContent} showsVerticalScrollIndicator={false}>
-            <Text style={styles.label}>Title *</Text>
+              {/* Photo Upload Section */}
+              <View style={styles.photoUploadSection}>
+                <Text style={styles.label}>Photos (Coming Soon)</Text>
+                <View style={styles.photoGrid}>
+                  <Pressable style={styles.photoPlaceholder} onPress={() => Alert.alert('Coming Soon', 'Photo upload feature will be available soon!')}>
+                    <Text style={styles.photoIcon}>📷</Text>
+                    <Text style={styles.photoLabel}>Photo 1</Text>
+                  </Pressable>
+                  <Pressable style={styles.photoPlaceholder} onPress={() => Alert.alert('Coming Soon', 'Photo upload feature will be available soon!')}>
+                    <Text style={styles.photoIcon}>📷</Text>
+                    <Text style={styles.photoLabel}>Photo 2</Text>
+                  </Pressable>
+                  <Pressable style={styles.photoPlaceholder} onPress={() => Alert.alert('Coming Soon', 'Photo upload feature will be available soon!')}>
+                    <Text style={styles.photoIcon}>📷</Text>
+                    <Text style={styles.photoLabel}>Photo 3</Text>
+                  </Pressable>
+                  <Pressable style={styles.photoPlaceholder} onPress={() => Alert.alert('Coming Soon', 'Photo upload feature will be available soon!')}>
+                    <Text style={styles.photoIcon}>📷</Text>
+                    <Text style={styles.photoLabel}>Photo 4</Text>
+                  </Pressable>
+                </View>
+              </View>
+
+              <Text style={styles.label}>Title *</Text>
               <TextInput
                 style={styles.textInput}
                 value={title}
@@ -467,13 +516,14 @@ const styles = StyleSheet.create({
   header: {
     backgroundColor: '#FFFFFF',
     paddingHorizontal: 20,
-    paddingVertical: 16,
+    paddingVertical: 20,
     borderBottomWidth: 1,
     borderBottomColor: '#E5E5EA',
   },
   headerContent: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
   },
   headerContentDetails: {
     justifyContent: 'flex-start',
@@ -488,31 +538,38 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   headerTitle: {
-    fontSize: 28,
+    fontSize: 24,
     fontWeight: '700',
     color: '#1C1C1E',
-    flex: 1,
+  },
+  createButton: {
+    backgroundColor: '#11224e',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 12,
+    shadowColor: '#11224e',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    elevation: 3,
+  },
+  createButtonText: {
+    color: '#FFFFFF',
+    fontWeight: '700',
+    fontSize: 15,
   },
   body: {
     flex: 1,
-    padding: 16,
+    backgroundColor: '#F8FAFC',
+    paddingHorizontal: 20,
+    paddingTop: 24,
+    paddingBottom: 20,
   },
   center: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#FFFFFF',
-  },
-  primaryCta: {
-    backgroundColor: '#34C759',
-    paddingVertical: 14,
-    borderRadius: 10,
-    alignItems: 'center',
-    marginTop: 8,
-  },
-  primaryCtaText: {
-    color: '#FFFFFF',
-    fontWeight: '700',
   },
   label: {
     fontSize: 12,
@@ -594,14 +651,23 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 16,
+    padding: 20,
   },
   modalCard: {
     width: '100%',
-    maxWidth: 520,
+    maxWidth: 400,
+    maxHeight: '85%',
     backgroundColor: '#FFFFFF',
-    borderRadius: 12,
+    borderRadius: 16,
     overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 10,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 20,
+    elevation: 10,
   },
   modalTitle: {
     fontSize: 18,
@@ -613,6 +679,7 @@ const styles = StyleSheet.create({
   modalContent: {
     padding: 16,
     paddingTop: 8,
+    paddingBottom: 8,
   },
   modalActions: {
     flexDirection: 'row',
@@ -665,71 +732,179 @@ const styles = StyleSheet.create({
   },
   // New styles for manifolder list
   manifoldersSection: {
-    marginTop: 24,
     flex: 1,
   },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20,
+    paddingBottom: 12,
+    borderBottomWidth: 2,
+    borderBottomColor: '#f87b1b',
+  },
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
+    fontSize: 24,
+    fontWeight: '800',
     color: '#1C1C1E',
-    marginBottom: 12,
   },
   manifoldersList: {
     flex: 1,
   },
   manifolderCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    marginBottom: 8,
+    borderRadius: 16,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#f87b1b',
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
-      height: 1,
+      height: 4,
     },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
   },
   manifolderCardContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 16,
+    padding: 20,
   },
-  manifolderInfo: {
-    flex: 1,
+  // Card Header Styles
+  cardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 16,
   },
   manifolderTitle: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: '700',
-    color: '#11224e',
-    marginBottom: 4,
-  },
-  manifolderCode: {
-    fontSize: 12,
-    color: '#8E8E93',
-    marginBottom: 4,
-  },
-  manifolderProject: {
-    fontSize: 14,
     color: '#1C1C1E',
-    marginBottom: 2,
+    flex: 1,
+    marginRight: 12,
   },
-  manifolderZone: {
+  statusTag: {
+    backgroundColor: '#11224e',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    shadowColor: '#11224e',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  statusTagText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  
+  // Card Body Styles
+  cardBody: {
+    marginBottom: 16,
+  },
+  manifolderDetails: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#F8FAFC',
+    borderRadius: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+  },
+  detailItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    flex: 1,
+    justifyContent: 'center',
+  },
+  detailIcon: {
     fontSize: 14,
-    color: '#8E8E93',
-    marginBottom: 2,
+  },
+  detailText: {
+    fontSize: 13,
+    color: '#6B7280',
+    fontWeight: '500',
+    flex: 1,
+  },
+  detailSeparator: {
+    width: 1,
+    height: 20,
+    backgroundColor: '#E5E7EB',
+    marginHorizontal: 8,
+  },
+  
+  // Card Footer Styles
+  cardFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#F3F4F6',
+  },
+  dateContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  dateIcon: {
+    fontSize: 14,
+    color: '#f87b1b',
   },
   manifolderDate: {
-    fontSize: 12,
-    color: '#8E8E93',
+    fontSize: 14,
+    color: '#6B7280',
+    fontWeight: '500',
   },
-  chevronContainer: {
-    padding: 4,
+  actionIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  actionText: {
+    fontSize: 14,
+    color: '#f87b1b',
+    fontWeight: '600',
   },
   chevron: {
     fontSize: 16,
+    color: '#f87b1b',
+    fontWeight: '700',
+  },
+  // Photo upload styles
+  photoUploadSection: {
+    marginBottom: 16,
+  },
+  photoGrid: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 8,
+    gap: 8,
+  },
+  photoPlaceholder: {
+    flex: 1,
+    aspectRatio: 1,
+    backgroundColor: '#F8F9FA',
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: '#E5E5EA',
+    borderStyle: 'dashed',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 8,
+  },
+  photoIcon: {
+    fontSize: 24,
+    marginBottom: 4,
+  },
+  photoLabel: {
+    fontSize: 10,
     color: '#8E8E93',
-    fontWeight: '600',
+    fontWeight: '500',
+    textAlign: 'center',
   },
 });
 

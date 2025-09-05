@@ -59,7 +59,7 @@ class ManifolderService {
   }
 
   // Question-related methods for manifolder detail workflow
-  getManifolderQuestions(manifolderId: string, token: string): Promise<{ manifolderId: string; questions: ManifolderQuestion[]; }> {
+  getManifolderQuestions(manifolderId: string, token: string): Promise<{ manifolderId: string; manifolderType: string; questions: ManifolderQuestion[]; }> {
     return this.request(`/manifolder-details/questions/${manifolderId}`, token);
   }
 

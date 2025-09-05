@@ -328,7 +328,7 @@ export default function DeclarationScreen() {
   return (
     <SafeAreaView style={styles.container}>
       {/* App Header */}
-      <AppHeader />
+      <AppHeader user={user || undefined} />
       
       {/* Enhanced Header */}
       <View style={styles.header}>

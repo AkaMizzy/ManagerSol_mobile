@@ -24,7 +24,7 @@ import { CompanyUser, CreateActionData, DeclarationAction, Zone } from '../../ty
 type TabType = 'created' | 'assigned';
 
 export default function TaskScreen() {
-  const { token } = useAuth();
+  const { token, user } = useAuth();
   const [activeTab, setActiveTab] = useState<TabType>('created');
   const [createdActions, setCreatedActions] = useState<DeclarationAction[]>([]);
   const [assignedActions, setAssignedActions] = useState<DeclarationAction[]>([]);
@@ -536,7 +536,7 @@ export default function TaskScreen() {
   return (
     <SafeAreaView style={styles.container}>
       {/* App Header */}
-      <AppHeader />
+      <AppHeader user={user || undefined} />
       
       {/* Header */}
       <View style={styles.header}>
