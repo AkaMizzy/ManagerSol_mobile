@@ -75,6 +75,7 @@ export interface ManifolderAnswerWithDetails {
   value: any;
   quantity?: number;
   zoneId?: string;
+  vocalAnswer?: string | null; // Add vocal answer field
   createdAt: string;
   updatedAt: string;
 }

@@ -81,6 +81,12 @@ class ManifolderService {
     });
   }
 
+  deleteManifolderAnswer(answerId: string, token: string): Promise<{ message: string; answerId: string; }> {
+    return this.request(`/manifolder-details/answers/${answerId}`, token, {
+      method: 'DELETE',
+    });
+  }
+
   // File upload method for manifolder questions
   async uploadManifolderFile(manifolderId: string, questionId: string, file: File | { uri: string; name: string; type: string }, token: string, zoneId: string): Promise<{ message: string; file: any; }> {
     if (!token) throw new Error('Authentication token required');

@@ -1,8 +1,10 @@
 import API_CONFIG from '@/app/config/api';
 import { ManifolderQuestion, QuestionType, Zone } from '@/types/manifolder';
 import { Ionicons } from '@expo/vector-icons';
+import * as ImagePicker from 'expo-image-picker';
 import React, { useState } from 'react';
 import {
+  Alert,
   Animated,
   FlatList,
   Modal,
@@ -30,6 +32,7 @@ interface QuestionAccordionProps {
   isExpanded?: boolean;
   onToggleExpand: (questionId: string) => void;
   onCopyQuestion?: (questionId: string) => void;
+  onResetQuestion?: (questionId: string) => void;
 }
 
 export default function QuestionAccordion({
@@ -43,12 +46,16 @@ export default function QuestionAccordion({
   isExpanded = false,
   onToggleExpand,
   onCopyQuestion,
+  onResetQuestion,
 }: QuestionAccordionProps) {
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [animatedHeight] = useState(new Animated.Value(0));
   const [showPreview, setShowPreview] = useState(false);
   const [questionZoneId, setQuestionZoneId] = useState(selectedZoneId || defaultZoneId);
   const [showZoneModal, setShowZoneModal] = useState(false);
+  const [showCameraModal, setShowCameraModal] = useState(false);
+  const [showVoiceModal, setShowVoiceModal] = useState(false);
+  const [vocalAnswer, setVocalAnswer] = useState<any>(null);
 
   React.useEffect(() => {
     Animated.timing(animatedHeight, {
@@ -56,7 +63,22 @@ export default function QuestionAccordion({
       duration: 300,
       useNativeDriver: false,
     }).start();
-  }, [isExpanded]);
+  }, [isExpanded, animatedHeight]);
+
+  // Initialize vocal answer from value prop
+  React.useEffect(() => {
+    if (value && typeof value === 'object' && value.path && (
+      value.type?.startsWith('audio/') || 
+      value.path.includes('.m4a') || 
+      value.path.includes('.mp3') || 
+      value.path.includes('.wav') ||
+      value.path.includes('.aac')
+    )) {
+      setVocalAnswer(value);
+    } else {
+      setVocalAnswer(null);
+    }
+  }, [value]);
 
   const handleValueChange = (newValue: any, newQuantity?: number, zoneId?: string) => {
     onValueChange(question.id, newValue, newQuantity, zoneId || questionZoneId);
@@ -134,6 +156,74 @@ export default function QuestionAccordion({
     if (hasPreviewableMedia()) {
       setShowPreview(true);
     }
+  };
+
+  const handleCameraCapture = async () => {
+    try {
+      const { status } = await ImagePicker.requestCameraPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission needed', 'Camera permission is required to take photos');
+        setShowCameraModal(false);
+        return;
+      }
+
+      const result = await ImagePicker.launchCameraAsync({
+        allowsEditing: true,
+        aspect: [4, 3],
+        quality: 0.8,
+      });
+
+      if (!result.canceled && result.assets[0]) {
+        const asset = result.assets[0];
+        const fileName = `camera_${Date.now()}.jpg`;
+        
+        handleValueChange({
+          uri: asset.uri,
+          name: fileName,
+          type: 'image/jpeg',
+        });
+      }
+    } catch (error: any) {
+      Alert.alert('Error', error.message || 'Failed to capture photo');
+    }
+    setShowCameraModal(false);
+  };
+
+  const handleGalleryPick = async () => {
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [4, 3],
+        quality: 0.8,
+      });
+
+      if (!result.canceled && result.assets[0]) {
+        const asset = result.assets[0];
+        const fileName = asset.fileName || `image_${Date.now()}.jpg`;
+        const fileType = asset.type || 'image/jpeg';
+        
+        handleValueChange({
+          uri: asset.uri,
+          name: fileName,
+          type: fileType,
+        });
+      }
+    } catch (error: any) {
+      Alert.alert('Error', error.message || 'Failed to pick image');
+    }
+    setShowCameraModal(false);
+  };
+
+  const handleVocalFileSelect = (file: { uri: string; name: string; type: string }) => {
+    setVocalAnswer(file);
+    handleValueChange(file);
+    setShowVoiceModal(false);
+  };
+
+  const handleVocalFileRemove = () => {
+    setVocalAnswer(null);
+    handleValueChange(null);
   };
 
   // Get hardcoded options for list questions based on question title and context
@@ -445,8 +535,9 @@ export default function QuestionAccordion({
             <Pressable
               style={styles.actionButton}
               onPress={() => {
-                // TODO: Implement refresh functionality
-                console.log('Reset button pressed for question:', question.id);
+                if (onResetQuestion) {
+                  onResetQuestion(question.id);
+                }
               }}
               accessibilityRole="button"
               accessibilityLabel="Reset question"
@@ -461,10 +552,7 @@ export default function QuestionAccordion({
             {/* Camera Button */}
             <Pressable
               style={styles.actionButton}
-              onPress={() => {
-                // TODO: Implement camera functionality
-                console.log('Camera button pressed for question:', question.id);
-              }}
+              onPress={() => setShowCameraModal(true)}
               accessibilityRole="button"
               accessibilityLabel="Take photo"
             >
@@ -478,10 +566,7 @@ export default function QuestionAccordion({
             {/* vocal Button */}
             <Pressable
               style={styles.actionButton}
-              onPress={() => {
-                // TODO: Implement camera functionality
-                console.log('mic button pressed for question:', question.id);
-              }}
+              onPress={() => setShowVoiceModal(true)}
               accessibilityRole="button"
               accessibilityLabel="record voice"
             >
@@ -646,6 +731,66 @@ export default function QuestionAccordion({
                 </Pressable>
               )}
             />
+          </View>
+        </View>
+      </Modal>
+
+      {/* Camera Selection Modal */}
+      <Modal
+        visible={showCameraModal}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setShowCameraModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Select Photo</Text>
+              <Pressable onPress={() => setShowCameraModal(false)}>
+                <Ionicons name="close" size={24} color="#1C1C1E" />
+              </Pressable>
+            </View>
+            
+            <View style={styles.cameraOptionsContainer}>
+              <Pressable style={styles.cameraOption} onPress={handleGalleryPick}>
+                <Ionicons name="images-outline" size={32} color="#007AFF" />
+                <Text style={styles.cameraOptionText}>Choose from Gallery</Text>
+              </Pressable>
+              
+              <Pressable style={styles.cameraOption} onPress={handleCameraCapture}>
+                <Ionicons name="camera-outline" size={32} color="#007AFF" />
+                <Text style={styles.cameraOptionText}>Take Photo</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Voice Recording Modal */}
+      <Modal
+        visible={showVoiceModal}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setShowVoiceModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Record Voice Note</Text>
+              <Pressable onPress={() => setShowVoiceModal(false)}>
+                <Ionicons name="close" size={24} color="#1C1C1E" />
+              </Pressable>
+            </View>
+            
+            <View style={styles.voiceOptionsContainer}>
+              <VoiceRecorder
+                value={vocalAnswer}
+                onFileSelect={handleVocalFileSelect}
+                onFileRemove={handleVocalFileRemove}
+                placeholder="Record voice note for this question"
+                maxDuration={300} // 5 minutes
+              />
+            </View>
           </View>
         </View>
       </Modal>
@@ -977,5 +1122,27 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
     textAlign: 'center',
     paddingVertical: 20,
+  },
+  cameraOptionsContainer: {
+    paddingVertical: 20,
+    gap: 16,
+  },
+  cameraOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    backgroundColor: '#F2F2F7',
+    borderRadius: 12,
+  },
+  cameraOptionText: {
+    fontSize: 16,
+    color: '#1C1C1E',
+    marginLeft: 16,
+    fontWeight: '500',
+  },
+  voiceOptionsContainer: {
+    paddingVertical: 20,
+    paddingHorizontal: 20,
   },
 });

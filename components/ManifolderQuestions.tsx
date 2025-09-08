@@ -41,6 +41,7 @@ export default function ManifolderQuestions({
   const [answers, setAnswers] = useState<Record<string, any>>({});
   const [quantities, setQuantities] = useState<Record<string, number>>({});
   const [questionZones, setQuestionZones] = useState<Record<string, string>>({});
+  const [answerIds, setAnswerIds] = useState<Record<string, string>>({});
   const [expandedQuestions, setExpandedQuestions] = useState<Set<string>>(new Set());
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -76,6 +77,7 @@ export default function ManifolderQuestions({
          const existingAnswers: Record<string, any> = {};
          const existingQuantities: Record<string, number> = {};
          const existingQuestionZones: Record<string, string> = {};
+         const existingAnswerIds: Record<string, string> = {};
          answersResponse.answers.forEach(answer => {
            // Handle GPS answers - they come with latitude/longitude from backend
            if (answer.questionType === 'GPS' && typeof answer.value === 'object' && answer.value.latitude && answer.value.longitude) {
@@ -92,6 +94,15 @@ export default function ManifolderQuestions({
                size: 0, // Backend doesn't provide size, so we'll set to 0
                mimetype: 'application/octet-stream' // Default mimetype
              };
+           } else if (answer.vocalAnswer) {
+             // Handle vocal answers - they come as file paths from backend
+             existingAnswers[answer.questionId] = {
+               filename: answer.vocalAnswer.split('/').pop() || '',
+               originalName: answer.vocalAnswer.split('/').pop() || '',
+               path: answer.vocalAnswer,
+               size: 0, // Backend doesn't provide size, so we'll set to 0
+               mimetype: 'audio/mp4' // Audio mimetype
+             };
            } else {
              existingAnswers[answer.questionId] = answer.value;
            }
@@ -105,10 +116,14 @@ export default function ManifolderQuestions({
            if (answer.zoneId) {
              existingQuestionZones[answer.questionId] = answer.zoneId;
            }
+           
+           // Store answer ID for deletion purposes
+           existingAnswerIds[answer.questionId] = answer.id;
          });
          setAnswers(existingAnswers);
          setQuantities(existingQuantities);
          setQuestionZones(prev => ({ ...prev, ...existingQuestionZones }));
+         setAnswerIds(existingAnswerIds);
        } catch {
          // If no existing answers, that's fine
          console.log('No existing answers found');
@@ -185,6 +200,72 @@ export default function ManifolderQuestions({
       Alert.alert('Success', 'Question duplicated successfully!');
     } catch (error: any) {
       Alert.alert('Error', error.message || 'Failed to duplicate question');
+    }
+  };
+
+  const handleResetQuestion = async (questionId: string) => {
+    if (!token) return;
+
+    const answerId = answerIds[questionId];
+    if (!answerId) {
+      // If no answer ID exists, just clear the local state
+      setAnswers(prev => {
+        const newAnswers = { ...prev };
+        delete newAnswers[questionId];
+        return newAnswers;
+      });
+      setQuantities(prev => {
+        const newQuantities = { ...prev };
+        delete newQuantities[questionId];
+        return newQuantities;
+      });
+      return;
+    }
+
+    try {
+      // Show confirmation dialog
+      Alert.alert(
+        'Reset Answer',
+        'Are you sure you want to delete this answer? This action cannot be undone.',
+        [
+          {
+            text: 'Cancel',
+            style: 'cancel',
+          },
+          {
+            text: 'Delete',
+            style: 'destructive',
+            onPress: async () => {
+              try {
+                await manifolderService.deleteManifolderAnswer(answerId, token);
+                
+                // Clear the local state
+                setAnswers(prev => {
+                  const newAnswers = { ...prev };
+                  delete newAnswers[questionId];
+                  return newAnswers;
+                });
+                setQuantities(prev => {
+                  const newQuantities = { ...prev };
+                  delete newQuantities[questionId];
+                  return newQuantities;
+                });
+                setAnswerIds(prev => {
+                  const newAnswerIds = { ...prev };
+                  delete newAnswerIds[questionId];
+                  return newAnswerIds;
+                });
+                
+                Alert.alert('Success', 'Answer deleted successfully!');
+              } catch (error: any) {
+                Alert.alert('Error', error.message || 'Failed to delete answer');
+              }
+            },
+          },
+        ]
+      );
+    } catch (error: any) {
+      Alert.alert('Error', error.message || 'Failed to reset answer');
     }
   };
 
@@ -371,6 +452,7 @@ export default function ManifolderQuestions({
               isExpanded={expandedQuestions.has(question.id)}
               onToggleExpand={handleQuestionToggle}
               onCopyQuestion={handleCopyQuestion}
+              onResetQuestion={handleResetQuestion}
             />
           ))}
         </View>
