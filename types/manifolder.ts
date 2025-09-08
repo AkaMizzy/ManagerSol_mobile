@@ -63,6 +63,7 @@ export interface ManifolderAnswer {
   longitude?: number;
   quantity?: number;
   zoneId?: string;
+  status?: number; // Add status field (0-4)
 }
 
 export interface ManifolderAnswerWithDetails {
@@ -75,6 +76,7 @@ export interface ManifolderAnswerWithDetails {
   value: any;
   quantity?: number;
   zoneId?: string;
+  status?: number; // Add status field (0-4)
   vocalAnswer?: string | null; // Add vocal answer field
   createdAt: string;
   updatedAt: string;

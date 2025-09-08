@@ -41,6 +41,7 @@ export default function ManifolderQuestions({
   const [answers, setAnswers] = useState<Record<string, any>>({});
   const [quantities, setQuantities] = useState<Record<string, number>>({});
   const [questionZones, setQuestionZones] = useState<Record<string, string>>({});
+  const [questionStatuses, setQuestionStatuses] = useState<Record<string, number>>({});
   const [answerIds, setAnswerIds] = useState<Record<string, string>>({});
   const [expandedQuestions, setExpandedQuestions] = useState<Set<string>>(new Set());
   const [isLoading, setIsLoading] = useState(true);
@@ -71,12 +72,20 @@ export default function ManifolderQuestions({
       });
       setQuestionZones(initialQuestionZones);
       
+      // Initialize question statuses with default status (0)
+      const initialQuestionStatuses: Record<string, number> = {};
+      response.questions.forEach(q => {
+        initialQuestionStatuses[q.id] = 0;
+      });
+      setQuestionStatuses(initialQuestionStatuses);
+      
                       // Try to load existing answers
        try {
          const answersResponse = await manifolderService.getManifolderAnswers(manifolderId, token);
          const existingAnswers: Record<string, any> = {};
          const existingQuantities: Record<string, number> = {};
          const existingQuestionZones: Record<string, string> = {};
+         const existingQuestionStatuses: Record<string, number> = {};
          const existingAnswerIds: Record<string, string> = {};
          answersResponse.answers.forEach(answer => {
            // Handle GPS answers - they come with latitude/longitude from backend
@@ -117,12 +126,18 @@ export default function ManifolderQuestions({
              existingQuestionZones[answer.questionId] = answer.zoneId;
            }
            
+           // Store status if available
+           if (answer.status !== undefined && answer.status !== null) {
+             existingQuestionStatuses[answer.questionId] = answer.status;
+           }
+           
            // Store answer ID for deletion purposes
            existingAnswerIds[answer.questionId] = answer.id;
          });
          setAnswers(existingAnswers);
          setQuantities(existingQuantities);
          setQuestionZones(prev => ({ ...prev, ...existingQuestionZones }));
+         setQuestionStatuses(prev => ({ ...prev, ...existingQuestionStatuses }));
          setAnswerIds(existingAnswerIds);
        } catch {
          // If no existing answers, that's fine
@@ -147,7 +162,7 @@ export default function ManifolderQuestions({
     });
   };
 
-  const handleAnswerChange = (questionId: string, value: any, quantity?: number, zoneId?: string) => {
+  const handleAnswerChange = (questionId: string, value: any, quantity?: number, zoneId?: string, status?: number) => {
     setAnswers(prev => ({
       ...prev,
       [questionId]: value,
@@ -164,6 +179,13 @@ export default function ManifolderQuestions({
       setQuestionZones(prev => ({
         ...prev,
         [questionId]: zoneId,
+      }));
+    }
+
+    if (status !== undefined) {
+      setQuestionStatuses(prev => ({
+        ...prev,
+        [questionId]: status,
       }));
     }
   };
@@ -219,6 +241,11 @@ export default function ManifolderQuestions({
         delete newQuantities[questionId];
         return newQuantities;
       });
+      setQuestionStatuses(prev => {
+        const newStatuses = { ...prev };
+        delete newStatuses[questionId];
+        return newStatuses;
+      });
       return;
     }
 
@@ -249,6 +276,11 @@ export default function ManifolderQuestions({
                   const newQuantities = { ...prev };
                   delete newQuantities[questionId];
                   return newQuantities;
+                });
+                setQuestionStatuses(prev => {
+                  const newStatuses = { ...prev };
+                  delete newStatuses[questionId];
+                  return newStatuses;
                 });
                 setAnswerIds(prev => {
                   const newAnswerIds = { ...prev };
@@ -320,6 +352,7 @@ export default function ManifolderQuestions({
                longitude: value.longitude,
                quantity: quantities[questionId],
                zoneId: questionZones[questionId],
+               status: questionStatuses[questionId],
              };
            }
            // Handle file answers - they're already uploaded, so we don't need to include them in submission
@@ -329,6 +362,7 @@ export default function ManifolderQuestions({
                value: value.path, // Just send the file path
                quantity: quantities[questionId],
                zoneId: questionZones[questionId],
+               status: questionStatuses[questionId],
              };
            }
            // Handle regular answers
@@ -337,6 +371,7 @@ export default function ManifolderQuestions({
              value,
              quantity: quantities[questionId],
              zoneId: questionZones[questionId],
+             status: questionStatuses[questionId],
            };
          });
 
@@ -439,14 +474,15 @@ export default function ManifolderQuestions({
               value={answers[question.id]}
               quantity={quantities[question.id]}
               selectedZoneId={questionZones[question.id]}
+              selectedStatus={questionStatuses[question.id]}
               availableZones={availableZones}
               defaultZoneId={defaultZoneId}
-              onValueChange={(questionId, value, quantity, zoneId) => {
+              onValueChange={(questionId, value, quantity, zoneId, status) => {
                 // Check if this is a file upload (has uri, name, type properties)
                 if (value && typeof value === 'object' && value.uri && value.name && value.type) {
                   handleFileUpload(questionId, value);
                 } else {
-                  handleAnswerChange(questionId, value, quantity, zoneId);
+                  handleAnswerChange(questionId, value, quantity, zoneId, status);
                 }
               }}
               isExpanded={expandedQuestions.has(question.id)}

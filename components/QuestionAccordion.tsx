@@ -26,9 +26,10 @@ interface QuestionAccordionProps {
   value?: any;
   quantity?: number;
   selectedZoneId?: string;
+  selectedStatus?: number;
   availableZones: Zone[];
   defaultZoneId: string;
-  onValueChange: (questionId: string, value: any, quantity?: number, zoneId?: string) => void;
+  onValueChange: (questionId: string, value: any, quantity?: number, zoneId?: string, status?: number) => void;
   isExpanded?: boolean;
   onToggleExpand: (questionId: string) => void;
   onCopyQuestion?: (questionId: string) => void;
@@ -40,6 +41,7 @@ export default function QuestionAccordion({
   value,
   quantity,
   selectedZoneId,
+  selectedStatus,
   availableZones,
   defaultZoneId,
   onValueChange,
@@ -52,7 +54,9 @@ export default function QuestionAccordion({
   const [animatedHeight] = useState(new Animated.Value(0));
   const [showPreview, setShowPreview] = useState(false);
   const [questionZoneId, setQuestionZoneId] = useState(selectedZoneId || defaultZoneId);
+  const [questionStatus, setQuestionStatus] = useState(selectedStatus || 0);
   const [showZoneModal, setShowZoneModal] = useState(false);
+  const [showStatusModal, setShowStatusModal] = useState(false);
   const [showCameraModal, setShowCameraModal] = useState(false);
   const [showVoiceModal, setShowVoiceModal] = useState(false);
   const [vocalAnswer, setVocalAnswer] = useState<any>(null);
@@ -80,13 +84,18 @@ export default function QuestionAccordion({
     }
   }, [value]);
 
-  const handleValueChange = (newValue: any, newQuantity?: number, zoneId?: string) => {
-    onValueChange(question.id, newValue, newQuantity, zoneId || questionZoneId);
+  const handleValueChange = (newValue: any, newQuantity?: number, zoneId?: string, status?: number) => {
+    onValueChange(question.id, newValue, newQuantity, zoneId || questionZoneId, status || questionStatus);
   };
 
   const handleZoneChange = (zoneId: string) => {
     setQuestionZoneId(zoneId);
-    onValueChange(question.id, value, quantity, zoneId);
+    onValueChange(question.id, value, quantity, zoneId, questionStatus);
+  };
+
+  const handleStatusChange = (status: number) => {
+    setQuestionStatus(status);
+    onValueChange(question.id, value, quantity, questionZoneId, status);
   };
 
   const formatDate = (date: Date) => {
@@ -94,6 +103,17 @@ export default function QuestionAccordion({
     const m = String(date.getMonth() + 1).padStart(2, '0');
     const day = String(date.getDate()).padStart(2, '0');
     return `${y}-${m}-${day}`;
+  };
+
+  const getStatusLabel = (status: number) => {
+    const statusLabels = {
+      0: 'Not Started',
+      1: 'In Progress',
+      2: 'Completed',
+      3: 'On Hold',
+      4: 'Cancelled'
+    };
+    return statusLabels[status as keyof typeof statusLabels] || 'Not Started';
   };
 
   // Check if question has media that can be previewed
@@ -668,6 +688,20 @@ export default function QuestionAccordion({
                 <Ionicons name="chevron-down" size={20} color="#8E8E93" />
               </Pressable>
             </View>
+
+            {/* Status Selection */}
+            <View style={styles.statusContainer}>
+              <Text style={styles.statusLabel}>Status:</Text>
+              <Pressable 
+                style={styles.statusPickerContainer}
+                onPress={() => setShowStatusModal(true)}
+              >
+                <Text style={styles.statusPickerText}>
+                  {getStatusLabel(questionStatus)}
+                </Text>
+                <Ionicons name="chevron-down" size={20} color="#8E8E93" />
+              </Pressable>
+            </View>
             {question.description && (
               <Text style={styles.questionDescription}>{question.description}</Text>
             )}
@@ -726,6 +760,57 @@ export default function QuestionAccordion({
                     {item.title} ({item.code})
                   </Text>
                   {item.id === questionZoneId && (
+                    <Ionicons name="checkmark" size={20} color="#007AFF" />
+                  )}
+                </Pressable>
+              )}
+            />
+          </View>
+        </View>
+      </Modal>
+
+      {/* Status Selection Modal */}
+      <Modal
+        visible={showStatusModal}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setShowStatusModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Select Status</Text>
+              <Pressable onPress={() => setShowStatusModal(false)}>
+                <Ionicons name="close" size={24} color="#1C1C1E" />
+              </Pressable>
+            </View>
+            <FlatList
+              data={[
+                { id: 0, label: 'Not Started' },
+                { id: 1, label: 'In Progress' },
+                { id: 2, label: 'Completed' },
+                { id: 3, label: 'On Hold' },
+                { id: 4, label: 'Cancelled' }
+              ]}
+              keyExtractor={(item) => item.id.toString()}
+              renderItem={({ item }) => (
+                <Pressable
+                  style={[
+                    styles.statusOption,
+                    item.id === questionStatus && styles.statusOptionSelected
+                  ]}
+                  onPress={() => {
+                    handleStatusChange(item.id);
+                    setShowStatusModal(false);
+                  }}
+                >
+                  <Text style={[
+                    styles.statusOptionText,
+                    item.id === questionStatus && styles.statusOptionTextSelected
+                  ]}>
+                    {item.label}
+                  </Text>
+                  {item.id === questionStatus && (
                     <Ionicons name="checkmark" size={20} color="#007AFF" />
                   )}
                 </Pressable>
@@ -1144,5 +1229,56 @@ const styles = StyleSheet.create({
   voiceOptionsContainer: {
     paddingVertical: 20,
     paddingHorizontal: 20,
+  },
+  statusContainer: {
+    marginTop: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  statusLabel: {
+    fontSize: 16,
+    color: '#1C1C1E',
+    fontWeight: '500',
+    marginRight: 12,
+    minWidth: 60,
+  },
+  statusPickerContainer: {
+    flex: 1,
+    backgroundColor: '#FAFAFA',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#E5E5EA',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    minHeight: 44,
+  },
+  statusPickerText: {
+    fontSize: 16,
+    color: '#1C1C1E',
+    flex: 1,
+  },
+  statusOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F2F2F7',
+  },
+  statusOptionSelected: {
+    backgroundColor: '#F0F8FF',
+  },
+  statusOptionText: {
+    fontSize: 16,
+    color: '#1C1C1E',
+    flex: 1,
+  },
+  statusOptionTextSelected: {
+    color: '#007AFF',
+    fontWeight: '500',
   },
 });
