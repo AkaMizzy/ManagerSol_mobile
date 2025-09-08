@@ -74,6 +74,7 @@ export interface ManifolderAnswerWithDetails {
   questionQuantity?: boolean;
   value: any;
   quantity?: number;
+  zoneId?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -91,7 +92,6 @@ export interface ManifolderQuestionsResponse {
   projectId: string;
   projectTitle: string;
   defaultZoneId: string;
-  defaultZoneTitle: string;
   availableZones: Zone[];
   questions: ManifolderQuestion[];
 }

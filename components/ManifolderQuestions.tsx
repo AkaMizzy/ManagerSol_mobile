@@ -37,9 +37,7 @@ export default function ManifolderQuestions({
   const [projectId, setProjectId] = useState<string>('');
   const [projectTitle, setProjectTitle] = useState<string>('');
   const [defaultZoneId, setDefaultZoneId] = useState<string>('');
-  const [defaultZoneTitle, setDefaultZoneTitle] = useState<string>('');
   const [availableZones, setAvailableZones] = useState<Zone[]>([]);
-  const [selectedZoneId, setSelectedZoneId] = useState<string>('');
   const [answers, setAnswers] = useState<Record<string, any>>({});
   const [quantities, setQuantities] = useState<Record<string, number>>({});
   const [questionZones, setQuestionZones] = useState<Record<string, string>>({});
@@ -63,9 +61,7 @@ export default function ManifolderQuestions({
       setProjectId(response.projectId);
       setProjectTitle(response.projectTitle);
       setDefaultZoneId(response.defaultZoneId);
-      setDefaultZoneTitle(response.defaultZoneTitle);
       setAvailableZones(response.availableZones);
-      setSelectedZoneId(response.defaultZoneId); // Set default zone as selected
       
       // Initialize question zones with default zone
       const initialQuestionZones: Record<string, string> = {};
@@ -79,6 +75,7 @@ export default function ManifolderQuestions({
          const answersResponse = await manifolderService.getManifolderAnswers(manifolderId, token);
          const existingAnswers: Record<string, any> = {};
          const existingQuantities: Record<string, number> = {};
+         const existingQuestionZones: Record<string, string> = {};
          answersResponse.answers.forEach(answer => {
            // Handle GPS answers - they come with latitude/longitude from backend
            if (answer.questionType === 'GPS' && typeof answer.value === 'object' && answer.value.latitude && answer.value.longitude) {
@@ -103,9 +100,15 @@ export default function ManifolderQuestions({
            if (answer.quantity !== undefined && answer.quantity !== null) {
              existingQuantities[answer.questionId] = answer.quantity;
            }
+           
+           // Store zone if available
+           if (answer.zoneId) {
+             existingQuestionZones[answer.questionId] = answer.zoneId;
+           }
          });
          setAnswers(existingAnswers);
          setQuantities(existingQuantities);
+         setQuestionZones(prev => ({ ...prev, ...existingQuestionZones }));
        } catch {
          // If no existing answers, that's fine
          console.log('No existing answers found');

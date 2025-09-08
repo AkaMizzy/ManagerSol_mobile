@@ -893,9 +893,6 @@ const styles = StyleSheet.create({
     color: '#1C1C1E',
     flex: 1,
   },
-  zonePicker: {
-    height: 40,
-  },
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
