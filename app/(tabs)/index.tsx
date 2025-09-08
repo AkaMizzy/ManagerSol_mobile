@@ -2,9 +2,11 @@ import { useAuth } from '@/contexts/AuthContext';
 import { createCalendarEvent } from '@/services/calendarService';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   Alert,
+  Image,
+  Pressable,
   ScrollView,
   StyleSheet,
   Text,
@@ -26,23 +28,90 @@ export default function DashboardScreen() {
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [dayEvents, setDayEvents] = useState<any[]>([]);
   const [stats, setStats] = useState<{ pending: number; today: number; completed: number; retard: number; canceled: number } | null>(null);
+  const [todayActivities, setTodayActivities] = useState<any[]>([]);
+  const [overdueActivities, setOverdueActivities] = useState<any[]>([]);
+  const [upcomingActivities, setUpcomingActivities] = useState<any[]>([]);
 
   useEffect(() => {
     (async () => {
       if (!token) return;
       try {
-        const res = await fetch(`${API_CONFIG.BASE_URL}/actions/stats`, {
+        // Fetch stats
+        const statsRes = await fetch(`${API_CONFIG.BASE_URL}/actions/stats`, {
           headers: { Authorization: `Bearer ${token}` },
         });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || 'Failed to load stats');
-        setStats(data);
+        const statsData = await statsRes.json();
+        if (!statsRes.ok) throw new Error(statsData.error || 'Failed to load stats');
+        setStats(statsData);
+
+        // Fetch today's activities
+        const activitiesRes = await fetch(`${API_CONFIG.BASE_URL}/today-activities`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const activitiesData = await activitiesRes.json();
+        if (activitiesRes.ok) {
+          setTodayActivities(activitiesData);
+        }
+
+        // Fetch overdue activities
+        const overdueRes = await fetch(`${API_CONFIG.BASE_URL}/overdue-activities`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const overdueData = await overdueRes.json();
+        if (overdueRes.ok) {
+          setOverdueActivities(overdueData);
+        }
+
+        // Fetch upcoming activities
+        const upcomingRes = await fetch(`${API_CONFIG.BASE_URL}/upcoming-activities`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const upcomingData = await upcomingRes.json();
+        if (upcomingRes.ok) {
+          setUpcomingActivities(upcomingData);
+        }
       } catch {
         // keep UI functional without stats
         setStats({ pending: 0, today: 0, completed: 0, retard: 0, canceled: 0 });
+        setTodayActivities([]);
+        setOverdueActivities([]);
+        setUpcomingActivities([]);
       }
     })();
   }, [token]);
+
+  // Helper function to format time
+  const formatTime = (dateString: string) => {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    return date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+  };
+
+  // Helper function to get status icon and text with activity type
+  const getStatusInfo = (status: number, activityType?: 'overdue' | 'today' | 'upcoming') => {
+    // For overdue activities, always show warning icon
+    if (activityType === 'overdue') {
+      return { icon: 'warning', color: '#FF3B30', text: 'En retard' };
+    }
+    
+    // For upcoming activities, show calendar icon
+    if (activityType === 'upcoming') {
+      return { icon: 'calendar', color: '#007AFF', text: 'À venir' };
+    }
+    
+    // For today's activities, show pending icon
+    if (activityType === 'today') {
+      return { icon: 'time', color: '#FF9500', text: 'Aujourd\'hui' };
+    }
+
+    // Default status-based logic for other cases
+    switch (status) {
+      case 0: return { icon: 'time', color: '#FF9500', text: 'Pending' };
+      case 1: return { icon: 'checkmark-circle', color: '#34C759', text: 'Completed' };
+      case 2: return { icon: 'close-circle', color: '#FF3B30', text: 'Canceled' };
+      default: return { icon: 'help-circle', color: '#8E8E93', text: 'Unknown' };
+    }
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -50,7 +119,7 @@ export default function DashboardScreen() {
         {/* Header */}
         <AppHeader user={user || undefined} />
 
-        {/* Quick Stats (framed single row) */}
+        {/* Quick Stats (framed single row)
         <View style={styles.kpiContainer}>
           <View style={styles.kpiRow}>
             <View style={styles.kpiCard}>
@@ -93,20 +162,20 @@ export default function DashboardScreen() {
               <Text style={styles.kpiLabel}>Canceled</Text>
             </View>
           </View>
-        </View>
+        </View> */}
 
         {/* Create Event CTA */}
         <View style={{ paddingHorizontal: 20, marginTop: 12 }}>
 
           <View style={{ alignItems: 'flex-end' }}>
-            <Text onPress={() => setEventModalVisible(true)} style={styles.linkButton} accessibilityRole="button">+ Create Action</Text>
+            <Text onPress={() => setEventModalVisible(true)} style={styles.linkButton} accessibilityRole="button"> Ajouter activité</Text>
           </View>
         </View>
 
         {/* Calendar */}
         <CalendarComp
           eventsByDate={eventsByDate}
-          onMonthChange={async (startIso, endIso) => {
+          onMonthChange={useCallback(async (startIso, endIso) => {
             try {
               if (!token) return;
               const res = await fetch(`${API_CONFIG.BASE_URL}/calendar?start_date=${startIso}&end_date=${endIso}`, {
@@ -125,7 +194,7 @@ export default function DashboardScreen() {
               });
               setEventsByDate(map);
             } catch {}
-          }}
+          }, [token])}
           onDayPress={async (dateIso) => {
             setSelectedDate(dateIso);
             if (!token) { setDayEvents([]); setDayModalVisible(true); return; }
@@ -146,37 +215,132 @@ export default function DashboardScreen() {
 
         {/* Recent Activity */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Recent Activity</Text>
+          <View style={styles.sectionHeader}>
+            <View style={styles.sectionTitleContainer}>
+              <Image
+                source={require('../../assets/icons/action_corrective.png')}
+                style={styles.sectionTitleIcon}
+                resizeMode="contain"
+              />
+              <Pressable
+                style={styles.tasksButton}
+                onPress={() => router.push('/(tabs)/tasks')}
+                accessibilityRole="button"
+                accessibilityLabel="Navigate to tasks"
+              >
+                <Text style={styles.tasksButtonText}>Activités</Text>
+              </Pressable>
+            </View>
+          </View>
+          <Text style={styles.sectionTitle1}>Activités de la journée en retard ({overdueActivities.length})</Text>
+          <View style={styles.activityContainer1}>
+            {overdueActivities.length > 0 ? (
+              overdueActivities.map((activity, index) => {
+                const statusInfo = getStatusInfo(activity.status, 'overdue');
+                return (
+                  <View key={activity.id || index} style={styles.activityItem}>
+                    <View style={styles.activityIcon}>
+                      <Ionicons name={statusInfo.icon as any} size={16} color={statusInfo.color} />
+                    </View>
+                    <View style={styles.activityContent}>
+                      <Text style={styles.activityText}>
+                        {activity.title || 'Untitled Activity'}
+                      </Text>
+                      <Text style={styles.activityTime}>
+                        {formatTime(activity.date_planification)} • {statusInfo.text}
+                        {activity.declaration_title && ` • ${activity.declaration_title}`}
+                      </Text>
+                    </View>
+                  </View>
+                );
+              })
+            ) : (
+              <View style={styles.activityItem}>
+                <View style={styles.activityIcon}>
+                  <Ionicons name="calendar-outline" size={16} color="#8E8E93" />
+                </View>
+                <View style={styles.activityContent}>
+                  <Text style={styles.activityText}>Aucune activité planifiée pour aujourd&apos;hui</Text>
+                  <Text style={styles.activityTime}>Vérifiez vos tâches ou créez de nouvelles activités</Text>
+                </View>
+              </View>
+            )}
+          </View>
+        </View>
+
+        {/* Duplicate Activities Section */}
+        <View style={styles.section}>
+          
+          <Text style={styles.sectionTitle}>Activités de la journée ({todayActivities.length})</Text>
           <View style={styles.activityContainer}>
-            <View style={styles.activityItem}>
-              <View style={styles.activityIcon}>
-                <Ionicons name="checkmark-circle" size={16} color="#34C759" />
+            {todayActivities.length > 0 ? (
+              todayActivities.map((activity, index) => {
+                const statusInfo = getStatusInfo(activity.status, 'today');
+                return (
+                  <View key={`duplicate-${activity.id || index}`} style={styles.activityItem}>
+                    <View style={styles.activityIcon}>
+                      <Ionicons name={statusInfo.icon as any} size={16} color={statusInfo.color} />
+                    </View>
+                    <View style={styles.activityContent}>
+                      <Text style={styles.activityText}>
+                        {activity.title || 'Untitled Activity'}
+                      </Text>
+                      <Text style={styles.activityTime}>
+                        {formatTime(activity.date_planification)} • {statusInfo.text}
+                        {activity.declaration_title && ` • ${activity.declaration_title}`}
+                      </Text>
+                    </View>
+                  </View>
+                );
+              })
+            ) : (
+              <View style={styles.activityItem}>
+                <View style={styles.activityIcon}>
+                  <Ionicons name="calendar-outline" size={16} color="#8E8E93" />
+                </View>
+                <View style={styles.activityContent}>
+                  <Text style={styles.activityText}>Aucune activité planifiée pour aujourd&apos;hui</Text>
+                  <Text style={styles.activityTime}>Vérifiez vos tâches ou créez de nouvelles activités</Text>
+                </View>
               </View>
-              <View style={styles.activityContent}>
-                <Text style={styles.activityText}>Task &quot;Review Documents&quot; completed</Text>
-                <Text style={styles.activityTime}>2 hours ago</Text>
+            )}
+          </View>
+        </View>
+        <View style={styles.section}>
+          
+          <Text style={styles.sectionTitle2}>Activités de la journée à venir ({upcomingActivities.length})</Text>
+          <View style={styles.activityContainer2}>
+            {upcomingActivities.length > 0 ? (
+              upcomingActivities.map((activity, index) => {
+                const statusInfo = getStatusInfo(activity.status, 'upcoming');
+                return (
+                  <View key={`duplicate-${activity.id || index}`} style={styles.activityItem}>
+                    <View style={styles.activityIcon}>
+                      <Ionicons name={statusInfo.icon as any} size={16} color={statusInfo.color} />
+                    </View>
+                    <View style={styles.activityContent}>
+                      <Text style={styles.activityText}>
+                        {activity.title || 'Untitled Activity'}
+                      </Text>
+                      <Text style={styles.activityTime}>
+                        {formatTime(activity.date_planification)} • {statusInfo.text}
+                        {activity.declaration_title && ` • ${activity.declaration_title}`}
+                      </Text>
+                    </View>
+                  </View>
+                );
+              })
+            ) : (
+              <View style={styles.activityItem}>
+                <View style={styles.activityIcon}>
+                  <Ionicons name="calendar-outline" size={16} color="#8E8E93" />
+                </View>
+                <View style={styles.activityContent}>
+                  <Text style={styles.activityText}>Aucune activité planifiée pour aujourd&apos;hui</Text>
+                  <Text style={styles.activityTime}>Vérifiez vos tâches ou créez de nouvelles activités</Text>
+                </View>
               </View>
-            </View>
-
-            <View style={styles.activityItem}>
-              <View style={styles.activityIcon}>
-                <Ionicons name="add-circle" size={16} color="#007AFF" />
-              </View>
-              <View style={styles.activityContent}>
-                <Text style={styles.activityText}>New task assigned: &quot;Data Entry&quot;</Text>
-                <Text style={styles.activityTime}>4 hours ago</Text>
-              </View>
-            </View>
-
-            <View style={styles.activityItem}>
-              <View style={styles.activityIcon}>
-                <Ionicons name="time" size={16} color="#FF9500" />
-              </View>
-              <View style={styles.activityContent}>
-                <Text style={styles.activityText}>Task &quot;Meeting Preparation&quot; due today</Text>
-                <Text style={styles.activityTime}>6 hours ago</Text>
-              </View>
-            </View> 
+            )}
           </View>
         </View>
       </ScrollView>
@@ -227,7 +391,7 @@ const styles = StyleSheet.create({
   },
   scrollView: {
     flex: 1,
-    paddingBottom: 100, // Add space for tab bar
+    paddingBottom: 150, // Increased space for tab bar to accommodate duplicate section
   },
 
   statsContainer: {
@@ -297,11 +461,68 @@ const styles = StyleSheet.create({
   section: {
     padding: 20,
   },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  sectionTitleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    width: '100%',
+  },
+  sectionTitleIcon: {
+    width: 30,
+    height: 30,
+  },
   sectionTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#1C1C1E',
+    color: '#f87b1b',
     marginBottom: 16,
+  },
+  sectionTitle1: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#FF3B30',
+    marginBottom: 16,
+  },
+  sectionTitle2: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#007AFF',
+    marginBottom: 16,
+  },
+  tasksButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#f87b1b',
+    borderRadius: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    marginLeft: 12,
+    shadowColor: '#f87b1b',
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.15,
+    shadowRadius: 3,
+    elevation: 2,
+  },
+  tasksButtonIcon: {
+    width: 25,
+    height: 25,
+  },
+  tasksButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#f87b1b',
+    marginLeft: 6,
   },
   linkButton: {
     color: '#f87b1b',
@@ -338,6 +559,22 @@ const styles = StyleSheet.create({
   activityContainer: {
     backgroundColor: '#FFFFFF',
     borderRadius: 12,
+    borderWidth: 2,
+    borderColor: '#f87b1b',
+    overflow: 'hidden',
+  },
+  activityContainer1: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: '#FF3B30',
+    overflow: 'hidden',
+  },
+  activityContainer2: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: '#007AFF',
     overflow: 'hidden',
   },
   activityItem: {
@@ -367,8 +604,8 @@ const styles = StyleSheet.create({
     marginTop: 12,
     backgroundColor: '#FFFFFF',
     borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#E5E5EA',
+    borderWidth: 2,
+    borderColor: '#f87b1b',
     overflow: 'hidden',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },

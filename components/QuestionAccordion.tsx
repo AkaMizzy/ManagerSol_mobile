@@ -1,9 +1,11 @@
 import API_CONFIG from '@/app/config/api';
-import { ManifolderQuestion, QuestionType } from '@/types/manifolder';
+import { ManifolderQuestion, QuestionType, Zone } from '@/types/manifolder';
 import { Ionicons } from '@expo/vector-icons';
 import React, { useState } from 'react';
 import {
   Animated,
+  FlatList,
+  Modal,
   Pressable,
   StyleSheet,
   Switch,
@@ -21,22 +23,32 @@ interface QuestionAccordionProps {
   question: ManifolderQuestion;
   value?: any;
   quantity?: number;
-  onValueChange: (questionId: string, value: any, quantity?: number) => void;
+  selectedZoneId?: string;
+  availableZones: Zone[];
+  defaultZoneId: string;
+  onValueChange: (questionId: string, value: any, quantity?: number, zoneId?: string) => void;
   isExpanded?: boolean;
   onToggleExpand: (questionId: string) => void;
+  onCopyQuestion?: (questionId: string) => void;
 }
 
 export default function QuestionAccordion({
   question,
   value,
   quantity,
+  selectedZoneId,
+  availableZones,
+  defaultZoneId,
   onValueChange,
   isExpanded = false,
   onToggleExpand,
+  onCopyQuestion,
 }: QuestionAccordionProps) {
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [animatedHeight] = useState(new Animated.Value(0));
   const [showPreview, setShowPreview] = useState(false);
+  const [questionZoneId, setQuestionZoneId] = useState(selectedZoneId || defaultZoneId);
+  const [showZoneModal, setShowZoneModal] = useState(false);
 
   React.useEffect(() => {
     Animated.timing(animatedHeight, {
@@ -46,8 +58,13 @@ export default function QuestionAccordion({
     }).start();
   }, [isExpanded]);
 
-  const handleValueChange = (newValue: any, newQuantity?: number) => {
-    onValueChange(question.id, newValue, newQuantity);
+  const handleValueChange = (newValue: any, newQuantity?: number, zoneId?: string) => {
+    onValueChange(question.id, newValue, newQuantity, zoneId || questionZoneId);
+  };
+
+  const handleZoneChange = (zoneId: string) => {
+    setQuestionZoneId(zoneId);
+    onValueChange(question.id, value, quantity, zoneId);
   };
 
   const formatDate = (date: Date) => {
@@ -164,6 +181,19 @@ export default function QuestionAccordion({
             placeholder={question.placeholder || 'Enter your answer...'}
             multiline
             numberOfLines={3}
+          />
+        );
+
+      case 'long_text':
+        return (
+          <TextInput
+            style={styles.longTextInput}
+            value={value || ''}
+            onChangeText={handleValueChange}
+            placeholder={question.placeholder || 'Enter your detailed answer...'}
+            multiline
+            numberOfLines={8}
+            textAlignVertical="top"
           />
         );
 
@@ -350,7 +380,7 @@ export default function QuestionAccordion({
     }
   };
 
-  const getSupportedTypes = (): QuestionType[] => ['text', 'number', 'date', 'boolean', 'GPS', 'file', 'photo', 'video', 'voice', 'taux', 'list'];
+  const getSupportedTypes = (): QuestionType[] => ['text', 'long_text', 'number', 'date', 'boolean', 'GPS', 'file', 'photo', 'video', 'voice', 'taux', 'list'];
   const isSupported = getSupportedTypes().includes(question.type);
 
   if (!isSupported) {
@@ -360,9 +390,26 @@ export default function QuestionAccordion({
   // Get preview media info
   const previewMedia = getPreviewMedia();
 
+  // Check if question is answered
+  const isAnswered = () => {
+    if (value === undefined || value === null || value === '') return false;
+    
+    // For GPS answers, check if both latitude and longitude exist
+    if (typeof value === 'object' && value.latitude !== undefined && value.longitude !== undefined) {
+      return value.latitude !== null && value.longitude !== null;
+    }
+    
+    // For file answers, check if file object exists with path
+    if (typeof value === 'object' && value.path !== undefined) {
+      return value.path !== null && value.path !== '';
+    }
+    
+    return true;
+  };
+
   return (
     <>
-      <View style={styles.container}>
+      <View style={[styles.container, isAnswered() && styles.containerAnswered]}>
         {/* Question Header - Always Visible */}
         <Pressable
           style={styles.questionHeader}
@@ -376,6 +423,75 @@ export default function QuestionAccordion({
           </View>
           
           <View style={styles.headerActions}>
+            {/* Copy Button */}
+            {onCopyQuestion && (
+              <Pressable
+                style={styles.copyButton}
+                onPress={() => onCopyQuestion(question.id)}
+                accessibilityRole="button"
+                accessibilityLabel="Copy question"
+              >
+                <Ionicons 
+                  name="copy-outline" 
+                  size={20} 
+                  color="#8E8E93" 
+                />
+                
+              </Pressable>
+              
+            )}
+            
+            {/* Refresh Button */}
+            <Pressable
+              style={styles.actionButton}
+              onPress={() => {
+                // TODO: Implement refresh functionality
+                console.log('Reset button pressed for question:', question.id);
+              }}
+              accessibilityRole="button"
+              accessibilityLabel="Reset question"
+            >
+              <Ionicons 
+                name="refresh-circle-outline" 
+                size={16} 
+                color="#8E8E93" 
+              />
+            </Pressable>
+            
+            {/* Camera Button */}
+            <Pressable
+              style={styles.actionButton}
+              onPress={() => {
+                // TODO: Implement camera functionality
+                console.log('Camera button pressed for question:', question.id);
+              }}
+              accessibilityRole="button"
+              accessibilityLabel="Take photo"
+            >
+              <Ionicons 
+                name="camera-outline" 
+                size={16} 
+                color="#8E8E93" 
+              />
+            </Pressable>
+
+            {/* vocal Button */}
+            <Pressable
+              style={styles.actionButton}
+              onPress={() => {
+                // TODO: Implement camera functionality
+                console.log('mic button pressed for question:', question.id);
+              }}
+              accessibilityRole="button"
+              accessibilityLabel="record voice"
+            >
+              <Ionicons 
+                name="mic-outline" 
+                size={16} 
+                color="#8E8E93" 
+              />
+            </Pressable>
+            
             {/* Preview Button */}
             {hasPreviewableMedia() && (
               <Pressable
@@ -431,15 +547,8 @@ export default function QuestionAccordion({
               },
             ]}
           >
-            {question.description && (
-              <Text style={styles.questionDescription}>{question.description}</Text>
-            )}
-            
-            <View style={styles.inputContainer}>
-              {renderInput()}
-              
-              {/* Quantity Input - Only show if question has quantity enabled */}
-              {question.quantity && (
+            {/* Quantity Input - Only show if question has quantity enabled */}
+            {question.quantity && (
                 <View style={styles.quantityContainer}>
                   <Text style={styles.quantityLabel}>Quantity:</Text>
                   <TextInput
@@ -460,6 +569,28 @@ export default function QuestionAccordion({
                   />
                 </View>
               )}
+
+            {/* Zone Selection */}
+            <View style={styles.zoneContainer}>
+              <Text style={styles.zoneLabel}>Zone:</Text>
+              <Pressable 
+                style={styles.zonePickerContainer}
+                onPress={() => setShowZoneModal(true)}
+              >
+                <Text style={styles.zonePickerText}>
+                  {availableZones.find(z => z.id === questionZoneId)?.title || 'Select Zone'}
+                </Text>
+                <Ionicons name="chevron-down" size={20} color="#8E8E93" />
+              </Pressable>
+            </View>
+            {question.description && (
+              <Text style={styles.questionDescription}>{question.description}</Text>
+            )}
+            
+            <View style={styles.inputContainer}>
+              {renderInput()}
+              
+              
             </View>
           </Animated.View>
         )}
@@ -473,6 +604,51 @@ export default function QuestionAccordion({
         mediaType={previewMedia?.type}
         title={question.title}
       />
+
+      {/* Zone Selection Modal */}
+      <Modal
+        visible={showZoneModal}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setShowZoneModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Select Zone</Text>
+              <Pressable onPress={() => setShowZoneModal(false)}>
+                <Ionicons name="close" size={24} color="#1C1C1E" />
+              </Pressable>
+            </View>
+            <FlatList
+              data={availableZones}
+              keyExtractor={(item) => item.id}
+              renderItem={({ item }) => (
+                <Pressable
+                  style={[
+                    styles.zoneOption,
+                    item.id === questionZoneId && styles.zoneOptionSelected
+                  ]}
+                  onPress={() => {
+                    handleZoneChange(item.id);
+                    setShowZoneModal(false);
+                  }}
+                >
+                  <Text style={[
+                    styles.zoneOptionText,
+                    item.id === questionZoneId && styles.zoneOptionTextSelected
+                  ]}>
+                    {item.title} ({item.code})
+                  </Text>
+                  {item.id === questionZoneId && (
+                    <Ionicons name="checkmark" size={20} color="#007AFF" />
+                  )}
+                </Pressable>
+              )}
+            />
+          </View>
+        </View>
+      </Modal>
     </>
   );
 }
@@ -482,6 +658,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderRadius: 12,
     marginVertical: 4,
+    borderWidth: 1,
+    borderColor: '#f87b1b',
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
@@ -490,6 +668,11 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.05,
     shadowRadius: 2,
     elevation: 1,
+  },
+  containerAnswered: {
+    backgroundColor: '#F0FDF4',
+    borderColor: '#34C759',
+    borderWidth: 2,
   },
   questionHeader: {
     flexDirection: 'row',
@@ -513,6 +696,22 @@ const styles = StyleSheet.create({
   previewButton: {
     width: 32,
     height: 32,
+    borderRadius: 16,
+    backgroundColor: '#F2F2F7',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  copyButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 16,
+    backgroundColor: '#F2F2F7',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  actionButton: {
+    width: 40,
+    height: 40,
     borderRadius: 16,
     backgroundColor: '#F2F2F7',
     justifyContent: 'center',
@@ -564,6 +763,19 @@ const styles = StyleSheet.create({
     backgroundColor: '#FAFAFA',
     textAlignVertical: 'top',
     minHeight: 44,
+  },
+  longTextInput: {
+    borderWidth: 1,
+    borderColor: '#E5E5EA',
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    fontSize: 16,
+    color: '#1C1C1E',
+    backgroundColor: '#FAFAFA',
+    textAlignVertical: 'top',
+    minHeight: 120,
+    maxHeight: 200,
   },
   booleanContainer: {
     flexDirection: 'row',
@@ -650,6 +862,86 @@ const styles = StyleSheet.create({
     color: '#1C1C1E',
     backgroundColor: '#FAFAFA',
     minHeight: 44,
+  },
+  zoneContainer: {
+    marginTop: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  zoneLabel: {
+    fontSize: 16,
+    color: '#1C1C1E',
+    fontWeight: '500',
+    marginRight: 12,
+    minWidth: 50,
+  },
+  zonePickerContainer: {
+    flex: 1,
+    backgroundColor: '#FAFAFA',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#E5E5EA',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    minHeight: 44,
+  },
+  zonePickerText: {
+    fontSize: 16,
+    color: '#1C1C1E',
+    flex: 1,
+  },
+  zonePicker: {
+    height: 40,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    maxHeight: '70%',
+    paddingBottom: 20,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E5EA',
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#1C1C1E',
+  },
+  zoneOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F2F2F7',
+  },
+  zoneOptionSelected: {
+    backgroundColor: '#F0F8FF',
+  },
+  zoneOptionText: {
+    fontSize: 16,
+    color: '#1C1C1E',
+    flex: 1,
+  },
+  zoneOptionTextSelected: {
+    color: '#007AFF',
+    fontWeight: '500',
   },
   listContainer: {
     gap: 8,

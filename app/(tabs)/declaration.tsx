@@ -10,6 +10,8 @@ import {
     TouchableOpacity,
     View
 } from 'react-native';
+import { Image } from 'expo-image';
+
 import DateTimePickerModal from 'react-native-modal-datetime-picker';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import ActionsModal from '../../components/ActionsModal';
@@ -334,14 +336,18 @@ export default function DeclarationScreen() {
       <View style={styles.header}>
         <View style={styles.headerTop}>
           <View style={styles.headerLeft}>
-            <Text style={styles.title}>Declarations</Text>
+          <Image
+              source={require('../../assets/icons/declaration_anomalie.png')}
+              style={styles.declarationLogo}
+              resizeMode="contain"
+            />
             <Text style={styles.subtitle}>
               {stats.totalDeclarations} declarations • {stats.highPriorityCount} high priority
             </Text>
           </View>
           <TouchableOpacity style={styles.addButton} onPress={handleCreateDeclaration}>
             <Ionicons name="add-circle" size={20} color="#f87b1b" />
-            <Text style={styles.addButtonText}>Create</Text>
+            <Text style={styles.addButtonText}>Ajouter</Text>
           </TouchableOpacity>
         </View>
         
@@ -572,6 +578,10 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#1C1C1E',
     paddingVertical: 2,
+  },
+  declarationLogo: {
+    width: 40,
+    height: 40,
   },
   title: {
     fontSize: 20,

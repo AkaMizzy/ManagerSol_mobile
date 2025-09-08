@@ -1,6 +1,7 @@
+import API_CONFIG from '@/app/config/api';
 import { useAuth } from '@/contexts/AuthContext';
 import manifolderService from '@/services/manifolderService';
-import { ManifolderAnswer, ManifolderQuestion } from '@/types/manifolder';
+import { ManifolderAnswer, ManifolderQuestion, Zone } from '@/types/manifolder';
 import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
@@ -14,20 +15,34 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import QuestionAccordion from './QuestionAccordion';
 
+
 interface ManifolderQuestionsProps {
   manifolderId: string;
+  manifolderData?: {
+    title: string;
+    project_title?: string;
+    zone_title?: string;
+  };
   onComplete?: () => void;
 }
 
 export default function ManifolderQuestions({
   manifolderId,
+  manifolderData,
   onComplete,
 }: ManifolderQuestionsProps) {
   const { token } = useAuth();
   const [questions, setQuestions] = useState<ManifolderQuestion[]>([]);
   const [manifolderType, setManifolderType] = useState<string>('');
+  const [projectId, setProjectId] = useState<string>('');
+  const [projectTitle, setProjectTitle] = useState<string>('');
+  const [defaultZoneId, setDefaultZoneId] = useState<string>('');
+  const [defaultZoneTitle, setDefaultZoneTitle] = useState<string>('');
+  const [availableZones, setAvailableZones] = useState<Zone[]>([]);
+  const [selectedZoneId, setSelectedZoneId] = useState<string>('');
   const [answers, setAnswers] = useState<Record<string, any>>({});
   const [quantities, setQuantities] = useState<Record<string, number>>({});
+  const [questionZones, setQuestionZones] = useState<Record<string, string>>({});
   const [expandedQuestions, setExpandedQuestions] = useState<Set<string>>(new Set());
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -45,6 +60,19 @@ export default function ManifolderQuestions({
       const response = await manifolderService.getManifolderQuestions(manifolderId, token);
       setQuestions(response.questions);
       setManifolderType(response.manifolderType);
+      setProjectId(response.projectId);
+      setProjectTitle(response.projectTitle);
+      setDefaultZoneId(response.defaultZoneId);
+      setDefaultZoneTitle(response.defaultZoneTitle);
+      setAvailableZones(response.availableZones);
+      setSelectedZoneId(response.defaultZoneId); // Set default zone as selected
+      
+      // Initialize question zones with default zone
+      const initialQuestionZones: Record<string, string> = {};
+      response.questions.forEach(q => {
+        initialQuestionZones[q.id] = response.defaultZoneId;
+      });
+      setQuestionZones(initialQuestionZones);
       
                       // Try to load existing answers
        try {
@@ -101,7 +129,7 @@ export default function ManifolderQuestions({
     });
   };
 
-  const handleAnswerChange = (questionId: string, value: any, quantity?: number) => {
+  const handleAnswerChange = (questionId: string, value: any, quantity?: number, zoneId?: string) => {
     setAnswers(prev => ({
       ...prev,
       [questionId]: value,
@@ -113,13 +141,58 @@ export default function ManifolderQuestions({
         [questionId]: quantity,
       }));
     }
+
+    if (zoneId) {
+      setQuestionZones(prev => ({
+        ...prev,
+        [questionId]: zoneId,
+      }));
+    }
+  };
+
+  const handleCopyQuestion = async (questionId: string) => {
+    if (!token) return;
+
+    try {
+      // Call backend API to duplicate the question
+      const response = await fetch(`${API_CONFIG.BASE_URL}/task-elements/${questionId}/duplicate`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({}),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to duplicate question');
+      }
+
+      const result = await response.json();
+      const newQuestion = result.newElement;
+
+      // Add the new question to the questions list
+      setQuestions(prev => [...prev, newQuestion]);
+
+      // Reload questions to ensure we have the latest data from backend
+      await loadQuestions();
+
+      // Show success message
+      Alert.alert('Success', 'Question duplicated successfully!');
+    } catch (error: any) {
+      Alert.alert('Error', error.message || 'Failed to duplicate question');
+    }
   };
 
   const handleFileUpload = async (questionId: string, file: { uri: string; name: string; type: string }) => {
     if (!token || !manifolderId) return;
 
+    const zoneId = questionZones[questionId] || defaultZoneId;
+    if (!zoneId) return;
+
     try {
-      const response = await manifolderService.uploadManifolderFile(manifolderId, questionId, file, token);
+      const response = await manifolderService.uploadManifolderFile(manifolderId, questionId, file, token, zoneId);
       
       // Update the answer with the uploaded file info
       setAnswers(prev => ({
@@ -162,6 +235,7 @@ export default function ManifolderQuestions({
                latitude: value.latitude,
                longitude: value.longitude,
                quantity: quantities[questionId],
+               zoneId: questionZones[questionId],
              };
            }
            // Handle file answers - they're already uploaded, so we don't need to include them in submission
@@ -170,6 +244,7 @@ export default function ManifolderQuestions({
                questionId,
                value: value.path, // Just send the file path
                quantity: quantities[questionId],
+               zoneId: questionZones[questionId],
              };
            }
            // Handle regular answers
@@ -177,6 +252,7 @@ export default function ManifolderQuestions({
              questionId,
              value,
              quantity: quantities[questionId],
+             zoneId: questionZones[questionId],
            };
          });
 
@@ -218,7 +294,7 @@ export default function ManifolderQuestions({
    };
 
            const getSupportedQuestions = () => {
-        const supportedTypes = ['text', 'number', 'date', 'boolean', 'GPS', 'file', 'photo', 'video', 'voice', 'taux', 'list'];
+        const supportedTypes = ['text', 'long_text', 'number', 'date', 'boolean', 'GPS', 'file', 'photo', 'video', 'voice', 'taux', 'list'];
         return questions.filter(q => supportedTypes.includes(q.type));
       };
 
@@ -265,22 +341,6 @@ export default function ManifolderQuestions({
 
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
-      {/* Header Section */}
-      <View style={styles.header}>
-        <View style={styles.headerContent}>
-          <View style={styles.questionIcon}>
-            <Text style={styles.questionIconText}>?</Text>
-          </View>
-          <View style={styles.headerText}>
-            <Text style={styles.headerTitle}>Questions</Text>
-            <Text style={styles.headerSubtitle}>
-              {manifolderType && `${formatManifolderType(manifolderType)} • `}
-              {getAnsweredCount()} of {supportedQuestions.length} answered
-            </Text>
-          </View>
-        </View>
-      </View>
-
       {/* Questions List */}
       <ScrollView 
         style={styles.scrollView} 
@@ -294,16 +354,20 @@ export default function ManifolderQuestions({
               question={question}
               value={answers[question.id]}
               quantity={quantities[question.id]}
-              onValueChange={(questionId, value, quantity) => {
+              selectedZoneId={questionZones[question.id]}
+              availableZones={availableZones}
+              defaultZoneId={defaultZoneId}
+              onValueChange={(questionId, value, quantity, zoneId) => {
                 // Check if this is a file upload (has uri, name, type properties)
                 if (value && typeof value === 'object' && value.uri && value.name && value.type) {
                   handleFileUpload(questionId, value);
                 } else {
-                  handleAnswerChange(questionId, value, quantity);
+                  handleAnswerChange(questionId, value, quantity, zoneId);
                 }
               }}
               isExpanded={expandedQuestions.has(question.id)}
               onToggleExpand={handleQuestionToggle}
+              onCopyQuestion={handleCopyQuestion}
             />
           ))}
         </View>

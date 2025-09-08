@@ -540,7 +540,11 @@ export default function TaskScreen() {
       
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Tasks</Text>
+      <Image
+              source={require('../../assets/icons/action_corrective.png')}
+              style={styles.tasksLogo}
+              resizeMode="contain"
+            />
         {/* Search Bar */}
         <View style={styles.searchBar}>
           <Ionicons name="search" size={18} color="#8E8E93" />
@@ -923,6 +927,10 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     paddingVertical: 8,
+  },
+  tasksLogo: {
+    width: 40,
+    height: 40,
   },
   activeTabButton: {
     borderBottomWidth: 2,

@@ -98,6 +98,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     borderBottomWidth: 1,
     borderBottomColor: '#E5E5EA',
+    
   },
   monthSelector: {
     flexDirection: 'row',

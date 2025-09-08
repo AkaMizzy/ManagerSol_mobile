@@ -6,6 +6,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import manifolderService from '@/services/manifolderService';
 import { Project, Zone } from '@/types/declaration';
 import { ManifolderListItem, ManifolderType } from '@/types/manifolder';
+import Ionicons from '@expo/vector-icons/build/Ionicons';
 import { Image } from 'expo-image';
 import React, { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Alert, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
@@ -184,9 +185,16 @@ export default function ManifolderTab() {
       {manifolders.length > 0 && (
         <View style={styles.manifoldersSection}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Recent Manifolds</Text>
-            <Pressable onPress={() => setIsModalVisible(true)} style={styles.createButton}>
-              <Text style={styles.createButtonText}>+ Create</Text>
+          <View style={styles.logoContainer}>
+            <Image
+              source={require('../../assets/icons/manifolder.png')}
+              style={styles.manifolderLogo}
+              resizeMode="contain"
+            />
+          </View>
+          <Pressable onPress={() => setIsModalVisible(true)} style={styles.createButton}>
+          <Ionicons name="add-circle" size={20} color="#f87b1b" />
+              <Text style={styles.createButtonText}>Ajouter</Text>
             </Pressable>
           </View>
           <ScrollView style={styles.manifoldersList} showsVerticalScrollIndicator={false}>
@@ -263,7 +271,25 @@ export default function ManifolderTab() {
             <Pressable onPress={handleBackToList} style={styles.backButton}>
               <Text style={styles.backButtonText}>←</Text>
             </Pressable>
-            <Text style={styles.headerTitle}>Questions</Text>
+            <View style={styles.headerTitleContainer}>
+              <Text style={styles.headerTitle}>{selectedManifolderData?.title || 'Questions'}</Text>
+              <View style={styles.headerDetails}>
+                <View style={styles.headerDetailItem}>
+                  <Text style={styles.headerDetailIcon}>🏢</Text>
+                  <Text style={styles.headerDetailText} numberOfLines={1}>{selectedManifolderData?.project_title || 'No project'}</Text>
+                </View>
+                <View style={styles.headerDetailSeparator} />
+                <View style={styles.headerDetailItem}>
+                  <Text style={styles.headerDetailIcon}>📍</Text>
+                  <Text style={styles.headerDetailText} numberOfLines={1}>{selectedManifolderData?.zone_title || 'No zone'}</Text>
+                </View>
+                <View style={styles.headerDetailSeparator} />
+                <View style={styles.headerDetailItem}>
+                  <Text style={styles.headerDetailIcon}>📋</Text>
+                  <Text style={styles.headerDetailText} numberOfLines={1}>{selectedManifolderData?.type_title || 'No type'}</Text>
+                </View>
+              </View>
+            </View>
           </View>
         </View>
       )}
@@ -281,6 +307,7 @@ export default function ManifolderTab() {
         selectedManifoler && (
           <ManifolderQuestions
             manifolderId={selectedManifoler}
+            manifolderData={selectedManifolderData}
             onComplete={handleQuestionsComplete}
           />
         )
@@ -542,21 +569,72 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#1C1C1E',
   },
-  createButton: {
-    backgroundColor: '#11224e',
-    paddingHorizontal: 20,
-    paddingVertical: 10,
+  headerTitleContainer: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  headerSubtitle: {
+    fontSize: 14,
+    color: '#8E8E93',
+    marginTop: 2,
+    textAlign: 'center',
+  },
+  headerDetails: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#F8FAFC',
     borderRadius: 12,
-    shadowColor: '#11224e',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.3,
-    shadowRadius: 6,
-    elevation: 3,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    marginTop: 8,
+  },
+  headerDetailItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    flex: 1,
+    justifyContent: 'center',
+  },
+  headerDetailIcon: {
+    fontSize: 12,
+  },
+  headerDetailText: {
+    fontSize: 11,
+    color: '#6B7280',
+    fontWeight: '500',
+    flex: 1,
+  },
+  headerDetailSeparator: {
+    width: 1,
+    height: 16,
+    backgroundColor: '#E5E7EB',
+    marginHorizontal: 6,
+  },
+  createButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#f87b1b',
+    borderRadius: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    marginLeft: 12,
+    shadowColor: '#f87b1b',
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.15,
+    shadowRadius: 3,
+    elevation: 2,
   },
   createButtonText: {
-    color: '#FFFFFF',
-    fontWeight: '700',
-    fontSize: 15,
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#f87b1b',
+    marginLeft: 6,
   },
   body: {
     flex: 1,
@@ -564,6 +642,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 24,
     paddingBottom: 20,
+  },
+  logoContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  manifolderLogo: {
+    width: 40,
+    height: 40,
   },
   center: {
     flex: 1,

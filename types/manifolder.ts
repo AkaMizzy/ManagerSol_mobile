@@ -39,7 +39,7 @@ export interface ManifolderListItem {
 }
 
 // Question types for manifolder detail workflow
-export type QuestionType = 'text' | 'number' | 'date' | 'boolean' | 'file' | 'photo' | 'video' | 'GPS' | 'voice' | 'taux' | 'list';
+export type QuestionType = 'text' | 'number' | 'date' | 'boolean' | 'file' | 'photo' | 'video' | 'GPS' | 'voice' | 'taux' | 'list' | 'long_text';
 
 export interface ManifolderQuestion {
   id: string;
@@ -62,6 +62,7 @@ export interface ManifolderAnswer {
   latitude?: number;
   longitude?: number;
   quantity?: number;
+  zoneId?: string;
 }
 
 export interface ManifolderAnswerWithDetails {
@@ -77,10 +78,20 @@ export interface ManifolderAnswerWithDetails {
   updatedAt: string;
 }
 
-export interface UploadedFile {
-  filename: string;
-  originalName: string;
-  path: string;
-  size: number;
-  mimetype: string;
+export interface Zone {
+  id: string;
+  title: string;
+  code: string;
+  level: number;
+}
+
+export interface ManifolderQuestionsResponse {
+  manifolderId: string;
+  manifolderType: string;
+  projectId: string;
+  projectTitle: string;
+  defaultZoneId: string;
+  defaultZoneTitle: string;
+  availableZones: Zone[];
+  questions: ManifolderQuestion[];
 }

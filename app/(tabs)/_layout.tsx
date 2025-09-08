@@ -21,9 +21,9 @@ export default function TabLayout() {
       tabBar={(props) => <CustomTabBar {...props} />}
     >
       <Tabs.Screen
-        name="index"
+        name="manifolder"
         options={{
-          title: 'Home',
+          title: 'Manifold',
           
         }}
       />
@@ -34,20 +34,7 @@ export default function TabLayout() {
           
         }}
       />
-      <Tabs.Screen
-        name="tasks"
-        options={{
-          title: 'Tasks',
-          
-        }}
-      />
-      <Tabs.Screen
-        name="manifolder"
-        options={{
-          title: 'Manifold',
-          
-        }}
-      />
+      
       <Tabs.Screen
         name="audit"
         options={{

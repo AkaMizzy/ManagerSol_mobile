@@ -1,6 +1,6 @@
 import API_CONFIG from '@/app/config/api';
 import { Project, Zone } from '@/types/declaration';
-import { CreateManifolderData, ManifolderAnswer, ManifolderAnswerWithDetails, ManifolderListItem, ManifolderQuestion, ManifolderType } from '@/types/manifolder';
+import { CreateManifolderData, ManifolderAnswer, ManifolderAnswerWithDetails, ManifolderListItem, ManifolderQuestionsResponse, ManifolderType } from '@/types/manifolder';
 
 class ManifolderService {
   private baseUrl = API_CONFIG.BASE_URL;
@@ -59,7 +59,7 @@ class ManifolderService {
   }
 
   // Question-related methods for manifolder detail workflow
-  getManifolderQuestions(manifolderId: string, token: string): Promise<{ manifolderId: string; manifolderType: string; questions: ManifolderQuestion[]; }> {
+  getManifolderQuestions(manifolderId: string, token: string): Promise<ManifolderQuestionsResponse> {
     return this.request(`/manifolder-details/questions/${manifolderId}`, token);
   }
 
@@ -82,12 +82,13 @@ class ManifolderService {
   }
 
   // File upload method for manifolder questions
-  async uploadManifolderFile(manifolderId: string, questionId: string, file: File | { uri: string; name: string; type: string }, token: string): Promise<{ message: string; file: any; }> {
+  async uploadManifolderFile(manifolderId: string, questionId: string, file: File | { uri: string; name: string; type: string }, token: string, zoneId: string): Promise<{ message: string; file: any; }> {
     if (!token) throw new Error('Authentication token required');
     
     const formData = new FormData();
     formData.append('manifolderId', manifolderId);
     formData.append('questionId', questionId);
+    formData.append('zoneId', zoneId);
     
     // Handle both web File objects and React Native file objects
     if ('uri' in file) {

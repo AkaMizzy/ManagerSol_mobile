@@ -1,10 +1,10 @@
 import { Image } from 'expo-image';
 import { useEffect, useState } from 'react';
 import {
-    Dimensions,
-    StyleSheet,
-    Text,
-    View,
+  Dimensions,
+  StyleSheet,
+  Text,
+  View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -39,6 +39,15 @@ export default function ConstructionLoadingScreen({
 
   return (
     <SafeAreaView style={styles.container}>
+      
+      <View style={styles.logoContainer}>
+        <Image
+          source={require('../assets/images/icon.png')}
+          style={styles.logo}
+          contentFit="contain"
+        />
+      </View>
+      
       <View style={styles.content}>
         {/* Construction GIF */}
         <View style={styles.gifContainer}>
@@ -50,8 +59,8 @@ export default function ConstructionLoadingScreen({
         </View>
 
         {/* Loading Text */}
-        <Text style={styles.loadingText}>Loading TrackSol...</Text>
-        <Text style={styles.subText}>Preparing your construction workspace</Text>
+        <Text style={styles.loadingText}>Loading Qualisol...</Text>
+        <Text style={styles.subText}>Preparation de votre espace de travail</Text>
 
         {/* Progress Bar */}
         <View style={styles.progressContainer}>
@@ -74,6 +83,16 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F8FAFC',
+  },
+  logoContainer: {
+    position: 'absolute',
+    top: 60,
+    left: 20,
+    zIndex: 1,
+  },
+  logo: {
+    width: 80,
+    height: 80,
   },
   content: {
     flex: 1,

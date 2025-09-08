@@ -7,7 +7,6 @@ import {
   Dimensions,
   KeyboardAvoidingView,
   Platform,
-  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -29,7 +28,7 @@ interface AlertState {
   message: string;
 }
 
-const { width, height } = Dimensions.get('window');
+const { height } = Dimensions.get('window');
 
 export default function LoginScreen() {
   const { login, isLoading, isAuthenticated } = useAuth();
@@ -103,11 +102,9 @@ export default function LoginScreen() {
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboardView}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
       >
-        <ScrollView
-          contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}
-        >
+        <View style={styles.content}>
           {/* Background Gradient Effect */}
           <View style={styles.backgroundGradient} />
           
@@ -124,9 +121,9 @@ export default function LoginScreen() {
                 </View>
               </View>
             </View>
-            <Text style={styles.title}>QualiSol</Text>
+            <Text style={styles.title}>Qualisol</Text>
             <Text style={styles.subtitle}>
-              Professional construction management for your teams
+              {/* Professional construction management for your teams */}
             </Text>
           </View>
 
@@ -134,20 +131,20 @@ export default function LoginScreen() {
           <View style={styles.form}>
             {/* Email Input */}
             <View style={styles.inputContainer}>
-              <Text style={styles.inputLabel}>Email Address</Text>
+              <Text style={styles.inputLabel}>Identifiant</Text>
               <View style={[
                 styles.inputWrapper,
                 focusedField === 'email' && styles.inputWrapperFocused
               ]}>
                 <Ionicons
-                  name="mail-outline"
+                  name="person-outline"
                   size={20}
                   color={focusedField === 'email' ? '#FF6B35' : '#6B7280'}
                   style={styles.inputIcon}
                 />
                 <TextInput
                   style={styles.input}
-                  placeholder="Enter your email"
+                  placeholder="Enter l'identifiant"
                   placeholderTextColor="#9CA3AF"
                   value={form.email}
                   onChangeText={(value) => handleInputChange('email', value)}
@@ -175,7 +172,7 @@ export default function LoginScreen() {
                 />
                 <TextInput
                   style={styles.input}
-                  placeholder="Enter your password"
+                  placeholder="Enter le mot de passe"
                   placeholderTextColor="#9CA3AF"
                   value={form.password}
                   onChangeText={(value) => handleInputChange('password', value)}
@@ -207,24 +204,29 @@ export default function LoginScreen() {
               {isLoading ? (
                 <ActivityIndicator color="#FFFFFF" size="small" />
               ) : (
-                <Text style={styles.loginButtonText}>Sign In</Text>
+                <Text style={styles.loginButtonText}>Se connecter</Text>
               )}
             </TouchableOpacity>
 
             {/* Forgot Password */}
             <TouchableOpacity style={styles.forgotPassword}>
-              <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
+              <Text style={styles.forgotPasswordText}>Mot de passe oublié?</Text>
             </TouchableOpacity>
           </View>
 
           {/* Footer */}
           <View style={styles.footer}>
             <Text style={styles.footerText}>
-              Don&apos;t have an account?{' '}
-              <Text style={styles.footerLink}>Contact your administrator</Text>
+              Vous n&apos;avez pas de compte?{' '}
+              </Text>
+              <Text style={styles.footerLink}>Contactez votre administrateur</Text>
+            
+            <Text style={[styles.footerText, { marginTop: 70, fontSize: 12, }]}>
+            <Text style={{color: '#FF6B35',fontSize: 15 }}> QualiSol </Text> ©{new Date().getFullYear()}-{new Date().getFullYear() + 1}. Tous droits réservés.
             </Text>
+            <Text style={{color: '#FF6B35'}}>www.muntadaacom.com</Text>
           </View>
-        </ScrollView>
+        </View>
       </KeyboardAvoidingView>
       
       {/* Custom Alert */}
@@ -248,10 +250,11 @@ const styles = StyleSheet.create({
   keyboardView: {
     flex: 1,
   },
-  scrollContent: {
-    flexGrow: 1,
+  content: {
+    flex: 1,
     paddingHorizontal: 32,
-    minHeight: height,
+    justifyContent: 'space-between',
+    minHeight: height * 0.9,
   },
   backgroundGradient: {
     position: 'absolute',
@@ -264,15 +267,15 @@ const styles = StyleSheet.create({
   },
   header: {
     alignItems: 'center',
-    marginTop: height * 0.08,
-    marginBottom: 48,
+    paddingTop: height * 0.03,
+    paddingBottom: 10,
   },
   logoContainer: {
-    marginBottom: 32,
+    marginBottom: 15,
   },
   logoGradient: {
-    width: 88,
-    height: 88,
+    width: 100,
+    height: 100,
     borderRadius: 22,
     backgroundColor: '#FF6B35',
     justifyContent: 'center',
@@ -284,8 +287,8 @@ const styles = StyleSheet.create({
     elevation: 8,
   },
   logo: {
-    width: 72,
-    height: 72,
+    width: 90,
+    height: 90,
     borderRadius: 18,
     backgroundColor: '#FFFFFF',
     justifyContent: 'center',
@@ -303,7 +306,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 32,
     fontWeight: '800',
-    color: '#1F2937',
+    color: '#FF6B35',
     marginBottom: 8,
     letterSpacing: -0.5,
   },
@@ -315,15 +318,19 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   form: {
-    marginBottom: 40,
+    flex: 1,
+    justifyContent: 'center',
+    paddingTop: 10,
+    paddingBottom: 20,
   },
   inputContainer: {
     marginBottom: 24,
   },
   inputLabel: {
+    
     fontSize: 14,
     fontWeight: '600',
-    color: '#1F2937',
+    color: '#FF6B35',
     marginBottom: 8,
     marginLeft: 4,
   },
@@ -335,12 +342,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 16,
     borderWidth: 2,
-    borderColor: '#E5E7EB',
-    shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
     shadowRadius: 8,
     elevation: 2,
+    borderColor: '#FF6B35',
+    shadowColor: '#FF6B35'
   },
   inputWrapperFocused: {
     borderColor: '#FF6B35',
@@ -388,7 +395,8 @@ const styles = StyleSheet.create({
   },
   forgotPassword: {
     alignItems: 'center',
-    marginTop: 20,
+    marginTop:20,
+    marginLeft: 170,
   },
   forgotPasswordText: {
     color: '#FF6B35',
@@ -397,8 +405,9 @@ const styles = StyleSheet.create({
   },
   footer: {
     alignItems: 'center',
-    marginTop: 'auto',
-    paddingBottom: 32,
+    paddingBottom: 100,
+    paddingTop: 20,
+    marginBottom:-80,
   },
   footerText: {
     fontSize: 14,
@@ -407,7 +416,6 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   footerLink: {
-    color: '#FF6B35',
     fontWeight: '600',
   },
 });

@@ -47,13 +47,18 @@ export default function AppHeader({
     <View style={styles.header}>
       <View style={styles.headerRow}>
         {/* Left side - App Icon */}
-        <View style={styles.headerLeft}>
+        <TouchableOpacity 
+          style={styles.headerLeft}
+          onPress={() => router.push('/(tabs)')}
+          accessibilityRole="button"
+          accessibilityLabel="Navigate to home"
+        >
           <Image
             source={require('../assets/images/icon.png')}
             style={styles.logo}
             resizeMode="contain"
           />
-        </View>
+        </TouchableOpacity>
         
         {/* Center - User Name */}
         <View style={styles.headerCenter}>
@@ -73,16 +78,24 @@ export default function AppHeader({
               style={styles.iconButton}
               onPress={handleNotificationPress}
             >
-              <Ionicons name="notifications-outline" size={22} color="#1C1C1E" />
+              <Ionicons name="notifications-outline" size={20} color="#FF6B35" />
             </TouchableOpacity>
           )}
+          {/* Chatbox Icon */}
+          <TouchableOpacity
+            accessibilityRole="button"
+            style={styles.iconButton}
+          
+          >
+            <Ionicons name="chatbox-outline" size={20} color="#FF6B35" />
+          </TouchableOpacity>
           {showProfile && (
             <TouchableOpacity
               accessibilityRole="button"
               style={styles.iconButton}
               onPress={handleProfilePress}
             >
-              <Ionicons name="person-circle-outline" size={24} color="#1C1C1E" />
+              <Ionicons name="person-circle-outline" size={20} color="#FF6B35" />
             </TouchableOpacity>
           )}
         </View>
@@ -96,8 +109,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 14,
     backgroundColor: '#FFFFFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E5EA',
+    borderBottomWidth: 2,
+    borderBottomColor: '#f87b1b',
   },
   headerRow: {
     flexDirection: 'row',
@@ -114,11 +127,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center'
   },
   headerRight: { 
-    width: 80,
+    width: 100,
     flexDirection: 'row', 
     justifyContent: 'flex-end', 
     alignItems: 'center', 
-    gap: 12 
+    gap: 8 
   },
   userName: { 
     fontSize: 20, 
@@ -131,7 +144,7 @@ const styles = StyleSheet.create({
     height: 50 
   },
   iconButton: { 
-    paddingHorizontal: 8, 
+    paddingHorizontal: 6, 
     paddingVertical: 4 
   },
 });

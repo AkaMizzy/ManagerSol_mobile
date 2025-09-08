@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import React from 'react';
-import { Image, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Image, Platform, Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export function CustomTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
@@ -15,9 +15,8 @@ export function CustomTabBar({ state, descriptors, navigation }: BottomTabBarPro
         paddingTop: Platform.OS === 'android' ? 6 : 8,
       }
     ]}>
-      {state.routes.filter(r => r.name !== 'profile').map((route, index) => {
+      {state.routes.filter(r => r.name !== 'profile' && r.name !== 'index' && r.name !== 'tasks').map((route, index) => {
         const { options } = descriptors[route.key];
-        const label = options.title || route.name;
         const isFocused = state.index === index;
 
         const onPress = () => {
@@ -42,22 +41,6 @@ export function CustomTabBar({ state, descriptors, navigation }: BottomTabBarPro
         const renderIcon = (routeName: string) => {
           const opacity = isFocused ? 1 : 0.6;
           switch (routeName) {
-            case 'index':
-              return (
-                <Ionicons
-                  name="home-outline"
-                  size={20}
-                  color={isFocused ? '#F87B1B' : '#8E8E93'}
-                />
-              );
-            case 'tasks':
-              return (
-                <Image
-                  source={require('../assets/icons/action_corrective.png')}
-                  style={[styles.customIcon, { opacity }]}
-                  resizeMode="contain"
-                />
-              );
             case 'declaration':
               return (
                 <Image
@@ -102,7 +85,7 @@ export function CustomTabBar({ state, descriptors, navigation }: BottomTabBarPro
               return (
                 <Ionicons
                   name="help-outline"
-                  size={20}
+                  size={24}
                   color={isFocused ? '#F87B1B' : '#8E8E93'}
                 />
               );
@@ -117,14 +100,12 @@ export function CustomTabBar({ state, descriptors, navigation }: BottomTabBarPro
             accessibilityLabel={options.tabBarAccessibilityLabel}
             onPress={onPress}
             onLongPress={onLongPress}
-            style={styles.tab}
+            style={[styles.tab, isFocused && styles.activeTab]}
           >
             <View style={styles.iconContainer}>
               {renderIcon(route.name)}
             </View>
-            <Text style={[styles.tabLabel, isFocused && styles.activeTabLabel]} numberOfLines={1}>
-              {label}
-            </Text>
+            
             {isFocused && <View style={styles.activeIndicator} />}
           </Pressable>
         );
@@ -137,8 +118,8 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     backgroundColor: '#FFFFFF',
-    borderTopWidth: 1,
-    borderTopColor: '#E5E5EA',
+    borderTopWidth: 2,
+    borderTopColor: '#f87b1b',
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
@@ -157,21 +138,26 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: Platform.OS === 'android' ? 6 : 6,
+    paddingVertical: Platform.OS === 'android' ? 8 : 8,
     position: 'relative',
-    minHeight: Platform.OS === 'android' ? 48 : 44,
-    paddingHorizontal: 2, // Reduced horizontal padding for 7 tabs
+    minHeight: Platform.OS === 'android' ? 56 : 52,
+    paddingHorizontal: 4,
+  },
+  activeTab: {
+    backgroundColor: '#FFF8F5',
+    borderRadius: 8,
+    marginHorizontal: 2,
   },
   iconContainer: {
-    marginBottom: Platform.OS === 'android' ? 2 : 3,
+    marginBottom: Platform.OS === 'android' ? 3 : 4,
     alignItems: 'center',
     justifyContent: 'center',
-    width: 28,
-    height: 28,
+    width: 32,
+    height: 32,
   },
   customIcon: {
-    width: 20,
-    height: 20,
+    width:50,
+    height: 50,
   },
   tabLabel: {
     fontSize: 10,
@@ -188,9 +174,17 @@ const styles = StyleSheet.create({
   activeIndicator: {
     position: 'absolute',
     bottom: Platform.OS === 'android' ? 4 : 0,
-    width: 16,
-    height: 2,
-    backgroundColor: '#F87B1B',
-    borderRadius: 1,
+    width: 24,
+    height: 4,
+    backgroundColor: '#f87b1b',
+    borderRadius: 2,
+    shadowColor: '#f87b1b',
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 2,
+    elevation: 2,
   },
 });
