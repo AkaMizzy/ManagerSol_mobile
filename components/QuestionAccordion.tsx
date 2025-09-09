@@ -37,7 +37,6 @@ interface QuestionAccordionProps {
   onSubmitAnswer?: (questionId: string) => void;
   isSubmitting?: boolean;
   isSubmitted?: boolean;
-  onSubmissionComplete?: (questionId: string) => void;
 }
 
 export default function QuestionAccordion({
@@ -56,7 +55,6 @@ export default function QuestionAccordion({
   onSubmitAnswer,
   isSubmitting = false,
   isSubmitted = false,
-  onSubmissionComplete,
 }: QuestionAccordionProps) {
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [animatedHeight] = useState(new Animated.Value(0));
@@ -68,7 +66,6 @@ export default function QuestionAccordion({
   const [showCameraModal, setShowCameraModal] = useState(false);
   const [showVoiceModal, setShowVoiceModal] = useState(false);
   const [vocalAnswer, setVocalAnswer] = useState<any>(null);
-  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
   React.useEffect(() => {
     Animated.timing(animatedHeight, {
@@ -93,44 +90,18 @@ export default function QuestionAccordion({
     }
   }, [value]);
 
-  // Reset unsaved changes flag when question is successfully submitted
-  React.useEffect(() => {
-    if (isSubmitted && !isSubmitting) {
-      setHasUnsavedChanges(false);
-      // Notify parent component that submission is complete
-      if (onSubmissionComplete) {
-        onSubmissionComplete(question.id);
-      }
-    }
-  }, [isSubmitted, isSubmitting, onSubmissionComplete, question.id]);
-
   const handleValueChange = (newValue: any, newQuantity?: number, zoneId?: string, status?: number) => {
     onValueChange(question.id, newValue, newQuantity, zoneId || questionZoneId, status || questionStatus);
-    
-    // Mark as having unsaved changes if this is a submitted question
-    if (isSubmitted) {
-      setHasUnsavedChanges(true);
-    }
   };
 
   const handleZoneChange = (zoneId: string) => {
     setQuestionZoneId(zoneId);
     onValueChange(question.id, value, quantity, zoneId, questionStatus);
-    
-    // Mark as having unsaved changes if this is a submitted question
-    if (isSubmitted) {
-      setHasUnsavedChanges(true);
-    }
   };
 
   const handleStatusChange = (status: number) => {
     setQuestionStatus(status);
     onValueChange(question.id, value, quantity, questionZoneId, status);
-    
-    // Mark as having unsaved changes if this is a submitted question
-    if (isSubmitted) {
-      setHasUnsavedChanges(true);
-    }
   };
 
   const formatDate = (date: Date) => {
@@ -747,8 +718,8 @@ export default function QuestionAccordion({
               )}
             </View>
 
-            {/* Submit Button - Show if answer exists and either not submitted or has unsaved changes */}
-            {isAnswered() && (!isSubmitted || hasUnsavedChanges) && onSubmitAnswer && (
+            {/* Submit Button - Only show if answer exists and not already submitted */}
+            {isAnswered() && !isSubmitted && onSubmitAnswer && (
               <View style={styles.submitContainer}>
                 <Pressable
                   style={[
@@ -766,14 +737,14 @@ export default function QuestionAccordion({
                     color="#FFFFFF" 
                   />
                   <Text style={styles.submitButtonText}>
-                    {isSubmitting ? 'Submitting...' : hasUnsavedChanges ? 'Update Answer' : 'Submit Answer'}
+                    {isSubmitting ? 'Submitting...' : 'Submit Answer'}
                   </Text>
                 </Pressable>
               </View>
             )}
 
-            {/* Submitted Indicator - Only show if submitted and no unsaved changes */}
-            {isSubmitted && !hasUnsavedChanges && (
+            {/* Submitted Indicator */}
+            {isSubmitted && (
               <View style={styles.submittedContainer}>
                 <Ionicons 
                   name="checkmark-circle" 
@@ -991,6 +962,13 @@ const styles = StyleSheet.create({
     flex: 1,
     marginRight: 12,
   },
+  questionTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#1C1C1E',
+    lineHeight: 24,
+    textAlign: 'center',
+  },
   headerActions: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1019,13 +997,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#f87b1b',
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  questionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#1C1C1E',
-    lineHeight: 24,
-    textAlign: 'center',
   },
   requiredIndicator: {
     color: '#FF3B30',

@@ -17,7 +17,7 @@ interface ConstructionLoadingScreenProps {
 
 export default function ConstructionLoadingScreen({ 
   onLoadingComplete, 
-  duration = 3000 
+  duration = 2000 
 }: ConstructionLoadingScreenProps) {
   const [progress, setProgress] = useState(0);
 
