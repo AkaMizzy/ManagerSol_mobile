@@ -46,6 +46,8 @@ export default function ManifolderQuestions({
   const [expandedQuestions, setExpandedQuestions] = useState<Set<string>>(new Set());
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submittingQuestions, setSubmittingQuestions] = useState<Set<string>>(new Set());
+  const [submittedQuestions, setSubmittedQuestions] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     loadQuestions();
@@ -87,6 +89,7 @@ export default function ManifolderQuestions({
          const existingQuestionZones: Record<string, string> = {};
          const existingQuestionStatuses: Record<string, number> = {};
          const existingAnswerIds: Record<string, string> = {};
+         const existingSubmittedQuestions: Set<string> = new Set();
          answersResponse.answers.forEach(answer => {
            // Handle GPS answers - they come with latitude/longitude from backend
            if (answer.questionType === 'GPS' && typeof answer.value === 'object' && answer.value.latitude && answer.value.longitude) {
@@ -133,12 +136,16 @@ export default function ManifolderQuestions({
            
            // Store answer ID for deletion purposes
            existingAnswerIds[answer.questionId] = answer.id;
+           
+           // Mark as submitted since it exists in the database
+           existingSubmittedQuestions.add(answer.questionId);
          });
          setAnswers(existingAnswers);
          setQuantities(existingQuantities);
          setQuestionZones(prev => ({ ...prev, ...existingQuestionZones }));
          setQuestionStatuses(prev => ({ ...prev, ...existingQuestionStatuses }));
          setAnswerIds(existingAnswerIds);
+         setSubmittedQuestions(existingSubmittedQuestions);
        } catch {
          // If no existing answers, that's fine
          console.log('No existing answers found');
@@ -320,6 +327,76 @@ export default function ManifolderQuestions({
     }
   };
 
+  const handleSubmitSingleAnswer = async (questionId: string) => {
+    if (!token || !manifolderId) return;
+
+    const answer = answers[questionId];
+    const quantity = quantities[questionId];
+    const zoneId = questionZones[questionId] || defaultZoneId;
+    const status = questionStatuses[questionId];
+
+    if (!answer) {
+      Alert.alert('No Answer', 'Please provide an answer before submitting.');
+      return;
+    }
+
+    try {
+      setSubmittingQuestions(prev => new Set(prev).add(questionId));
+
+      // Prepare the answer data based on question type
+      let submitData: any = {
+        manifolderId,
+        questionId,
+        zoneId,
+        status,
+      };
+
+      // Handle GPS answers
+      if (typeof answer === 'object' && answer.latitude !== undefined && answer.longitude !== undefined) {
+        submitData.latitude = answer.latitude;
+        submitData.longitude = answer.longitude;
+      }
+      // Handle file answers - they're already uploaded, so we don't need to include them in submission
+      else if (typeof answer === 'object' && answer.path !== undefined) {
+        submitData.value = answer.path; // Just send the file path
+      }
+      // Handle regular answers
+      else {
+        submitData.value = answer;
+      }
+
+      // Add quantity if available
+      if (quantity !== undefined) {
+        submitData.quantity = quantity;
+      }
+
+      await manifolderService.submitSingleAnswer(submitData, token);
+
+      // Mark as submitted
+      setSubmittedQuestions(prev => new Set(prev).add(questionId));
+      
+      // Store the answer ID for future reference
+      const response = await manifolderService.getManifolderAnswers(manifolderId, token);
+      const submittedAnswer = response.answers.find(a => a.questionId === questionId);
+      if (submittedAnswer) {
+        setAnswerIds(prev => ({
+          ...prev,
+          [questionId]: submittedAnswer.id,
+        }));
+      }
+
+      Alert.alert('Success', 'Answer submitted successfully!');
+    } catch (error: any) {
+      Alert.alert('Error', error.message || 'Failed to submit answer');
+    } finally {
+      setSubmittingQuestions(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(questionId);
+        return newSet;
+      });
+    }
+  };
+
   const handleSubmitAnswers = async () => {
     if (!token || !manifolderId) return;
 
@@ -489,6 +566,9 @@ export default function ManifolderQuestions({
               onToggleExpand={handleQuestionToggle}
               onCopyQuestion={handleCopyQuestion}
               onResetQuestion={handleResetQuestion}
+              onSubmitAnswer={handleSubmitSingleAnswer}
+              isSubmitting={submittingQuestions.has(question.id)}
+              isSubmitted={submittedQuestions.has(question.id)}
             />
           ))}
         </View>

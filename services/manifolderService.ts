@@ -70,6 +70,22 @@ class ManifolderService {
     });
   }
 
+  submitSingleAnswer(payload: { 
+    manifolderId: string; 
+    questionId: string; 
+    value?: any; 
+    latitude?: number; 
+    longitude?: number; 
+    quantity?: number; 
+    zoneId: string; 
+    status?: number; 
+  }, token: string): Promise<{ message: string; manifolderId: string; questionId: string; answerId: string; }> {
+    return this.request('/manifolder-details/answer', token, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  }
+
   getManifolderAnswers(manifolderId: string, token: string): Promise<{ manifolderId: string; answers: ManifolderAnswerWithDetails[]; }> {
     return this.request(`/manifolder-details/answers/${manifolderId}`, token);
   }

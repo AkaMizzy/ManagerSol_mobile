@@ -34,6 +34,9 @@ interface QuestionAccordionProps {
   onToggleExpand: (questionId: string) => void;
   onCopyQuestion?: (questionId: string) => void;
   onResetQuestion?: (questionId: string) => void;
+  onSubmitAnswer?: (questionId: string) => void;
+  isSubmitting?: boolean;
+  isSubmitted?: boolean;
 }
 
 export default function QuestionAccordion({
@@ -49,6 +52,9 @@ export default function QuestionAccordion({
   onToggleExpand,
   onCopyQuestion,
   onResetQuestion,
+  onSubmitAnswer,
+  isSubmitting = false,
+  isSubmitted = false,
 }: QuestionAccordionProps) {
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [animatedHeight] = useState(new Animated.Value(0));
@@ -711,6 +717,43 @@ export default function QuestionAccordion({
                 </Pressable>
               )}
             </View>
+
+            {/* Submit Button - Only show if answer exists and not already submitted */}
+            {isAnswered() && !isSubmitted && onSubmitAnswer && (
+              <View style={styles.submitContainer}>
+                <Pressable
+                  style={[
+                    styles.submitButton,
+                    isSubmitting && styles.submitButtonDisabled,
+                  ]}
+                  onPress={() => onSubmitAnswer(question.id)}
+                  disabled={isSubmitting}
+                  accessibilityRole="button"
+                  accessibilityLabel="Submit this answer"
+                >
+                  <Ionicons 
+                    name={isSubmitting ? "hourglass-outline" : "checkmark-circle-outline"} 
+                    size={20} 
+                    color="#FFFFFF" 
+                  />
+                  <Text style={styles.submitButtonText}>
+                    {isSubmitting ? 'Submitting...' : 'Submit Answer'}
+                  </Text>
+                </Pressable>
+              </View>
+            )}
+
+            {/* Submitted Indicator */}
+            {isSubmitted && (
+              <View style={styles.submittedContainer}>
+                <Ionicons 
+                  name="checkmark-circle" 
+                  size={20} 
+                  color="#34C759" 
+                />
+                <Text style={styles.submittedText}>Answer Submitted</Text>
+              </View>
+            )}
           </Animated.View>
         )}
       </View>
@@ -1290,5 +1333,44 @@ const styles = StyleSheet.create({
   statusOptionTextSelected: {
     color: '#007AFF',
     fontWeight: '500',
+  },
+  submitContainer: {
+    marginTop: 16,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#F2F2F7',
+  },
+  submitButton: {
+    backgroundColor: '#34C759',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 10,
+    gap: 8,
+  },
+  submitButtonDisabled: {
+    backgroundColor: '#8E8E93',
+  },
+  submitButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  submittedContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 16,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#F2F2F7',
+    gap: 8,
+  },
+  submittedText: {
+    color: '#34C759',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });
