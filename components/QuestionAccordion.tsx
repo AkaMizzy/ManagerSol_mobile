@@ -37,6 +37,7 @@ interface QuestionAccordionProps {
   onSubmitAnswer?: (questionId: string) => void;
   isSubmitting?: boolean;
   isSubmitted?: boolean;
+  hasBeenSubmitted?: boolean; // Track if this question was ever submitted before
 }
 
 export default function QuestionAccordion({
@@ -55,6 +56,7 @@ export default function QuestionAccordion({
   onSubmitAnswer,
   isSubmitting = false,
   isSubmitted = false,
+  hasBeenSubmitted = false,
 }: QuestionAccordionProps) {
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [animatedHeight] = useState(new Animated.Value(0));
@@ -65,6 +67,7 @@ export default function QuestionAccordion({
   const [showStatusModal, setShowStatusModal] = useState(false);
   const [showCameraModal, setShowCameraModal] = useState(false);
   const [showVoiceModal, setShowVoiceModal] = useState(false);
+  const [showListModal, setShowListModal] = useState(false);
   const [vocalAnswer, setVocalAnswer] = useState<any>(null);
 
   React.useEffect(() => {
@@ -290,84 +293,112 @@ export default function QuestionAccordion({
     switch (question.type) {
       case 'text':
         return (
-          <TextInput
-            style={styles.textInput}
-            value={value || ''}
-            onChangeText={handleValueChange}
-            placeholder={question.placeholder || 'Enter your answer...'}
-            multiline
-            numberOfLines={3}
-          />
+          <View style={styles.inputContainer}>
+            {question.description && (
+              <Text style={styles.inputLabel}>{question.description}</Text>
+            )}
+            <TextInput
+              style={styles.textInput}
+              value={value || ''}
+              onChangeText={handleValueChange}
+              placeholder={question.placeholder || 'Enter your answer...'}
+              multiline
+              numberOfLines={3}
+            />
+          </View>
         );
 
       case 'long_text':
         return (
-          <TextInput
-            style={styles.longTextInput}
-            value={value || ''}
-            onChangeText={handleValueChange}
-            placeholder={question.placeholder || 'Enter your detailed answer...'}
-            multiline
-            numberOfLines={8}
-            textAlignVertical="top"
-          />
+          <View style={styles.inputContainer}>
+            {question.description && (
+              <Text style={styles.inputLabel}>{question.description}</Text>
+            )}
+            <TextInput
+              style={styles.longTextInput}
+              value={value || ''}
+              onChangeText={handleValueChange}
+              placeholder={question.placeholder || 'Enter your detailed answer...'}
+              multiline
+              numberOfLines={8}
+              textAlignVertical="top"
+            />
+          </View>
         );
 
       case 'number':
         return (
-          <TextInput
-            style={styles.textInput}
-            value={value?.toString() || ''}
-            onChangeText={(text) => {
-              const numValue = parseFloat(text);
-              handleValueChange(isNaN(numValue) ? '' : numValue);
-            }}
-            placeholder={question.placeholder || 'Enter a number...'}
-            keyboardType="numeric"
-          />
+          <View style={styles.inputContainer}>
+            {question.description && (
+              <Text style={styles.inputLabel}>{question.description}</Text>
+            )}
+            <TextInput
+              style={styles.textInput}
+              value={value?.toString() || ''}
+              onChangeText={(text) => {
+                const numValue = parseFloat(text);
+                handleValueChange(isNaN(numValue) ? '' : numValue);
+              }}
+              placeholder={question.placeholder || 'Enter a number...'}
+              keyboardType="numeric"
+            />
+          </View>
         );
 
       case 'taux':
         return (
-          <View style={styles.tauxContainer}>
-            <TextInput
-              style={styles.tauxInput}
-              value={value?.toString() || ''}
-              onChangeText={(text) => {
-                const numValue = parseFloat(text);
-                if (isNaN(numValue)) {
-                  handleValueChange('');
-                } else if (numValue >= 0 && numValue <= 100) {
-                  handleValueChange(numValue);
-                }
-                // If value is outside range, don't update (silently ignore)
-              }}
-              placeholder={question.placeholder || 'Enter percentage (0-100)...'}
-              keyboardType="numeric"
-              maxLength={5} // Allow up to 100.0
-            />
-            <Text style={styles.tauxUnit}>%</Text>
+          <View style={styles.inputContainer}>
+            {question.description && (
+              <Text style={styles.inputLabel}>{question.description}</Text>
+            )}
+            <View style={styles.tauxContainer}>
+              <TextInput
+                style={styles.tauxInput}
+                value={value?.toString() || ''}
+                onChangeText={(text) => {
+                  const numValue = parseFloat(text);
+                  if (isNaN(numValue)) {
+                    handleValueChange('');
+                  } else if (numValue >= 0 && numValue <= 100) {
+                    handleValueChange(numValue);
+                  }
+                  // If value is outside range, don't update (silently ignore)
+                }}
+                placeholder={question.placeholder || 'Enter percentage (0-100)...'}
+                keyboardType="numeric"
+                maxLength={5} // Allow up to 100.0
+              />
+              <Text style={styles.tauxUnit}>%</Text>
+            </View>
           </View>
         );
 
       case 'boolean':
         return (
-          <View style={styles.booleanContainer}>
-            <Text style={styles.booleanLabel}>
-              {value ? 'Yes' : 'No'}
-            </Text>
-            <Switch
-              value={Boolean(value)}
-              onValueChange={handleValueChange}
-              trackColor={{ false: '#E5E5EA', true: '#34C759' }}
-              thumbColor={value ? '#FFFFFF' : '#FFFFFF'}
-            />
+          <View style={styles.inputContainer}>
+            {question.description && (
+              <Text style={styles.inputLabel}>{question.description}</Text>
+            )}
+            <View style={styles.booleanContainer}>
+              <Text style={styles.booleanLabel}>
+                {value ? 'Yes' : 'No'}
+              </Text>
+              <Switch
+                value={Boolean(value)}
+                onValueChange={handleValueChange}
+                trackColor={{ false: '#E5E5EA', true: '#34C759' }}
+                thumbColor={value ? '#FFFFFF' : '#FFFFFF'}
+              />
+            </View>
           </View>
         );
 
              case 'date':
          return (
-           <View>
+           <View style={styles.inputContainer}>
+             {question.description && (
+               <Text style={styles.inputLabel}>{question.description}</Text>
+             )}
              <Pressable 
                style={styles.dateButton} 
                onPress={() => setShowDatePicker(true)}
@@ -393,95 +424,110 @@ export default function QuestionAccordion({
 
        case 'GPS':
          return (
-           <MapSelector
-             value={value && value.latitude && value.longitude ? {
-               latitude: parseFloat(value.latitude),
-               longitude: parseFloat(value.longitude)
-             } : null}
-             onLocationSelect={(latitude, longitude) => {
-               // Handle clearing (when latitude/longitude are 0)
-               if (latitude === 0 && longitude === 0) {
-                 handleValueChange(null);
-               } else {
-                 handleValueChange({ latitude, longitude });
-               }
-             }}
-             placeholder={question.placeholder || 'Select location on map...'}
-           />
+           <View style={styles.inputContainer}>
+             {question.description && (
+               <Text style={styles.inputLabel}>{question.description}</Text>
+             )}
+             <MapSelector
+               value={value && value.latitude && value.longitude ? {
+                 latitude: parseFloat(value.latitude),
+                 longitude: parseFloat(value.longitude)
+               } : null}
+               onLocationSelect={(latitude, longitude) => {
+                 // Handle clearing (when latitude/longitude are 0)
+                 if (latitude === 0 && longitude === 0) {
+                   handleValueChange(null);
+                 } else {
+                   handleValueChange({ latitude, longitude });
+                 }
+               }}
+               placeholder={question.placeholder || 'Select location on map...'}
+             />
+           </View>
          );
 
       case 'file':
         return (
-          <FileUploader
-            value={value}
-            onFileSelect={(file) => handleValueChange(file)}
-            onFileRemove={() => handleValueChange(null)}
-            placeholder={question.placeholder || 'Select a document...'}
-            acceptedTypes={['document']}
-          />
+          <View style={styles.inputContainer}>
+            {question.description && (
+              <Text style={styles.inputLabel}>{question.description}</Text>
+            )}
+            <FileUploader
+              value={value}
+              onFileSelect={(file) => handleValueChange(file)}
+              onFileRemove={() => handleValueChange(null)}
+              placeholder={question.placeholder || 'Select a document...'}
+              acceptedTypes={['document']}
+            />
+          </View>
         );
 
       case 'photo':
         return (
-          <FileUploader
-            value={value}
-            onFileSelect={(file) => handleValueChange(file)}
-            onFileRemove={() => handleValueChange(null)}
-            placeholder={question.placeholder || 'Select an image...'}
-            acceptedTypes={['image']}
-          />
+          <View style={styles.inputContainer}>
+            {question.description && (
+              <Text style={styles.inputLabel}>{question.description}</Text>
+            )}
+            <FileUploader
+              value={value}
+              onFileSelect={(file) => handleValueChange(file)}
+              onFileRemove={() => handleValueChange(null)}
+              placeholder={question.placeholder || 'Select an image...'}
+              acceptedTypes={['image']}
+            />
+          </View>
         );
 
              case 'video':
          return (
-           <FileUploader
-             value={value}
-             onFileSelect={(file) => handleValueChange(file)}
-             onFileRemove={() => handleValueChange(null)}
-             placeholder={question.placeholder || 'Select a video...'}
-             acceptedTypes={['video']}
-           />
+           <View style={styles.inputContainer}>
+             {question.description && (
+               <Text style={styles.inputLabel}>{question.description}</Text>
+             )}
+             <FileUploader
+               value={value}
+               onFileSelect={(file) => handleValueChange(file)}
+               onFileRemove={() => handleValueChange(null)}
+               placeholder={question.placeholder || 'Select a video...'}
+               acceptedTypes={['video']}
+             />
+           </View>
          );
 
        case 'voice':
          return (
-           <VoiceRecorder
-             value={value}
-             onFileSelect={(file) => handleValueChange(file)}
-             onFileRemove={() => handleValueChange(null)}
-             placeholder={question.placeholder || 'Record voice message...'}
-             maxDuration={300} // 5 minutes
-           />
+           <View style={styles.inputContainer}>
+             {question.description && (
+               <Text style={styles.inputLabel}>{question.description}</Text>
+             )}
+             <VoiceRecorder
+               value={value}
+               onFileSelect={(file) => handleValueChange(file)}
+               onFileRemove={() => handleValueChange(null)}
+               placeholder={question.placeholder || 'Record voice message...'}
+               maxDuration={300} // 5 minutes
+             />
+           </View>
          );
 
       case 'list':
         return (
-          <View style={styles.listContainer}>
-            {getListOptions(question).map((option: string, index: number) => (
-              <Pressable
-                key={index}
-                style={[
-                  styles.listOption,
-                  value === option && styles.listOptionSelected
-                ]}
-                onPress={() => handleValueChange(option)}
-              >
-                <Text style={[
-                  styles.listOptionText,
-                  value === option && styles.listOptionTextSelected
-                ]}>
-                  {option}
-                </Text>
-                {value === option && (
-                  <Ionicons 
-                    name="checkmark-circle" 
-                    size={20} 
-                    color="#007AFF" 
-                    style={styles.listOptionIcon}
-                  />
-                )}
-              </Pressable>
-            ))}
+          <View style={styles.inputContainer}>
+            {question.description && (
+              <Text style={styles.inputLabel}>{question.description}</Text>
+            )}
+            <Pressable 
+              style={styles.listPickerContainer}
+              onPress={() => setShowListModal(true)}
+            >
+              <Text style={[
+                styles.listPickerText,
+                !value && styles.listPickerPlaceholder
+              ]}>
+                {value || question.placeholder || 'Tap to select an option...'}
+              </Text>
+              <Ionicons name="chevron-down" size={20} color="#8E8E93" />
+            </Pressable>
           </View>
         );
 
@@ -578,6 +624,9 @@ export default function QuestionAccordion({
               },
             ]}
           >
+            {/* Question Input - Primary focus */}
+            {renderInput()}
+
             {/* Quantity Input - Only show if question has quantity enabled */}
             {question.quantity && (
                 <View style={styles.quantityContainer}>
@@ -613,14 +662,6 @@ export default function QuestionAccordion({
                 </Text>
                 <Ionicons name="chevron-down" size={20} color="#8E8E93" />
               </Pressable>
-            </View>
-
-            {question.description && (
-              <Text style={styles.questionDescription}>{question.description}</Text>
-            )}
-            
-            <View style={styles.inputContainer}>
-              {renderInput()}
             </View>
 
             {/* Status Selection */}
@@ -737,7 +778,12 @@ export default function QuestionAccordion({
                     color="#FFFFFF" 
                   />
                   <Text style={styles.submitButtonText}>
-                    {isSubmitting ? 'Submitting...' : 'Submit Answer'}
+                    {isSubmitting 
+                      ? 'Submitting...' 
+                      : hasBeenSubmitted 
+                        ? 'Update Answer' 
+                        : 'Submit Answer'
+                    }
                   </Text>
                 </Pressable>
               </View>
@@ -751,7 +797,9 @@ export default function QuestionAccordion({
                   size={20} 
                   color="#34C759" 
                 />
-                <Text style={styles.submittedText}>Answer Submitted</Text>
+                <Text style={styles.submittedText}>
+                  {hasBeenSubmitted ? 'Answer Updated Successfully' : 'Answer Submitted'}
+                </Text>
               </View>
             )}
           </Animated.View>
@@ -922,6 +970,51 @@ export default function QuestionAccordion({
           </View>
         </View>
       </Modal>
+
+      {/* List Selection Modal */}
+      <Modal
+        visible={showListModal}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setShowListModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Select Option</Text>
+              <Pressable onPress={() => setShowListModal(false)}>
+                <Ionicons name="close" size={24} color="#1C1C1E" />
+              </Pressable>
+            </View>
+            <FlatList
+              data={getListOptions(question)}
+              keyExtractor={(item, index) => `${item}-${index}`}
+              renderItem={({ item }) => (
+                <Pressable
+                  style={[
+                    styles.listOption,
+                    value === item && styles.listOptionSelected
+                  ]}
+                  onPress={() => {
+                    handleValueChange(item);
+                    setShowListModal(false);
+                  }}
+                >
+                  <Text style={[
+                    styles.listOptionText,
+                    value === item && styles.listOptionTextSelected
+                  ]}>
+                    {item}
+                  </Text>
+                  {value === item && (
+                    <Ionicons name="checkmark" size={20} color="#007AFF" />
+                  )}
+                </Pressable>
+              )}
+            />
+          </View>
+        </View>
+      </Modal>
     </>
   );
 }
@@ -1019,13 +1112,22 @@ const styles = StyleSheet.create({
     borderTopColor: '#F2F2F7',
   },
   questionDescription: {
-    fontSize: 14,
-    color: '#8E8E93',
-    lineHeight: 20,
-    marginBottom: 12,
+    fontSize: 15,
+    color: '#1C1C1E',
+    lineHeight: 22,
+    marginBottom: 16,
+    marginTop: 8,
+    paddingHorizontal: 4,
+    fontWeight: '400',
   },
   inputContainer: {
     marginTop: 8,
+  },
+  inputLabel: {
+    fontSize: 16,
+    color: '#1C1C1E',
+    fontWeight: '600',
+    marginBottom: 8,
   },
   actionButtonsContainer: {
     flexDirection: 'row',
@@ -1226,22 +1328,54 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   listContainer: {
-    gap: 8,
+    marginTop: 8,
+  },
+  listLabel: {
+    fontSize: 16,
+    color: '#1C1C1E',
+    fontWeight: '600',
+    marginBottom: 8,
+  },
+  listPickerContainer: {
+    backgroundColor: '#FAFAFA',
+    borderRadius: 10,
+    borderWidth: 2,
+    borderColor: '#E5E5EA',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    minHeight: 48,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  listPickerText: {
+    fontSize: 16,
+    color: '#1C1C1E',
+    fontWeight: '500',
+    flex: 1,
+  },
+  listPickerPlaceholder: {
+    color: '#8E8E93',
+    fontStyle: 'italic',
   },
   listOption: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderWidth: 1,
-    borderColor: '#E5E5EA',
-    borderRadius: 10,
-    backgroundColor: '#FAFAFA',
-    minHeight: 44,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F2F2F7',
   },
   listOptionSelected: {
-    borderColor: '#007AFF',
     backgroundColor: '#F0F8FF',
   },
   listOptionText: {

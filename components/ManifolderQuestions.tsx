@@ -4,15 +4,16 @@ import manifolderService from '@/services/manifolderService';
 import { ManifolderAnswer, ManifolderQuestion, Zone } from '@/types/manifolder';
 import React, { useEffect, useState } from 'react';
 import {
-    ActivityIndicator,
-    Alert,
-    Pressable,
-    ScrollView,
-    StyleSheet,
-    Text,
-    View,
+  ActivityIndicator,
+  Alert,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import AnsweredQuestionsCounter from './AnsweredQuestionsCounter';
 import QuestionAccordion from './QuestionAccordion';
 
 
@@ -48,6 +49,7 @@ export default function ManifolderQuestions({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submittingQuestions, setSubmittingQuestions] = useState<Set<string>>(new Set());
   const [submittedQuestions, setSubmittedQuestions] = useState<Set<string>>(new Set());
+  const [hasBeenSubmittedQuestions, setHasBeenSubmittedQuestions] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     loadQuestions();
@@ -90,6 +92,7 @@ export default function ManifolderQuestions({
          const existingQuestionStatuses: Record<string, number> = {};
          const existingAnswerIds: Record<string, string> = {};
          const existingSubmittedQuestions: Set<string> = new Set();
+         const existingHasBeenSubmittedQuestions: Set<string> = new Set();
          answersResponse.answers.forEach(answer => {
            // Handle GPS answers - they come with latitude/longitude from backend
            if (answer.questionType === 'GPS' && typeof answer.value === 'object' && answer.value.latitude && answer.value.longitude) {
@@ -139,6 +142,8 @@ export default function ManifolderQuestions({
            
            // Mark as submitted since it exists in the database
            existingSubmittedQuestions.add(answer.questionId);
+           // Also mark as having been submitted before
+           existingHasBeenSubmittedQuestions.add(answer.questionId);
          });
          setAnswers(existingAnswers);
          setQuantities(existingQuantities);
@@ -146,6 +151,7 @@ export default function ManifolderQuestions({
          setQuestionStatuses(prev => ({ ...prev, ...existingQuestionStatuses }));
          setAnswerIds(existingAnswerIds);
          setSubmittedQuestions(existingSubmittedQuestions);
+         setHasBeenSubmittedQuestions(existingHasBeenSubmittedQuestions);
        } catch {
          // If no existing answers, that's fine
          console.log('No existing answers found');
@@ -194,6 +200,15 @@ export default function ManifolderQuestions({
         ...prev,
         [questionId]: status,
       }));
+    }
+
+    // Reset submission status when answer is changed
+    if (submittedQuestions.has(questionId)) {
+      setSubmittedQuestions(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(questionId);
+        return newSet;
+      });
     }
   };
 
@@ -253,6 +268,19 @@ export default function ManifolderQuestions({
         delete newStatuses[questionId];
         return newStatuses;
       });
+      
+      // Reset submission status
+      setSubmittedQuestions(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(questionId);
+        return newSet;
+      });
+      setHasBeenSubmittedQuestions(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(questionId);
+        return newSet;
+      });
+      
       return;
     }
 
@@ -293,6 +321,18 @@ export default function ManifolderQuestions({
                   const newAnswerIds = { ...prev };
                   delete newAnswerIds[questionId];
                   return newAnswerIds;
+                });
+                
+                // Reset submission status
+                setSubmittedQuestions(prev => {
+                  const newSet = new Set(prev);
+                  newSet.delete(questionId);
+                  return newSet;
+                });
+                setHasBeenSubmittedQuestions(prev => {
+                  const newSet = new Set(prev);
+                  newSet.delete(questionId);
+                  return newSet;
                 });
                 
                 Alert.alert('Success', 'Answer deleted successfully!');
@@ -374,6 +414,9 @@ export default function ManifolderQuestions({
 
       // Mark as submitted
       setSubmittedQuestions(prev => new Set(prev).add(questionId));
+      
+      // Track that this question has been submitted before
+      setHasBeenSubmittedQuestions(prev => new Set(prev).add(questionId));
       
       // Store the answer ID for future reference
       const response = await manifolderService.getManifolderAnswers(manifolderId, token);
@@ -537,6 +580,29 @@ export default function ManifolderQuestions({
 
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
+      {/* Header with Counter */}
+      <View style={styles.header}>
+        <View style={styles.headerContent}>
+          <View style={styles.questionIcon}>
+            <Text style={styles.questionIconText}>?</Text>
+          </View>
+          <View style={styles.headerText}>
+            <Text style={styles.headerTitle}>
+              {formatManifolderType(manifolderType)} Questions
+            </Text>
+            <Text style={styles.headerSubtitle}>
+            Répondez à toutes les questions pour compléter le manifolder
+            </Text>
+          </View>
+        </View>
+        <View style={styles.counterContainer}>
+          <AnsweredQuestionsCounter 
+            answeredCount={getAnsweredCount()} 
+            totalCount={supportedQuestions.length} 
+          />
+        </View>
+      </View>
+
       {/* Questions List */}
       <ScrollView 
         style={styles.scrollView} 
@@ -569,6 +635,7 @@ export default function ManifolderQuestions({
               onSubmitAnswer={handleSubmitSingleAnswer}
               isSubmitting={submittingQuestions.has(question.id)}
               isSubmitted={submittedQuestions.has(question.id)}
+              hasBeenSubmitted={hasBeenSubmittedQuestions.has(question.id)}
             />
           ))}
         </View>
@@ -667,6 +734,10 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#8E8E93',
     marginTop: 2,
+  },
+  counterContainer: {
+    marginTop: 12,
+    alignItems: 'center',
   },
   scrollView: {
     flex: 1,
