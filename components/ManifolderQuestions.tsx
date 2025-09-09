@@ -54,11 +54,14 @@ export default function ManifolderQuestions({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [manifolderId, token]);
 
-  const loadQuestions = async () => {
+  const loadQuestions = async (preserveState = false) => {
     if (!token || !manifolderId) return;
     
     try {
-      setIsLoading(true);
+      if (!preserveState) {
+        setIsLoading(true);
+      }
+      
       const response = await manifolderService.getManifolderQuestions(manifolderId, token);
       setQuestions(response.questions);
       setManifolderType(response.manifolderType);
@@ -67,19 +70,22 @@ export default function ManifolderQuestions({
       setDefaultZoneId(response.defaultZoneId);
       setAvailableZones(response.availableZones);
       
-      // Initialize question zones with default zone
-      const initialQuestionZones: Record<string, string> = {};
-      response.questions.forEach(q => {
-        initialQuestionZones[q.id] = response.defaultZoneId;
-      });
-      setQuestionZones(initialQuestionZones);
-      
-      // Initialize question statuses with default status (0)
-      const initialQuestionStatuses: Record<string, number> = {};
-      response.questions.forEach(q => {
-        initialQuestionStatuses[q.id] = 0;
-      });
-      setQuestionStatuses(initialQuestionStatuses);
+      // Only initialize zones and statuses if not preserving state
+      if (!preserveState) {
+        // Initialize question zones with default zone
+        const initialQuestionZones: Record<string, string> = {};
+        response.questions.forEach(q => {
+          initialQuestionZones[q.id] = response.defaultZoneId;
+        });
+        setQuestionZones(initialQuestionZones);
+        
+        // Initialize question statuses with default status (0)
+        const initialQuestionStatuses: Record<string, number> = {};
+        response.questions.forEach(q => {
+          initialQuestionStatuses[q.id] = 0;
+        });
+        setQuestionStatuses(initialQuestionStatuses);
+      }
       
                       // Try to load existing answers
        try {
@@ -153,7 +159,9 @@ export default function ManifolderQuestions({
     } catch (error: any) {
       Alert.alert('Error', error.message || 'Failed to load questions');
     } finally {
-      setIsLoading(false);
+      if (!preserveState) {
+        setIsLoading(false);
+      }
     }
   };
 
@@ -327,6 +335,12 @@ export default function ManifolderQuestions({
     }
   };
 
+  const handleSubmissionComplete = (questionId: string) => {
+    // Reset the unsaved changes flag for this question
+    // This is handled by the QuestionAccordion component itself
+    console.log(`Submission completed for question ${questionId}`);
+  };
+
   const handleSubmitSingleAnswer = async (questionId: string) => {
     if (!token || !manifolderId) return;
 
@@ -384,6 +398,10 @@ export default function ManifolderQuestions({
           [questionId]: submittedAnswer.id,
         }));
       }
+
+      // Reload questions to reflect the new sorting (answered questions move to bottom)
+      // Preserve state to maintain expanded questions and user inputs
+      await loadQuestions(true);
 
       Alert.alert('Success', 'Answer submitted successfully!');
     } catch (error: any) {
@@ -569,6 +587,7 @@ export default function ManifolderQuestions({
               onSubmitAnswer={handleSubmitSingleAnswer}
               isSubmitting={submittingQuestions.has(question.id)}
               isSubmitted={submittedQuestions.has(question.id)}
+              onSubmissionComplete={handleSubmissionComplete}
             />
           ))}
         </View>
