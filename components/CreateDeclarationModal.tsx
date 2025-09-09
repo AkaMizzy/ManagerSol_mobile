@@ -18,7 +18,7 @@ import DateTimePickerModal from 'react-native-modal-datetime-picker';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { WebView } from 'react-native-webview';
 import API_CONFIG from '../app/config/api';
-import { CompanyUser, CreateDeclarationData, DeclarationType, Project, Zone } from '../types/declaration';
+import { CompanyUser, CreateDeclarationData, DeclarationType, ManifolderDetailsForDeclaration, Project, Zone } from '../types/declaration';
 
 interface CreateDeclarationModalProps {
   visible: boolean;
@@ -30,6 +30,7 @@ interface CreateDeclarationModalProps {
   companyUsers: CompanyUser[];
   currentUser: CompanyUser;
   isLoading?: boolean;
+  manifolderDetails?: ManifolderDetailsForDeclaration;
 }
 
 const { width } = Dimensions.get('window');
@@ -44,6 +45,7 @@ export default function CreateDeclarationModal({
   companyUsers,
   currentUser,
   isLoading = false,
+  manifolderDetails,
 }: CreateDeclarationModalProps) {
   const [formData, setFormData] = useState<CreateDeclarationData>({
     title: '',
@@ -91,23 +93,27 @@ export default function CreateDeclarationModal({
   // Reset form when modal opens/closes
   useEffect(() => {
     if (visible) {
-      setFormData({
-        title: '',
+      const initialFormData: CreateDeclarationData = {
+        title: manifolderDetails ? `Declaration for ${manifolderDetails.manifolderDetail.questionTitle}` : '',
         id_declaration_type: '',
         severite: 5,
-        id_zone: '',
-        description: '',
+        id_zone: manifolderDetails ? manifolderDetails.manifolder.defaultZoneId : '',
+        description: manifolderDetails ? `Related to manifolder question: ${manifolderDetails.manifolderDetail.questionTitle}` : '',
         date_declaration: '',
         code_declaration: '',
         id_declarent: currentUser?.id,
         latitude: undefined,
         longitude: undefined,
-      });
+        id_manifold: manifolderDetails ? manifolderDetails.manifolder.id : undefined,
+        id_manifold_detail: manifolderDetails ? manifolderDetails.manifolderDetail.id : undefined,
+      };
+      
+      setFormData(initialFormData);
       setErrors({});
       setSelectedPhotos([]);
       setShowLocationInput(false);
     }
-  }, [visible, currentUser?.id]);
+  }, [visible, currentUser?.id, manifolderDetails]);
 
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
@@ -493,6 +499,25 @@ export default function CreateDeclarationModal({
           <Text style={styles.headerTitle}>Create Declaration</Text>
           <View style={styles.placeholder} />
         </View>
+
+        {/* Manifolder Information */}
+        {manifolderDetails && (
+          <View style={styles.manifolderInfoContainer}>
+            <View style={styles.manifolderInfoHeader}>
+              <Ionicons name="document-text-outline" size={20} color="#f87b1b" />
+              <Text style={styles.manifolderInfoTitle}>Related to Manifolder</Text>
+            </View>
+            <View style={styles.manifolderInfoContent}>
+              <Text style={styles.manifolderInfoText}>
+                <Text style={styles.manifolderInfoLabel}>Manifolder:</Text> {manifolderDetails.manifolder.title}
+              </Text>
+              <Text style={styles.manifolderInfoText}>
+                <Text style={styles.manifolderInfoLabel}>Question:</Text> {manifolderDetails.manifolderDetail.questionTitle}
+              </Text>
+              
+            </View>
+          </View>
+        )}
 
         {/* Form */}
         <ScrollView style={styles.form} showsVerticalScrollIndicator={false}>
@@ -1033,6 +1058,38 @@ const styles = StyleSheet.create({
   },
   placeholder: {
     width: 40,
+  },
+  manifolderInfoContainer: {
+    backgroundColor: '#FFF7ED',
+    borderLeftWidth: 4,
+    borderLeftColor: '#f87b1b',
+    marginHorizontal: 16,
+    marginVertical: 8,
+    borderRadius: 8,
+    padding: 12,
+  },
+  manifolderInfoHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+    gap: 8,
+  },
+  manifolderInfoTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#f87b1b',
+  },
+  manifolderInfoContent: {
+    gap: 4,
+  },
+  manifolderInfoText: {
+    fontSize: 14,
+    color: '#1C1C1E',
+    lineHeight: 20,
+  },
+  manifolderInfoLabel: {
+    fontWeight: '600',
+    color: '#f87b1b',
   },
   form: {
     flex: 1,

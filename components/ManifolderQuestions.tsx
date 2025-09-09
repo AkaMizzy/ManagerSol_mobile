@@ -1,6 +1,8 @@
 import API_CONFIG from '@/app/config/api';
 import { useAuth } from '@/contexts/AuthContext';
+import declarationService from '@/services/declarationService';
 import manifolderService from '@/services/manifolderService';
+import { ManifolderDetailsForDeclaration } from '@/types/declaration';
 import { ManifolderAnswer, ManifolderQuestion, Zone } from '@/types/manifolder';
 import React, { useEffect, useState } from 'react';
 import {
@@ -14,6 +16,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AnsweredQuestionsCounter from './AnsweredQuestionsCounter';
+import CreateDeclarationModal from './CreateDeclarationModal';
 import QuestionAccordion from './QuestionAccordion';
 
 
@@ -32,11 +35,11 @@ export default function ManifolderQuestions({
   manifolderData,
   onComplete,
 }: ManifolderQuestionsProps) {
-  const { token } = useAuth();
+  const { user, token } = useAuth();
   const [questions, setQuestions] = useState<ManifolderQuestion[]>([]);
   const [manifolderType, setManifolderType] = useState<string>('');
-  const [projectId, setProjectId] = useState<string>('');
-  const [projectTitle, setProjectTitle] = useState<string>('');
+  const [projectId, setProjectId] = useState<string>(''); // eslint-disable-line @typescript-eslint/no-unused-vars
+  const [projectTitle, setProjectTitle] = useState<string>(''); // eslint-disable-line @typescript-eslint/no-unused-vars
   const [defaultZoneId, setDefaultZoneId] = useState<string>('');
   const [availableZones, setAvailableZones] = useState<Zone[]>([]);
   const [answers, setAnswers] = useState<Record<string, any>>({});
@@ -50,9 +53,20 @@ export default function ManifolderQuestions({
   const [submittingQuestions, setSubmittingQuestions] = useState<Set<string>>(new Set());
   const [submittedQuestions, setSubmittedQuestions] = useState<Set<string>>(new Set());
   const [hasBeenSubmittedQuestions, setHasBeenSubmittedQuestions] = useState<Set<string>>(new Set());
+  
+  // Declaration creation state
+  const [showDeclarationModal, setShowDeclarationModal] = useState(false);
+  const [manifolderDetailsForDeclaration, setManifolderDetailsForDeclaration] = useState<ManifolderDetailsForDeclaration | null>(null);
+  const [isLoadingManifolderDetails, setIsLoadingManifolderDetails] = useState(false);
+  
+  // Declaration modal data
+  const [declarationTypes, setDeclarationTypes] = useState<any[]>([]);
+  const [projects, setProjects] = useState<any[]>([]);
+  const [companyUsers, setCompanyUsers] = useState<any[]>([]);
 
   useEffect(() => {
     loadQuestions();
+    loadDeclarationData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [manifolderId, token]);
 
@@ -173,6 +187,26 @@ export default function ManifolderQuestions({
       }
       return newSet;
     });
+  };
+
+  const loadDeclarationData = async () => {
+    if (!token) return;
+    
+    try {
+      // Load declaration types, projects, and company users in parallel
+      const [typesData, projectsData, usersData] = await Promise.all([
+        declarationService.getDeclarationTypes(token),
+        declarationService.getCompanyProjects(token),
+        declarationService.getCompanyUsers(token),
+      ]);
+      
+      setDeclarationTypes(typesData);
+      setProjects(projectsData);
+      setCompanyUsers(usersData);
+    } catch (error: any) {
+      console.error('Failed to load declaration data:', error);
+      // Don't show alert as this is not critical for the main functionality
+    }
   };
 
   const handleAnswerChange = (questionId: string, value: any, quantity?: number, zoneId?: string, status?: number) => {
@@ -440,6 +474,68 @@ export default function ManifolderQuestions({
     }
   };
 
+  const handleCreateDeclaration = async (questionId: string) => {
+    if (!token || !manifolderId) return;
+
+    // Get the answer ID for this question to use as manifolderDetailId
+    const answerId = answerIds[questionId];
+    if (!answerId) {
+      Alert.alert('Error', 'Please submit your answer first before creating a declaration');
+      return;
+    }
+
+    try {
+      setIsLoadingManifolderDetails(true);
+      
+      // Fetch manifolder details for declaration creation
+      const response = await fetch(`${API_CONFIG.BASE_URL}/manifolder-details-for-declaration/${manifolderId}/${answerId}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch manifolder details');
+      }
+
+      const manifolderDetails: ManifolderDetailsForDeclaration = await response.json();
+      setManifolderDetailsForDeclaration(manifolderDetails);
+      setShowDeclarationModal(true);
+    } catch (error: any) {
+      Alert.alert('Error', error.message || 'Failed to load manifolder details for declaration creation');
+    } finally {
+      setIsLoadingManifolderDetails(false);
+    }
+  };
+
+  const handleDeclarationSubmit = async (declarationData: any) => {
+    if (!token) return;
+
+    try {
+      const response = await fetch(`${API_CONFIG.BASE_URL}/declarations`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(declarationData),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to create declaration');
+      }
+
+      await response.json(); // We don't need the result, just check if it was successful
+      Alert.alert('Success', 'Declaration created successfully!');
+      setShowDeclarationModal(false);
+      setManifolderDetailsForDeclaration(null);
+    } catch (error: any) {
+      Alert.alert('Error', error.message || 'Failed to create declaration');
+    }
+  };
+
   const handleSubmitAnswers = async () => {
     if (!token || !manifolderId) return;
 
@@ -633,6 +729,7 @@ export default function ManifolderQuestions({
               onCopyQuestion={handleCopyQuestion}
               onResetQuestion={handleResetQuestion}
               onSubmitAnswer={handleSubmitSingleAnswer}
+              onCreateDeclaration={handleCreateDeclaration}
               isSubmitting={submittingQuestions.has(question.id)}
               isSubmitted={submittedQuestions.has(question.id)}
               hasBeenSubmitted={hasBeenSubmittedQuestions.has(question.id)}
@@ -656,6 +753,23 @@ export default function ManifolderQuestions({
           </Pressable>
         </View>
       </ScrollView>
+
+      {/* Declaration Creation Modal */}
+      <CreateDeclarationModal
+        visible={showDeclarationModal}
+        onClose={() => {
+          setShowDeclarationModal(false);
+          setManifolderDetailsForDeclaration(null);
+        }}
+        onSubmit={handleDeclarationSubmit}
+        declarationTypes={declarationTypes}
+        zones={manifolderDetailsForDeclaration?.availableZones || []}
+        projects={projects}
+        companyUsers={companyUsers}
+        currentUser={user || { id: '', firstname: '', lastname: '', email: '' }}
+        isLoading={isLoadingManifolderDetails}
+        manifolderDetails={manifolderDetailsForDeclaration || undefined}
+      />
     </SafeAreaView>
   );
 }

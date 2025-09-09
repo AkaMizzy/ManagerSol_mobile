@@ -35,6 +35,7 @@ interface QuestionAccordionProps {
   onCopyQuestion?: (questionId: string) => void;
   onResetQuestion?: (questionId: string) => void;
   onSubmitAnswer?: (questionId: string) => void;
+  onCreateDeclaration?: (questionId: string) => void;
   isSubmitting?: boolean;
   isSubmitted?: boolean;
   hasBeenSubmitted?: boolean; // Track if this question was ever submitted before
@@ -54,6 +55,7 @@ export default function QuestionAccordion({
   onCopyQuestion,
   onResetQuestion,
   onSubmitAnswer,
+  onCreateDeclaration,
   isSubmitting = false,
   isSubmitted = false,
   hasBeenSubmitted = false,
@@ -802,6 +804,29 @@ export default function QuestionAccordion({
                 </Text>
               </View>
             )}
+
+            {/* Declaration Creation Button - Only show if answer is submitted and onCreateDeclaration is provided */}
+            {isSubmitted && onCreateDeclaration && (
+              <View style={styles.declarationContainer}>
+                <Pressable
+                  style={styles.declarationButton}
+                  onPress={() => {
+                    onCreateDeclaration(question.id);
+                  }}
+                  accessibilityRole="button"
+                  accessibilityLabel="Create declaration for this question"
+                >
+                  <Ionicons 
+                    name="document-text-outline" 
+                    size={20} 
+                    color="#FFFFFF" 
+                  />
+                  <Text style={styles.declarationButtonText}>
+                    Create Declaration
+                  </Text>
+                </Pressable>
+              </View>
+            )}
           </Animated.View>
         )}
       </View>
@@ -1506,6 +1531,27 @@ const styles = StyleSheet.create({
   },
   submittedText: {
     color: '#34C759',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  declarationContainer: {
+    marginTop: 16,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#F2F2F7',
+  },
+  declarationButton: {
+    backgroundColor: '#f87b1b',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 10,
+    gap: 8,
+  },
+  declarationButtonText: {
+    color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '600',
   },

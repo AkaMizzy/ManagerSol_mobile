@@ -36,16 +36,44 @@ export interface Declaration {
   id_project?: string | null;
   latitude?: number | null;
   longitude?: number | null;
+  id_manifold?: string | null;
+  id_manifold_detail?: string | null;
   declaration_type_title: string;
   zone_title: string;
   project_title?: string | null;
   company_title?: string | null;
   declarent_firstname?: string | null;
   declarent_lastname?: string | null;
+  manifolder_title?: string | null;
+  manifolder_description?: string | null;
+  manifolder_type_title?: string | null;
+  manifolder_question_title?: string | null;
+  manifolder_question_type?: string | null;
   photo_count: number;
   chat_count: number;
   photos?: DeclarationPhoto[];
   chats?: ChatMessage[];
+  manifolderInfo?: {
+    manifolderId: string;
+    manifolderDetailId: string;
+    manifolderTitle: string;
+    manifolderDescription?: string;
+    manifolderType: string;
+    question: {
+      title: string;
+      type: string;
+      description?: string;
+    };
+    answer: {
+      text?: string;
+      file?: string;
+      vocal?: string;
+      latitude?: number;
+      longitude?: number;
+      quantity?: number;
+      status?: number;
+    };
+  };
 }
 
 export interface CreateDeclarationData {
@@ -60,6 +88,8 @@ export interface CreateDeclarationData {
   id_project?: string;
   latitude?: number;
   longitude?: number;
+  id_manifold?: string;
+  id_manifold_detail?: string;
   photos?: { uri: string; type: string; name: string }[];
 }
 
@@ -102,6 +132,36 @@ export interface DeclarationAction {
   company_title?: string | null;
   zone_title?: string | null;
   id_parent_action?: string | null; // For sub-actions
+}
+
+export interface ManifolderDetailsForDeclaration {
+  manifolder: {
+    id: string;
+    title: string;
+    description?: string;
+    projectId: string;
+    projectTitle: string;
+    defaultZoneId: string;
+    zoneTitle: string;
+    manifolderType: string;
+  };
+  manifolderDetail: {
+    id: string;
+    questionId: string;
+    questionTitle: string;
+    questionType: string;
+    questionDescription?: string;
+    answer: {
+      text?: string;
+      file?: string;
+      vocal?: string;
+      latitude?: number;
+      longitude?: number;
+      quantity?: number;
+      status?: number;
+    };
+  };
+  availableZones: Zone[];
 }
 
 export interface CompanyUser {
