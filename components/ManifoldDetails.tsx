@@ -6,16 +6,16 @@ import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import React, { useEffect, useState } from 'react';
 import {
-    ActivityIndicator,
-    Alert,
-    Linking,
-    Platform,
-    Pressable,
-    ScrollView,
-    Share,
-    StyleSheet,
-    Text,
-    View,
+  ActivityIndicator,
+  Alert,
+  Linking,
+  Platform,
+  Pressable,
+  ScrollView,
+  Share,
+  StyleSheet,
+  Text,
+  View,
 } from 'react-native';
 
 interface ManifoldDetailsProps {
@@ -277,17 +277,13 @@ export default function ManifoldDetails({
   return (
     <View style={styles.container}>
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        {/* Floating Back Button */}
-        <Pressable style={styles.floatingBackButton} onPress={onBack}>
-          <Ionicons name="arrow-back" size={24} color="#007AFF" />
-        </Pressable>
-
-        {/* Status Badge */}
-        <View style={styles.statusContainer}>
-          <View style={styles.statusBadge}>
-            <Text style={styles.statusText}>Active</Text>
-          </View>
-          <Text style={styles.manifolderCode}>{manifolder.code_formatted}</Text>
+        {/* Header with Back Button and Title */}
+        <View style={styles.headerContainer}>
+          <Pressable style={styles.headerBackButton} onPress={onBack}>
+            <Ionicons name="arrow-back" size={24} color="#11224e" />
+          </Pressable>
+          <Text style={styles.headerTitle}>{manifolder.code_formatted}</Text>
+          <View style={styles.headerSpacer} />
         </View>
 
         {/* Primary Actions */}
@@ -481,14 +477,20 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 16,
   },
-  floatingBackButton: {
-    position: 'absolute',
-    top: 16,
-    left: 16,
-    zIndex: 10,
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+  headerContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    marginBottom: 8,
+  },
+  headerBackButton: {
+    width: 40,
+    height: 40,
     borderRadius: 20,
-    padding: 8,
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    justifyContent: 'center',
+    alignItems: 'center',
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
@@ -498,27 +500,17 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 3,
   },
-  statusContainer: {
-    marginBottom: 16,
-    alignItems: 'center',
-  },
-  statusBadge: {
-    backgroundColor: '#34C759',
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: 12,
-    marginBottom: 8,
-  },
-  statusText: {
-    color: '#FFFFFF',
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  manifolderCode: {
+  headerTitle: {
+    flex: 1,
     fontSize: 18,
     fontWeight: '700',
     color: '#11224e',
     fontFamily: 'monospace',
+    textAlign: 'center',
+    marginHorizontal: 16,
+  },
+  headerSpacer: {
+    width: 40,
   },
   primaryActionsCard: {
     backgroundColor: '#FFFFFF',
@@ -545,9 +537,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingVertical: 12,
     paddingHorizontal: 16,
-    backgroundColor: '#007AFF',
+    backgroundColor: '#f87b1b',
     borderRadius: 10,
-    shadowColor: '#007AFF',
+    shadowColor: '#f87b1b',
     shadowOffset: {
       width: 0,
       height: 2,

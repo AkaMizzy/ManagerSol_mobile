@@ -533,86 +533,6 @@ export default function QuestionAccordion({
           </View>
           
           <View style={styles.headerActions}>
-            {/* Copy Button */}
-            {onCopyQuestion && (
-              <Pressable
-                style={styles.copyButton}
-                onPress={() => onCopyQuestion(question.id)}
-                accessibilityRole="button"
-                accessibilityLabel="Copy question"
-              >
-                <Ionicons 
-                  name="copy-outline" 
-                  size={20} 
-                  color="#8E8E93" 
-                />
-                
-              </Pressable>
-              
-            )}
-            
-            {/* Refresh Button */}
-            <Pressable
-              style={styles.actionButton}
-              onPress={() => {
-                if (onResetQuestion) {
-                  onResetQuestion(question.id);
-                }
-              }}
-              accessibilityRole="button"
-              accessibilityLabel="Reset question"
-            >
-              <Ionicons 
-                name="refresh-circle-outline" 
-                size={16} 
-                color="#8E8E93" 
-              />
-            </Pressable>
-            
-            {/* Camera Button */}
-            <Pressable
-              style={styles.actionButton}
-              onPress={() => setShowCameraModal(true)}
-              accessibilityRole="button"
-              accessibilityLabel="Take photo"
-            >
-              <Ionicons 
-                name="camera-outline" 
-                size={16} 
-                color="#8E8E93" 
-              />
-            </Pressable>
-
-            {/* vocal Button */}
-            <Pressable
-              style={styles.actionButton}
-              onPress={() => setShowVoiceModal(true)}
-              accessibilityRole="button"
-              accessibilityLabel="record voice"
-            >
-              <Ionicons 
-                name="mic-outline" 
-                size={16} 
-                color="#8E8E93" 
-              />
-            </Pressable>
-            
-            {/* Preview Button */}
-            {hasPreviewableMedia() && (
-              <Pressable
-                style={styles.previewButton}
-                onPress={handlePreviewPress}
-                accessibilityRole="button"
-                accessibilityLabel="Preview media"
-              >
-                <Ionicons 
-                  name="eye-outline" 
-                  size={16} 
-                  color="#8E8E93" 
-                />
-              </Pressable>
-            )}
-            
             {/* Chevron */}
             <Animated.View
               style={[
@@ -708,8 +628,87 @@ export default function QuestionAccordion({
             
             <View style={styles.inputContainer}>
               {renderInput()}
+            </View>
+
+            {/* Action Buttons - Only visible when expanded */}
+            <View style={styles.actionButtonsContainer}>
+              {/* Copy Button */}
+              {onCopyQuestion && (
+                <Pressable
+                  style={styles.copyButton}
+                  onPress={() => onCopyQuestion(question.id)}
+                  accessibilityRole="button"
+                  accessibilityLabel="Copy question"
+                >
+                  <Ionicons 
+                    name="copy-outline" 
+                    size={20} 
+                    color="#FFFFFF" 
+                  />
+                </Pressable>
+              )}
               
+              {/* Refresh Button */}
+              <Pressable
+                style={styles.actionButton}
+                onPress={() => {
+                  if (onResetQuestion) {
+                    onResetQuestion(question.id);
+                  }
+                }}
+                accessibilityRole="button"
+                accessibilityLabel="Reset question"
+              >
+                <Ionicons 
+                  name="refresh-circle-outline" 
+                  size={16} 
+                  color="#FFFFFF" 
+                />
+              </Pressable>
               
+              {/* Camera Button */}
+              <Pressable
+                style={styles.actionButton}
+                onPress={() => setShowCameraModal(true)}
+                accessibilityRole="button"
+                accessibilityLabel="Take photo"
+              >
+                <Ionicons 
+                  name="camera-outline" 
+                  size={16} 
+                  color="#FFFFFF" 
+                />
+              </Pressable>
+
+              {/* Vocal Button */}
+              <Pressable
+                style={styles.actionButton}
+                onPress={() => setShowVoiceModal(true)}
+                accessibilityRole="button"
+                accessibilityLabel="record voice"
+              >
+                <Ionicons 
+                  name="mic-outline" 
+                  size={16} 
+                  color="#FFFFFF" 
+                />
+              </Pressable>
+              
+              {/* Preview Button */}
+              {hasPreviewableMedia() && (
+                <Pressable
+                  style={styles.actionButton}
+                  onPress={handlePreviewPress}
+                  accessibilityRole="button"
+                  accessibilityLabel="Preview media"
+                >
+                  <Ionicons 
+                    name="eye-outline" 
+                    size={16} 
+                    color="#FFFFFF" 
+                  />
+                </Pressable>
+              )}
             </View>
           </Animated.View>
         )}
@@ -935,7 +934,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 16,
-    backgroundColor: '#F2F2F7',
+    backgroundColor: '#f87b1b',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -943,15 +942,15 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 16,
-    backgroundColor: '#F2F2F7',
+    backgroundColor: '#f87b1b',
     justifyContent: 'center',
     alignItems: 'center',
   },
   questionTitle: {
-    fontSize: 16,
-    fontWeight: '500',
+    fontSize: 18,
+    fontWeight: '600',
     color: '#1C1C1E',
-    lineHeight: 22,
+    lineHeight: 24,
   },
   requiredIndicator: {
     color: '#FF3B30',
@@ -981,6 +980,16 @@ const styles = StyleSheet.create({
   },
   inputContainer: {
     marginTop: 8,
+  },
+  actionButtonsContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 12,
+    marginTop: 16,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#F2F2F7',
   },
   textInput: {
     borderWidth: 1,
@@ -1099,9 +1108,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   zoneLabel: {
-    fontSize: 16,
+    fontSize: 18,
     color: '#1C1C1E',
-    fontWeight: '500',
+    fontWeight: '600',
     marginRight: 12,
     minWidth: 50,
   },
@@ -1236,9 +1245,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   statusLabel: {
-    fontSize: 16,
+    fontSize: 18,
     color: '#1C1C1E',
-    fontWeight: '500',
+    fontWeight: '600',
     marginRight: 12,
     minWidth: 60,
   },
