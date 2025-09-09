@@ -609,6 +609,14 @@ export default function QuestionAccordion({
               </Pressable>
             </View>
 
+            {question.description && (
+              <Text style={styles.questionDescription}>{question.description}</Text>
+            )}
+            
+            <View style={styles.inputContainer}>
+              {renderInput()}
+            </View>
+
             {/* Status Selection */}
             <View style={styles.statusContainer}>
               <Text style={styles.statusLabel}>Status:</Text>
@@ -621,13 +629,6 @@ export default function QuestionAccordion({
                 </Text>
                 <Ionicons name="chevron-down" size={20} color="#8E8E93" />
               </Pressable>
-            </View>
-            {question.description && (
-              <Text style={styles.questionDescription}>{question.description}</Text>
-            )}
-            
-            <View style={styles.inputContainer}>
-              {renderInput()}
             </View>
 
             {/* Action Buttons - Only visible when expanded */}

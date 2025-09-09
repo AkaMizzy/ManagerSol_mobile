@@ -269,7 +269,7 @@ export default function ManifolderTab() {
         <View style={styles.header}>
           <View style={styles.headerContent}>
             <Pressable onPress={handleBackToList} style={styles.backButton}>
-              <Text style={styles.backButtonText}>←</Text>
+            <Ionicons name="arrow-back" size={24} color="#11224e" />
             </Pressable>
             <View style={styles.headerTitleContainer}>
               <Text style={styles.headerTitle}>{selectedManifolderData?.title || 'Questions'}</Text>
@@ -556,16 +556,30 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-start',
   },
   backButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
     marginRight: 12,
     padding: 8,
   },
   backButtonText: {
-    fontSize: 24,
-    color: '#007AFF',
+    fontSize: 28,
+    color: '#11224e',
     fontWeight: '600',
   },
   headerTitle: {
-    fontSize: 24,
+    fontSize: 26,
     fontWeight: '700',
     color: '#1C1C1E',
   },
@@ -597,12 +611,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   headerDetailIcon: {
-    fontSize: 12,
+    fontSize: 16,
   },
   headerDetailText: {
-    fontSize: 11,
+    fontSize: 14,
     color: '#6B7280',
-    fontWeight: '500',
+    fontWeight: '600',
     flex: 1,
   },
   headerDetailSeparator: {
