@@ -4,19 +4,20 @@ import manifolderService from '@/services/manifolderService';
 import { ManifolderListItem } from '@/types/manifolder';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
-  ActivityIndicator,
-  Alert,
-  Linking,
-  Platform,
-  Pressable,
-  ScrollView,
-  Share,
-  StyleSheet,
-  Text,
-  View,
+    ActivityIndicator,
+    Alert,
+    Linking,
+    Platform,
+    Pressable,
+    ScrollView,
+    Share,
+    StyleSheet,
+    Text,
+    View,
 } from 'react-native';
+import FileUploader from './FileUploader';
 
 interface ManifoldDetailsProps {
   manifolderId: string;
@@ -31,6 +32,7 @@ interface ManifolderDetailData extends ManifolderListItem {
   updated_at?: string;
   answers_count?: number;
   questions_count?: number;
+  upload_doc?: string;
 }
 
 export default function ManifoldDetails({ 
@@ -46,17 +48,9 @@ export default function ManifoldDetails({
   const [pdfExists, setPdfExists] = useState(false);
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [isCheckingPdf, setIsCheckingPdf] = useState(false);
+  const [isUploadingDocument, setIsUploadingDocument] = useState(false);
 
-  useEffect(() => {
-    if (manifolderData) {
-      setManifolder(manifolderData);
-      setIsLoading(false);
-    } else {
-      loadManifolderDetails();
-    }
-  }, [manifolderId]);
-
-  const loadManifolderDetails = async () => {
+  const loadManifolderDetails = useCallback(async () => {
     try {
       setIsLoading(true);
       setError(null);
@@ -69,9 +63,18 @@ export default function ManifoldDetails({
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [manifolderId, token]);
 
-  const checkPDFStatus = async () => {
+  useEffect(() => {
+    if (manifolderData) {
+      setManifolder(manifolderData);
+      setIsLoading(false);
+    } else {
+      loadManifolderDetails();
+    }
+  }, [manifolderId, manifolderData, loadManifolderDetails]);
+
+  const checkPDFStatus = useCallback(async () => {
     try {
       setIsCheckingPdf(true);
       
@@ -90,21 +93,21 @@ export default function ManifoldDetails({
         setPdfExists(false);
         setPdfUrl(null);
       }
-    } catch (error) {
+    } catch {
       // If check fails, assume no PDF exists
       setPdfExists(false);
       setPdfUrl(null);
     } finally {
       setIsCheckingPdf(false);
     }
-  };
+  }, [manifolderId, token]);
 
   useEffect(() => {
     // Check PDF status when manifolder loads
     if (manifolder) {
       checkPDFStatus();
     }
-  }, [manifolder]);
+  }, [manifolder, checkPDFStatus]);
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -173,7 +176,7 @@ export default function ManifoldDetails({
             });
             Alert.alert('Success', 'PDF shared successfully!');
           }
-        } catch (openError) {
+        } catch {
           // If direct opening fails, fallback to share
           try {
             await Share.share({
@@ -182,7 +185,7 @@ export default function ManifoldDetails({
               message: `Manifolder PDF Report: ${manifolder?.code_formatted || manifolderId}`,
             });
             Alert.alert('Success', 'PDF shared successfully!');
-          } catch (shareError) {
+          } catch {
             Alert.alert('Error', 'Failed to open or share PDF. Please try again.');
           }
         }
@@ -227,7 +230,7 @@ export default function ManifoldDetails({
             });
             Alert.alert('Success', 'PDF shared successfully!');
           }
-        } catch (openError) {
+        } catch {
           // If direct opening fails, fallback to share
           try {
             await Share.share({
@@ -236,7 +239,7 @@ export default function ManifoldDetails({
               message: `Manifolder PDF Report: ${manifolder?.code_formatted || manifolderId}`,
             });
             Alert.alert('Success', 'PDF shared successfully!');
-          } catch (shareError) {
+          } catch {
             Alert.alert('Error', 'Failed to open or share PDF. Please try again.');
           }
         }
@@ -244,6 +247,142 @@ export default function ManifoldDetails({
       
     } catch (error: any) {
       Alert.alert('Error', error.message || 'Failed to open PDF');
+    }
+  };
+
+  const uploadDocument = async (file: { uri: string; name: string; type: string }) => {
+    try {
+      setIsUploadingDocument(true);
+      
+      const formData = new FormData();
+      formData.append('document', {
+        uri: file.uri,
+        name: file.name,
+        type: file.type,
+      } as any);
+
+      const response = await fetch(`${API_CONFIG.BASE_URL}/manifolders/${manifolderId}/upload-document`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'multipart/form-data',
+        },
+        body: formData,
+      });
+
+      if (!response.ok) {
+        let msg = 'Document upload failed';
+        try { 
+          const j = await response.json(); 
+          msg = j.error || msg; 
+        } catch {}
+        throw new Error(msg);
+      }
+
+      const result = await response.json();
+      
+      // Update manifolder state with new document
+      if (manifolder) {
+        setManifolder({
+          ...manifolder,
+          upload_doc: result.fileUrl
+        });
+      }
+      
+      Alert.alert('Success', 'Document uploaded successfully!');
+      
+    } catch (error: any) {
+      Alert.alert('Error', error.message || 'Failed to upload document');
+    } finally {
+      setIsUploadingDocument(false);
+    }
+  };
+
+  const removeDocument = async () => {
+    try {
+      setIsUploadingDocument(true);
+      
+      const response = await fetch(`${API_CONFIG.BASE_URL}/manifolders/${manifolderId}/document`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        let msg = 'Document removal failed';
+        try { 
+          const j = await response.json(); 
+          msg = j.error || msg; 
+        } catch {}
+        throw new Error(msg);
+      }
+
+      // Update manifolder state to remove document
+      if (manifolder) {
+        setManifolder({
+          ...manifolder,
+          upload_doc: undefined
+        });
+      }
+      
+      Alert.alert('Success', 'Document removed successfully!');
+      
+    } catch (error: any) {
+      Alert.alert('Error', error.message || 'Failed to remove document');
+    } finally {
+      setIsUploadingDocument(false);
+    }
+  };
+
+  const viewDocument = async () => {
+    if (!manifolder?.upload_doc) {
+      Alert.alert('Error', 'No document attached');
+      return;
+    }
+
+    try {
+      const fullDocUrl = `${API_CONFIG.BASE_URL}${manifolder.upload_doc}`;
+      
+      // Handle document opening based on platform
+      if (Platform.OS === 'web') {
+        // Web: Open document in new tab
+        window.open(fullDocUrl, '_blank');
+        Alert.alert('Success', 'Document opened in new tab!');
+      } else {
+        // Mobile: Try to open document directly with device's default viewer
+        try {
+          const supported = await Linking.canOpenURL(fullDocUrl);
+          
+          if (supported) {
+            await Linking.openURL(fullDocUrl);
+            Alert.alert('Success', 'Document opened successfully!');
+          } else {
+            // Fallback to share if direct opening fails
+            await Share.share({
+              url: fullDocUrl,
+              title: `Manifolder Document: ${manifolder?.code_formatted || manifolderId}`,
+              message: `Manifolder Document: ${manifolder?.code_formatted || manifolderId}`,
+            });
+            Alert.alert('Success', 'Document shared successfully!');
+          }
+        } catch {
+          // If direct opening fails, fallback to share
+          try {
+            await Share.share({
+              url: fullDocUrl,
+              title: `Manifolder Document: ${manifolder?.code_formatted || manifolderId}`,
+              message: `Manifolder Document: ${manifolder?.code_formatted || manifolderId}`,
+            });
+            Alert.alert('Success', 'Document shared successfully!');
+          } catch {
+            Alert.alert('Error', 'Failed to open or share document. Please try again.');
+          }
+        }
+      }
+      
+    } catch (error: any) {
+      Alert.alert('Error', error.message || 'Failed to open document');
     }
   };
 
@@ -398,8 +537,60 @@ export default function ManifoldDetails({
           )}
         </View>
 
-        {/* Code Information Card */}
-        
+        {/* Document Upload Card */}
+        <View style={styles.card}>
+          <View style={styles.cardHeader}>
+            <Ionicons name="document-outline" size={24} color="#11224e" />
+            <Text style={styles.cardTitle}>Attached Document</Text>
+          </View>
+          
+          {manifolder.upload_doc ? (
+            <View style={styles.documentContainer}>
+              <View style={styles.documentInfo}>
+                <Ionicons name="document-text-outline" size={32} color="#007AFF" />
+                <View style={styles.documentDetails}>
+                  <Text style={styles.documentName}>Attached Document</Text>
+                  <Text style={styles.documentPath}>{manifolder.upload_doc.split('/').pop()}</Text>
+                </View>
+              </View>
+              
+              <View style={styles.documentActions}>
+                <Pressable style={styles.documentActionButton} onPress={viewDocument}>
+                  <Ionicons name="eye-outline" size={20} color="#007AFF" />
+                  <Text style={styles.documentActionText}>View</Text>
+                </Pressable>
+                
+                <Pressable 
+                  style={[styles.documentActionButton, styles.dangerButton]} 
+                  onPress={removeDocument}
+                  disabled={isUploadingDocument}
+                >
+                  <Ionicons name="trash-outline" size={20} color="#FF3B30" />
+                  <Text style={[styles.documentActionText, styles.dangerText]}>
+                    {isUploadingDocument ? 'Removing...' : 'Remove'}
+                  </Text>
+                </Pressable>
+              </View>
+            </View>
+          ) : (
+            <View style={styles.uploadContainer}>
+              <FileUploader
+                value={null}
+                onFileSelect={uploadDocument}
+                onFileRemove={() => {}}
+                placeholder="Upload a document"
+                acceptedTypes={['document']}
+                maxSize={10}
+              />
+              {isUploadingDocument && (
+                <View style={styles.uploadingIndicator}>
+                  <ActivityIndicator size="small" color="#f87b1b" />
+                  <Text style={styles.uploadingText}>Uploading...</Text>
+                </View>
+              )}
+            </View>
+          )}
+        </View>
 
         {/* Secondary Actions Card */}
         <View style={styles.card}>
@@ -656,5 +847,69 @@ const styles = StyleSheet.create({
   },
   bottomSpacing: {
     height: 20,
+  },
+  documentContainer: {
+    backgroundColor: '#F2F2F7',
+    borderRadius: 10,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: '#E5E5EA',
+  },
+  documentInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  documentDetails: {
+    flex: 1,
+    marginLeft: 12,
+  },
+  documentName: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1C1C1E',
+    marginBottom: 4,
+  },
+  documentPath: {
+    fontSize: 14,
+    color: '#8E8E93',
+  },
+  documentActions: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  documentActionButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#E5E5EA',
+  },
+  documentActionText: {
+    marginLeft: 6,
+    fontSize: 14,
+    color: '#007AFF',
+    fontWeight: '500',
+  },
+  uploadContainer: {
+    position: 'relative',
+  },
+  uploadingIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 12,
+    paddingVertical: 8,
+  },
+  uploadingText: {
+    marginLeft: 8,
+    fontSize: 14,
+    color: '#f87b1b',
+    fontWeight: '500',
   },
 });
