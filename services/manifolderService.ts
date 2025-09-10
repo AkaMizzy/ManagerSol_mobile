@@ -150,6 +150,43 @@ class ManifolderService {
   getFileUrl(filename: string): string {
     return `${this.baseUrl}/manifolder-details/file/${filename}`;
   }
+
+  // Signature-related methods
+  saveSignature(payload: {
+    id_manifolder: string;
+    signature_role: 'technicien' | 'control' | 'admin';
+    signature: string;
+    signer_email: string;
+  }, token: string): Promise<{ message: string; signatureId: string; signature_role: string; signer_email: string; date_sign: string; }> {
+    return this.request('/manifolder-signatures', token, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  }
+
+  getManifolderSignatures(manifolderId: string, token: string): Promise<{
+    manifolderId: string;
+    signatures: {
+      technicien?: { id: string; email: string; date: string; createdAt: string; updatedAt: string; };
+      control?: { id: string; email: string; date: string; createdAt: string; updatedAt: string; };
+      admin?: { id: string; email: string; date: string; createdAt: string; updatedAt: string; };
+    };
+    signatureList: Array<{ id: string; role: string; email: string; date: string; createdAt: string; updatedAt: string; }>;
+    totalSignatures: number;
+    isComplete: boolean;
+  }> {
+    return this.request(`/manifolder-signatures/${manifolderId}`, token);
+  }
+
+  getSignatureStatus(manifolderId: string, token: string): Promise<{
+    manifolderId: string;
+    signatureStatus: string;
+    signatureCount: number;
+    isComplete: boolean;
+    remainingSignatures: number;
+  }> {
+    return this.request(`/manifolder-signatures/status/${manifolderId}`, token);
+  }
 }
 
 export default new ManifolderService();

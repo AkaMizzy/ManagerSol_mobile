@@ -2,6 +2,7 @@ import API_CONFIG from '@/app/config/api';
 import AppHeader from '@/components/AppHeader';
 import ManifoldDetails from '@/components/ManifoldDetails';
 import ManifolderQuestions from '@/components/ManifolderQuestions';
+import SignatureField from '@/components/SignatureField';
 import { useAuth } from '@/contexts/AuthContext';
 import manifolderService from '@/services/manifolderService';
 import { Project, Zone } from '@/types/declaration';
@@ -58,12 +59,34 @@ export default function ManifolderTab() {
   const [showZoneDropdown, setShowZoneDropdown] = useState(false);
   const [showTypeDropdown, setShowTypeDropdown] = useState(false);
 
+  // Signature states
+  const [signatures, setSignatures] = useState<{
+    technicien: { signature: string; email: string } | null;
+    control: { signature: string; email: string } | null;
+    admin: { signature: string; email: string } | null;
+  }>({
+    technicien: null,
+    control: null,
+    admin: null,
+  });
+
   const getZoneLogo = (zoneId: string) => {
     const zone = zones.find(z => z.id === zoneId);
     if (zone?.logo) {
       return `${API_CONFIG.BASE_URL}${zone.logo}`;
     }
     return null;
+  };
+
+  const handleSignatureComplete = (role: string, signature: string, email: string) => {
+    setSignatures(prev => ({
+      ...prev,
+      [role]: { signature, email }
+    }));
+  };
+
+  const isAllSignaturesComplete = () => {
+    return signatures.technicien && signatures.control && signatures.admin;
   };
 
   const filteredZones = useMemo(() => {
@@ -102,6 +125,11 @@ export default function ManifolderTab() {
       Alert.alert('Validation', 'Please select Project, Zone, Type and enter a Title');
       return;
     }
+
+    if (!isAllSignaturesComplete()) {
+      Alert.alert('Validation', 'All three signatures (Technicien, Contrôle, Admin) are required');
+      return;
+    }
     try {
       setSubmitting(true);
       const result = await manifolderService.createManifolder({
@@ -114,6 +142,32 @@ export default function ManifolderTab() {
         title: title.trim(),
         description: description.trim() || undefined,
       }, token!);
+
+      // Save signatures after manifolder creation
+      if (result.manifolderId) {
+        const signaturePromises = [
+          manifolderService.saveSignature({
+            id_manifolder: result.manifolderId,
+            signature_role: 'technicien',
+            signature: signatures.technicien!.signature,
+            signer_email: signatures.technicien!.email,
+          }, token!),
+          manifolderService.saveSignature({
+            id_manifolder: result.manifolderId,
+            signature_role: 'control',
+            signature: signatures.control!.signature,
+            signer_email: signatures.control!.email,
+          }, token!),
+          manifolderService.saveSignature({
+            id_manifolder: result.manifolderId,
+            signature_role: 'admin',
+            signature: signatures.admin!.signature,
+            signer_email: signatures.admin!.email,
+          }, token!),
+        ];
+
+        await Promise.all(signaturePromises);
+      }
       
       // Close modal and reset form
       setIsModalVisible(false);
@@ -123,12 +177,18 @@ export default function ManifolderTab() {
       setHeurF(null);
       setTitle('');
       setDescription('');
+      // Reset signatures
+      setSignatures({
+        technicien: null,
+        control: null,
+        admin: null,
+      });
       
       // Reload manifolders list
       try {
         const updatedManifolders = await manifolderService.getManifolders({}, token!);
         setManifolders(updatedManifolders);
-      } catch (e) {
+      } catch {
         console.log('Failed to reload manifolders');
       }
       
@@ -140,7 +200,7 @@ export default function ManifolderTab() {
         // Show success message with option to go back to list
         Alert.alert(
           'Manifolder Created Successfully!',
-          `Manifolder ${result.code_formatted} has been created. You can now answer the questions.`,
+          `Manifolder ${result.code_formatted} has been created with all required signatures. You can now answer the questions.`,
           [
             { text: 'Back to List', onPress: handleBackToList },
             { text: 'Continue', style: 'default' }
@@ -518,6 +578,29 @@ export default function ManifolderTab() {
                 multiline
                 numberOfLines={3}
               />
+
+              {/* Signature Fields */}
+              <View style={styles.signatureSection}>
+                <Text style={styles.signatureSectionTitle}>Required Signatures</Text>
+                <SignatureField
+                  role="technicien"
+                  roleLabel="Technicien"
+                  onSignatureComplete={handleSignatureComplete}
+                  isCompleted={!!signatures.technicien}
+                />
+                <SignatureField
+                  role="control"
+                  roleLabel="Contrôle"
+                  onSignatureComplete={handleSignatureComplete}
+                  isCompleted={!!signatures.control}
+                />
+                <SignatureField
+                  role="admin"
+                  roleLabel="Admin"
+                  onSignatureComplete={handleSignatureComplete}
+                  isCompleted={!!signatures.admin}
+                />
+              </View>
 
               <View style={styles.modalActions}>
                 <Pressable style={styles.secondaryBtn} onPress={() => setIsModalVisible(false)}>
@@ -1004,6 +1087,18 @@ const styles = StyleSheet.create({
     fontSize: 10,
     color: '#8E8E93',
     fontWeight: '500',
+    textAlign: 'center',
+  },
+  // Signature section styles
+  signatureSection: {
+    marginTop: 20,
+    marginBottom: 16,
+  },
+  signatureSectionTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#11224e',
+    marginBottom: 16,
     textAlign: 'center',
   },
 });
