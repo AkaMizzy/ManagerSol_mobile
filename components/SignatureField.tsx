@@ -37,10 +37,6 @@ export default function SignatureField({
   const [email, setEmail] = useState<string>('');
   const signatureRef = useRef<any>(null);
 
-  const handleSignature = (signature: string) => {
-    setSignature(signature);
-  };
-
   const clearSignature = () => {
     if (signatureRef.current) {
       signatureRef.current.clearSignature();
@@ -53,9 +49,18 @@ export default function SignatureField({
     return emailRegex.test(email);
   };
 
+  const handleSignature = (signature: string) => {
+    if (signature && email.trim()) {
+      onSignatureComplete(role, signature, email.trim());
+      setIsModalVisible(false);
+      setEmail('');
+      clearSignature();
+    }
+  };
+
   const handleSave = () => {
-    if (!signature || !email.trim()) {
-      Alert.alert('Validation', 'Please provide both signature and email');
+    if (!email.trim()) {
+      Alert.alert('Validation', 'Please provide email address');
       return;
     }
 
@@ -64,10 +69,12 @@ export default function SignatureField({
       return;
     }
 
-    onSignatureComplete(role, signature, email.trim());
-    setIsModalVisible(false);
-    setEmail('');
-    clearSignature();
+    // Trigger signature capture programmatically
+    if (signatureRef.current) {
+      signatureRef.current.readSignature();
+    } else {
+      Alert.alert('Validation', 'Please draw a signature');
+    }
   };
 
   const handleCancel = () => {
@@ -77,16 +84,7 @@ export default function SignatureField({
   };
 
   const getRoleIcon = (role: string) => {
-    switch (role) {
-      case 'technicien':
-        return '🔧';
-      case 'control':
-        return '🔍';
-      case 'admin':
-        return '👨‍💼';
-      default:
-        return '✍️';
-    }
+    return '✍️'; // Use handwriting emoji for all roles
   };
 
   const getRoleColor = (role: string) => {
@@ -119,109 +117,120 @@ export default function SignatureField({
               {roleLabel}
             </Text>
             {isCompleted && (
-              <Ionicons name="checkmark-circle" size={20} color="#34C759" />
+              <Ionicons name="checkmark-circle" size={18} color="#34C759" />
             )}
           </View>
-          <Text style={styles.fieldSubtext}>
-            {isCompleted ? 'Signature completed' : 'Tap to add signature'}
-          </Text>
         </View>
       </Pressable>
 
       <Modal
         visible={isModalVisible}
         transparent
-        animationType="slide"
+        animationType="fade"
         onRequestClose={handleCancel}
       >
         <View style={styles.modalBackdrop}>
           <View style={styles.modalContainer}>
+            {/* Header */}
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Signature - {roleLabel}</Text>
+              <View style={styles.headerContent}>
+                <Text style={styles.modalTitle}>Digital Signature</Text>
+                <Text style={styles.modalSubtitle}>{roleLabel}</Text>
+              </View>
               <Pressable onPress={handleCancel} style={styles.closeButton}>
-                <Ionicons name="close" size={24} color="#11224e" />
+                <Ionicons name="close" size={20} color="#6B7280" />
               </Pressable>
             </View>
 
+            {/* Content */}
             <View style={styles.modalContent}>
-              <Text style={styles.label}>Email *</Text>
-              <TextInput
-                style={styles.emailInput}
-                value={email}
-                onChangeText={setEmail}
-                placeholder="Enter signer email..."
-                keyboardType="email-address"
-                autoCapitalize="none"
-                autoCorrect={false}
-              />
-
-              <Text style={styles.label}>Signature *</Text>
-              <View style={styles.canvasContainer}>
-                <SignatureCanvas
-                  ref={signatureRef}
-                  onOK={handleSignature}
-                  descriptionText="Sign here"
-                  clearText="Clear"
-                  confirmText="Confirm"
-                  webStyle={`
-                    .m-signature-pad {
-                      box-shadow: none;
-                      border: 1px solid #E5E5EA;
-                      border-radius: 10px;
-                      background-color: #FFFFFF;
-                      width: 100%;
-                      height: 100%;
-                    }
-                    .m-signature-pad--body {
-                      background-color: #FFFFFF;
-                      height: 200px;
-                    }
-                    .m-signature-pad--body canvas {
-                      background-color: #FFFFFF;
-                      border: 1px solid #E5E5EA;
-                      border-radius: 10px;
-                      width: 100% !important;
-                      height: 100% !important;
-                    }
-                    .m-signature-pad--footer {
-                      background-color: #F8F9FA;
-                      border-top: 1px solid #E5E5EA;
-                      padding: 10px;
-                    }
-                    .m-signature-pad--footer button {
-                      background-color: #11224e;
-                      color: white;
-                      border: none;
-                      padding: 8px 16px;
-                      border-radius: 6px;
-                      margin: 4px;
-                      font-size: 14px;
-                    }
-                    .m-signature-pad--footer button:hover {
-                      background-color: #0a1a3a;
-                    }
-                    .m-signature-pad--footer .description {
-                      color: #6B7280;
-                      font-size: 12px;
-                      margin-bottom: 8px;
-                    }
-                  `}
-                  style={styles.signatureCanvas}
-                  backgroundColor="white"
-                  penColor="#11224e"
-                  minWidth={2}
-                  maxWidth={4}
-                  imageType="image/png"
-                  trimWhitespace={true}
+              {/* Email Input */}
+              <View style={styles.inputSection}>
+                <Text style={styles.inputLabel}>Signer Email Address</Text>
+                <TextInput
+                  style={styles.emailInput}
+                  value={email}
+                  onChangeText={setEmail}
+                  placeholder="Enter email address"
+                  placeholderTextColor="#9CA3AF"
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  autoCorrect={false}
                 />
               </View>
 
-              <View style={styles.modalActions}>
-                <Pressable onPress={handleCancel} style={styles.cancelButton}>
-                  <Text style={styles.cancelButtonText}>Cancel</Text>
+              {/* Signature Canvas */}
+              <View style={styles.signatureSection}>
+                <Text style={styles.inputLabel}>Signature</Text>
+                <View style={styles.canvasContainer}>
+                  <SignatureCanvas
+                    ref={signatureRef}
+                    onOK={handleSignature}
+                    descriptionText=""
+                    clearText=""
+                    confirmText=""
+                    webStyle={`
+                      .m-signature-pad {
+                        box-shadow: none;
+                        border: none;
+                        background-color: transparent;
+                        width: 100%;
+                        height: 100%;
+                      }
+                      .m-signature-pad--body {
+                        background-color: #FAFAFA;
+                        height: 100%;
+                        border: 2px dashed #D1D5DB;
+                        border-radius: 12px;
+                        position: relative;
+                      }
+                      .m-signature-pad--body canvas {
+                        background-color: transparent;
+                        border: none;
+                        border-radius: 12px;
+                        width: 100% !important;
+                        height: 100% !important;
+                        cursor: crosshair;
+                      }
+                      .m-signature-pad--footer {
+                        display: none !important;
+                      }
+                      .m-signature-pad--footer button {
+                        display: none !important;
+                      }
+                      .m-signature-pad--body::before {
+                        content: "Sign here";
+                        position: absolute;
+                        top: 50%;
+                        left: 50%;
+                        transform: translate(-50%, -50%);
+                        color: #9CA3AF;
+                        font-size: 16px;
+                        font-weight: 500;
+                        pointer-events: none;
+                        z-index: 1;
+                      }
+                    `}
+                    style={styles.signatureCanvas}
+                    backgroundColor="transparent"
+                    penColor="#11224e"
+                    minWidth={2}
+                    maxWidth={3}
+                    imageType="image/png"
+                    trimWhitespace={true}
+                  />
+                </View>
+              </View>
+
+              {/* Action Buttons */}
+              <View style={styles.actionButtons}>
+                <Pressable onPress={clearSignature} style={styles.secondaryButton}>
+                  <Ionicons name="refresh" size={18} color="#6B7280" />
+                  <Text style={styles.secondaryButtonText}>Clear</Text>
                 </Pressable>
-                <Pressable onPress={handleSave} style={styles.saveButton}>
-                  <Text style={styles.saveButtonText}>Save Signature</Text>
+                <Pressable onPress={handleSave} style={styles.primaryButton}>
+                  <Ionicons name="checkmark" size={18} color="#FFFFFF" />
+                  <Text style={styles.primaryButtonText}>Confirm</Text>
                 </Pressable>
               </View>
             </View>
@@ -238,8 +247,9 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: '#E5E5EA',
     borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
+    padding: 12,
+    flex: 1,
+    marginHorizontal: 2,
   },
   completedField: {
     borderColor: '#34C759',
@@ -247,134 +257,189 @@ const styles = StyleSheet.create({
   },
   fieldContent: {
     alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 50,
+    paddingVertical: 8,
   },
   fieldHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 8,
+    justifyContent: 'center',
+    flexWrap: 'wrap',
   },
   roleIcon: {
-    fontSize: 20,
-    marginRight: 8,
+    fontSize: 16,
+    marginRight: 4,
   },
   roleLabel: {
-    fontSize: 16,
+    fontSize: 13,
     fontWeight: '700',
-    flex: 1,
-  },
-  fieldSubtext: {
-    fontSize: 14,
-    color: '#8E8E93',
-    fontWeight: '500',
+    textAlign: 'center',
+    flexShrink: 1,
   },
   modalBackdrop: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: 'rgba(0, 0, 0, 0.4)',
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 20,
+    padding: 24,
   },
   modalContainer: {
     width: '100%',
-    maxWidth: 400,
+    maxWidth: 420,
     backgroundColor: '#FFFFFF',
-    borderRadius: 16,
+    borderRadius: 20,
     overflow: 'hidden',
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
-      height: 10,
+      height: 20,
     },
-    shadowOpacity: 0.25,
-    shadowRadius: 20,
-    elevation: 10,
+    shadowOpacity: 0.15,
+    shadowRadius: 25,
+    elevation: 15,
   },
   modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
+    paddingHorizontal: 24,
+    paddingVertical: 20,
+    backgroundColor: '#FAFAFA',
     borderBottomWidth: 1,
-    borderBottomColor: '#E5E5EA',
+    borderBottomColor: '#F3F4F6',
+  },
+  headerContent: {
+    flex: 1,
   },
   modalTitle: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: '700',
-    color: '#11224e',
+    color: '#111827',
+    marginBottom: 2,
+  },
+  modalSubtitle: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#6B7280',
   },
   closeButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: '#F2F2F7',
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#FFFFFF',
     justifyContent: 'center',
     alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
   },
   modalContent: {
-    padding: 20,
+    padding: 24,
   },
-  label: {
-    fontSize: 14,
+  inputSection: {
+    marginBottom: 24,
+  },
+  signatureSection: {
+    marginBottom: 32,
+  },
+  inputLabel: {
+    fontSize: 15,
     fontWeight: '600',
-    color: '#11224e',
+    color: '#374151',
     marginBottom: 8,
-    marginTop: 12,
   },
   emailInput: {
-    borderWidth: 1,
-    borderColor: '#E5E5EA',
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 12,
+    borderWidth: 1.5,
+    borderColor: '#E5E7EB',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
     fontSize: 16,
-    color: '#1C1C1E',
+    color: '#111827',
     backgroundColor: '#FFFFFF',
-    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
   },
   canvasContainer: {
-    marginBottom: 20,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#E5E5EA',
+    backgroundColor: '#FAFAFA',
+    borderRadius: 16,
+    borderWidth: 2,
+    borderColor: '#D1D5DB',
+    borderStyle: 'dashed',
     overflow: 'hidden',
-    width: screenWidth - 80,
-    height: 280,
+    width: screenWidth - 96,
+    height: 200,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   signatureCanvas: {
     width: '100%',
     height: '100%',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: 'transparent',
   },
-  modalActions: {
+  actionButtons: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    gap: 12,
+    gap: 16,
   },
-  cancelButton: {
+  secondaryButton: {
     flex: 1,
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#E5E5EA',
-    backgroundColor: '#FFFFFF',
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: '#E5E7EB',
+    backgroundColor: '#FFFFFF',
+    gap: 8,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
   },
-  cancelButtonText: {
-    color: '#11224e',
+  secondaryButtonText: {
+    color: '#6B7280',
     fontWeight: '600',
     fontSize: 16,
   },
-  saveButton: {
+  primaryButton: {
     flex: 1,
-    backgroundColor: '#11224e',
-    paddingVertical: 14,
-    borderRadius: 12,
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    borderRadius: 12,
+    backgroundColor: '#11224e',
+    gap: 8,
+    shadowColor: '#11224e',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 4,
   },
-  saveButtonText: {
+  primaryButtonText: {
     color: '#FFFFFF',
     fontWeight: '700',
     fontSize: 16,

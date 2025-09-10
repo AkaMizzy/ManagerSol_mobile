@@ -582,24 +582,26 @@ export default function ManifolderTab() {
               {/* Signature Fields */}
               <View style={styles.signatureSection}>
                 <Text style={styles.signatureSectionTitle}>Required Signatures</Text>
-                <SignatureField
-                  role="technicien"
-                  roleLabel="Technicien"
-                  onSignatureComplete={handleSignatureComplete}
-                  isCompleted={!!signatures.technicien}
-                />
-                <SignatureField
-                  role="control"
-                  roleLabel="Contrôle"
-                  onSignatureComplete={handleSignatureComplete}
-                  isCompleted={!!signatures.control}
-                />
-                <SignatureField
-                  role="admin"
-                  roleLabel="Admin"
-                  onSignatureComplete={handleSignatureComplete}
-                  isCompleted={!!signatures.admin}
-                />
+                <View style={styles.signatureRow}>
+                  <SignatureField
+                    role="technicien"
+                    roleLabel="Technicien"
+                    onSignatureComplete={handleSignatureComplete}
+                    isCompleted={!!signatures.technicien}
+                  />
+                  <SignatureField
+                    role="control"
+                    roleLabel="Contrôle"
+                    onSignatureComplete={handleSignatureComplete}
+                    isCompleted={!!signatures.control}
+                  />
+                  <SignatureField
+                    role="admin"
+                    roleLabel="Admin"
+                    onSignatureComplete={handleSignatureComplete}
+                    isCompleted={!!signatures.admin}
+                  />
+                </View>
               </View>
 
               <View style={styles.modalActions}>
@@ -1100,6 +1102,11 @@ const styles = StyleSheet.create({
     color: '#11224e',
     marginBottom: 16,
     textAlign: 'center',
+  },
+  signatureRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 8,
   },
 });
 
