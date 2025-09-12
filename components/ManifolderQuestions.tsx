@@ -54,6 +54,13 @@ export default function ManifolderQuestions({
   const [submittedQuestions, setSubmittedQuestions] = useState<Set<string>>(new Set());
   const [hasBeenSubmittedQuestions, setHasBeenSubmittedQuestions] = useState<Set<string>>(new Set());
   
+  // Signature completion state
+  const [signatureStatus, setSignatureStatus] = useState<{
+    signatureCount: number;
+    isComplete: boolean;
+    remainingSignatures: number;
+  } | null>(null);
+  
   // Declaration creation state
   const [showDeclarationModal, setShowDeclarationModal] = useState(false);
   const [manifolderDetailsForDeclaration, setManifolderDetailsForDeclaration] = useState<ManifolderDetailsForDeclaration | null>(null);
@@ -67,6 +74,7 @@ export default function ManifolderQuestions({
   useEffect(() => {
     loadQuestions();
     loadDeclarationData();
+    loadSignatureStatus();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [manifolderId, token]);
 
@@ -209,7 +217,37 @@ export default function ManifolderQuestions({
     }
   };
 
+  const loadSignatureStatus = async () => {
+    if (!token || !manifolderId) return;
+    
+    try {
+      const signatureData = await manifolderService.getManifolderSignatures(manifolderId, token);
+      
+      // Calculate status locally from the signature data
+      const signatureCount = signatureData.totalSignatures;
+      setSignatureStatus({
+        signatureCount: signatureCount,
+        isComplete: signatureCount === 3,
+        remainingSignatures: 3 - signatureCount
+      });
+      
+    } catch (err: any) {
+      console.log('Failed to load signature status:', err.message);
+      // Don't show error alert for signatures as they're optional
+    }
+  };
+
   const handleAnswerChange = (questionId: string, value: any, quantity?: number, zoneId?: string, status?: number) => {
+    // Prevent answer changes if all signatures are completed
+    if (signatureStatus?.isComplete) {
+      Alert.alert(
+        'Questions Locked',
+        'All signatures have been completed. Questions can no longer be modified.',
+        [{ text: 'OK' }]
+      );
+      return;
+    }
+
     setAnswers(prev => ({
       ...prev,
       [questionId]: value,
@@ -404,6 +442,16 @@ export default function ManifolderQuestions({
   const handleSubmitSingleAnswer = async (questionId: string) => {
     if (!token || !manifolderId) return;
 
+    // Prevent submission if all signatures are completed
+    if (signatureStatus?.isComplete) {
+      Alert.alert(
+        'Submission Locked',
+        'All signatures have been completed. Questions can no longer be submitted.',
+        [{ text: 'OK' }]
+      );
+      return;
+    }
+
     const answer = answers[questionId];
     const quantity = quantities[questionId];
     const zoneId = questionZones[questionId] || defaultZoneId;
@@ -451,6 +499,13 @@ export default function ManifolderQuestions({
       
       // Track that this question has been submitted before
       setHasBeenSubmittedQuestions(prev => new Set(prev).add(questionId));
+      
+      // Auto-collapse the accordion after successful submission
+      setExpandedQuestions(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(questionId);
+        return newSet;
+      });
       
       // Store the answer ID for future reference
       const response = await manifolderService.getManifolderAnswers(manifolderId, token);
@@ -538,6 +593,16 @@ export default function ManifolderQuestions({
 
   const handleSubmitAnswers = async () => {
     if (!token || !manifolderId) return;
+
+    // Prevent submission if all signatures are completed
+    if (signatureStatus?.isComplete) {
+      Alert.alert(
+        'Submission Locked',
+        'All signatures have been completed. Questions can no longer be submitted.',
+        [{ text: 'OK' }]
+      );
+      return;
+    }
 
          // Note: Skip required field validation since we don't have required column in database
      // In the future, you can add this validation back if the required column is added
@@ -630,7 +695,21 @@ export default function ManifolderQuestions({
 
            const getSupportedQuestions = () => {
         const supportedTypes = ['text', 'long_text', 'number', 'date', 'boolean', 'GPS', 'file', 'photo', 'video', 'voice', 'taux', 'list'];
-        return questions.filter(q => supportedTypes.includes(q.type));
+        const filteredQuestions = questions.filter(q => supportedTypes.includes(q.type));
+        
+        // Sort questions: unanswered first, then answered
+        return filteredQuestions.sort((a, b) => {
+          const aIsSubmitted = submittedQuestions.has(a.id);
+          const bIsSubmitted = submittedQuestions.has(b.id);
+          
+          // If both have same submission status, maintain original order
+          if (aIsSubmitted === bIsSubmitted) {
+            return 0;
+          }
+          
+          // Unanswered questions (false) come before answered questions (true)
+          return aIsSubmitted ? 1 : -1;
+        });
       };
 
   const formatManifolderType = (type: string) => {
@@ -676,35 +755,62 @@ export default function ManifolderQuestions({
 
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
-      {/* Header with Counter */}
-      <View style={styles.header}>
-        <View style={styles.headerContent}>
-          <View style={styles.questionIcon}>
-            <Text style={styles.questionIconText}>?</Text>
-          </View>
-          <View style={styles.headerText}>
-            <Text style={styles.headerTitle}>
-              {formatManifolderType(manifolderType)} Questions
-            </Text>
-            <Text style={styles.headerSubtitle}>
-            Répondez à toutes les questions pour compléter le manifolder
-            </Text>
-          </View>
-        </View>
-        <View style={styles.counterContainer}>
-          <AnsweredQuestionsCounter 
-            answeredCount={getAnsweredCount()} 
-            totalCount={supportedQuestions.length} 
-          />
-        </View>
-      </View>
-
-      {/* Questions List */}
+      {/* Scrollable Content */}
       <ScrollView 
         style={styles.scrollView} 
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
+        {/* Header */}
+        <View style={styles.header}>
+          <View style={styles.headerContent}>
+            <View style={styles.questionIcon}>
+              <Text style={styles.questionIconText}>?</Text>
+            </View>
+            <View style={styles.headerText}>
+              <Text style={styles.headerTitle}>
+                {formatManifolderType(manifolderType)} Questions
+              </Text>
+              <Text style={styles.headerSubtitle}>
+              Répondez à toutes les questions pour compléter le manifolder
+              </Text>
+            </View>
+          </View>
+          
+          {/* Counter inside header */}
+          <View style={styles.counterContainer}>
+            <AnsweredQuestionsCounter 
+              answeredCount={getAnsweredCount()} 
+              totalCount={supportedQuestions.length} 
+            />
+          </View>
+        </View>
+        
+        {/* Signature Status Banner */}
+        {signatureStatus && (
+          <View style={[
+            styles.signatureStatusBanner,
+            signatureStatus.isComplete ? styles.signatureStatusBannerComplete : styles.signatureStatusBannerIncomplete
+          ]}>
+            <View style={styles.signatureStatusContent}>
+              <Text style={styles.signatureStatusIcon}>
+                {signatureStatus.isComplete ? '🔒' : '📝'}
+              </Text>
+              <View style={styles.signatureStatusText}>
+                <Text style={styles.signatureStatusTitle}>
+                  {signatureStatus.isComplete ? 'Questions Locked' : 'Signatures Required'}
+                </Text>
+                <Text style={styles.signatureStatusDescription}>
+                  {signatureStatus.isComplete 
+                    ? 'All signatures completed. Questions cannot be modified.'
+                    : `${signatureStatus.remainingSignatures} signature(s) remaining to lock questions.`
+                  }
+                </Text>
+              </View>
+            </View>
+          </View>
+        )}
+        
         <View style={styles.questionsContainer}>
           {supportedQuestions.map((question) => (
             <QuestionAccordion
@@ -733,6 +839,7 @@ export default function ManifolderQuestions({
               isSubmitting={submittingQuestions.has(question.id)}
               isSubmitted={submittedQuestions.has(question.id)}
               hasBeenSubmitted={hasBeenSubmittedQuestions.has(question.id)}
+              isLocked={signatureStatus?.isComplete || false}
             />
           ))}
         </View>
@@ -815,8 +922,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     paddingHorizontal: 20,
     paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E5EA',
+    marginBottom: 8,
   },
   headerContent: {
     flexDirection: 'row',
@@ -852,6 +958,53 @@ const styles = StyleSheet.create({
   counterContainer: {
     marginTop: 12,
     alignItems: 'center',
+  },
+  // Signature Status Banner Styles
+  signatureStatusBanner: {
+    marginHorizontal: 16,
+    marginBottom: 12,
+    borderRadius: 12,
+    padding: 16,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  signatureStatusBannerComplete: {
+    backgroundColor: '#FEF2F2',
+    borderWidth: 1,
+    borderColor: '#FECACA',
+  },
+  signatureStatusBannerIncomplete: {
+    backgroundColor: '#F0F9FF',
+    borderWidth: 1,
+    borderColor: '#BAE6FD',
+  },
+  signatureStatusContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  signatureStatusIcon: {
+    fontSize: 24,
+    marginRight: 12,
+  },
+  signatureStatusText: {
+    flex: 1,
+  },
+  signatureStatusTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#1F2937',
+    marginBottom: 2,
+  },
+  signatureStatusDescription: {
+    fontSize: 14,
+    color: '#6B7280',
+    lineHeight: 20,
   },
   scrollView: {
     flex: 1,

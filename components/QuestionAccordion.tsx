@@ -4,16 +4,16 @@ import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import React, { useState } from 'react';
 import {
-  Alert,
-  Animated,
-  FlatList,
-  Modal,
-  Pressable,
-  StyleSheet,
-  Switch,
-  Text,
-  TextInput,
-  View,
+    Alert,
+    Animated,
+    FlatList,
+    Modal,
+    Pressable,
+    StyleSheet,
+    Switch,
+    Text,
+    TextInput,
+    View,
 } from 'react-native';
 import DateTimePickerModal from 'react-native-modal-datetime-picker';
 import FileUploader from './FileUploader';
@@ -39,6 +39,7 @@ interface QuestionAccordionProps {
   isSubmitting?: boolean;
   isSubmitted?: boolean;
   hasBeenSubmitted?: boolean; // Track if this question was ever submitted before
+  isLocked?: boolean; // Track if questions are locked due to signature completion
 }
 
 export default function QuestionAccordion({
@@ -59,6 +60,7 @@ export default function QuestionAccordion({
   isSubmitting = false,
   isSubmitted = false,
   hasBeenSubmitted = false,
+  isLocked = false,
 }: QuestionAccordionProps) {
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [animatedHeight] = useState(new Animated.Value(0));
@@ -584,6 +586,7 @@ export default function QuestionAccordion({
           <View style={styles.questionTitleContainer}>
             <Text style={styles.questionTitle}>{question.title}</Text>
             {question.required && <Text style={styles.requiredIndicator}>*</Text>}
+            {isLocked && <Text style={styles.lockedIndicator}>🔒</Text>}
           </View>
           
           <View style={styles.headerActions}>
@@ -767,12 +770,12 @@ export default function QuestionAccordion({
                 <Pressable
                   style={[
                     styles.submitButton,
-                    isSubmitting && styles.submitButtonDisabled,
+                    (isSubmitting || isLocked) && styles.submitButtonDisabled,
                   ]}
                   onPress={() => onSubmitAnswer(question.id)}
-                  disabled={isSubmitting}
+                  disabled={isSubmitting || isLocked}
                   accessibilityRole="button"
-                  accessibilityLabel="Submit this answer"
+                  accessibilityLabel={isLocked ? "Answer locked - cannot submit" : "Submit this answer"}
                 >
                   <Ionicons 
                     name={isSubmitting ? "hourglass-outline" : "checkmark-circle-outline"} 
@@ -780,11 +783,13 @@ export default function QuestionAccordion({
                     color="#FFFFFF" 
                   />
                   <Text style={styles.submitButtonText}>
-                    {isSubmitting 
-                      ? 'Submitting...' 
-                      : hasBeenSubmitted 
-                        ? 'Update Answer' 
-                        : 'Submit Answer'
+                    {isLocked 
+                      ? 'Locked' 
+                      : isSubmitting 
+                        ? 'Submitting...' 
+                        : hasBeenSubmitted 
+                          ? 'Update Answer' 
+                          : 'Submit Answer'
                     }
                   </Text>
                 </Pressable>
@@ -1121,6 +1126,11 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     marginLeft: 4,
+  },
+  lockedIndicator: {
+    fontSize: 16,
+    marginLeft: 4,
+    opacity: 0.7,
   },
   chevronContainer: {
     padding: 4,
