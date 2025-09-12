@@ -177,16 +177,6 @@ class ManifolderService {
   }> {
     return this.request(`/manifolder-signatures/${manifolderId}`, token);
   }
-
-  getSignatureStatus(manifolderId: string, token: string): Promise<{
-    manifolderId: string;
-    signatureStatus: string;
-    signatureCount: number;
-    isComplete: boolean;
-    remainingSignatures: number;
-  }> {
-    return this.request(`/manifolder-signatures/status/${manifolderId}`, token);
-  }
 }
 
 export default new ManifolderService();

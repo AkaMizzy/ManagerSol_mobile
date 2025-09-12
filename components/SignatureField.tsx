@@ -19,6 +19,8 @@ interface SignatureFieldProps {
   roleLabel: string;
   onSignatureComplete: (role: string, signature: string, email: string) => void;
   isCompleted: boolean;
+  disabled?: boolean;
+  signerEmail?: string;
 }
 
 interface SignatureData {
@@ -31,6 +33,8 @@ export default function SignatureField({
   roleLabel,
   onSignatureComplete,
   isCompleted,
+  disabled = false,
+  signerEmail,
 }: SignatureFieldProps) {
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [signature, setSignature] = useState<string>('');
@@ -83,6 +87,19 @@ export default function SignatureField({
     clearSignature();
   };
 
+  const handleFieldPress = () => {
+    if (disabled) {
+      // Show signature info instead of opening modal
+      Alert.alert(
+        'Signature Already Completed',
+        `This ${roleLabel} signature has already been completed by ${signerEmail || 'unknown user'}.`,
+        [{ text: 'OK' }]
+      );
+      return;
+    }
+    setIsModalVisible(true);
+  };
+
   const getRoleIcon = (role: string) => {
     return '✍️'; // Use handwriting emoji for all roles
   };
@@ -106,18 +123,26 @@ export default function SignatureField({
         style={[
           styles.signatureField,
           isCompleted && styles.completedField,
+          disabled && styles.disabledField,
           { borderColor: getRoleColor(role) },
         ]}
-        onPress={() => setIsModalVisible(true)}
+        onPress={handleFieldPress}
+        disabled={disabled}
       >
         <View style={styles.fieldContent}>
           <View style={styles.fieldHeader}>
             <Text style={styles.roleIcon}>{getRoleIcon(role)}</Text>
-            <Text style={[styles.roleLabel, { color: getRoleColor(role) }]}>
+            <Text style={[
+              styles.roleLabel, 
+              { color: disabled ? '#9CA3AF' : getRoleColor(role) }
+            ]}>
               {roleLabel}
             </Text>
             {isCompleted && (
               <Ionicons name="checkmark-circle" size={18} color="#34C759" />
+            )}
+            {disabled && !isCompleted && (
+              <Ionicons name="lock-closed" size={16} color="#6B7280" />
             )}
           </View>
         </View>
@@ -254,6 +279,11 @@ const styles = StyleSheet.create({
   completedField: {
     borderColor: '#34C759',
     backgroundColor: '#F0FDF4',
+  },
+  disabledField: {
+    opacity: 0.6,
+    backgroundColor: '#F9FAFB',
+    borderColor: '#D1D5DB',
   },
   fieldContent: {
     alignItems: 'center',

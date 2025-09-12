@@ -1,4 +1,5 @@
 import API_CONFIG from '@/app/config/api';
+import SignatureField from '@/components/SignatureField';
 import { useAuth } from '@/contexts/AuthContext';
 import manifolderService from '@/services/manifolderService';
 import { ManifolderListItem } from '@/types/manifolder';
@@ -6,16 +7,16 @@ import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import React, { useCallback, useEffect, useState } from 'react';
 import {
-    ActivityIndicator,
-    Alert,
-    Linking,
-    Platform,
-    Pressable,
-    ScrollView,
-    Share,
-    StyleSheet,
-    Text,
-    View,
+  ActivityIndicator,
+  Alert,
+  Linking,
+  Platform,
+  Pressable,
+  ScrollView,
+  Share,
+  StyleSheet,
+  Text,
+  View,
 } from 'react-native';
 import FileUploader from './FileUploader';
 
@@ -50,6 +51,23 @@ export default function ManifoldDetails({
   const [isCheckingPdf, setIsCheckingPdf] = useState(false);
   const [isUploadingDocument, setIsUploadingDocument] = useState(false);
 
+  // Signature states
+  const [signatures, setSignatures] = useState<{
+    technicien: { signature: string; email: string } | null;
+    control: { signature: string; email: string } | null;
+    admin: { signature: string; email: string } | null;
+  }>({
+    technicien: null,
+    control: null,
+    admin: null,
+  });
+  const [signatureStatus, setSignatureStatus] = useState<{
+    signatureCount: number;
+    isComplete: boolean;
+    remainingSignatures: number;
+  } | null>(null);
+  const [isLoadingSignatures, setIsLoadingSignatures] = useState(false);
+
   const loadManifolderDetails = useCallback(async () => {
     try {
       setIsLoading(true);
@@ -73,6 +91,77 @@ export default function ManifoldDetails({
       loadManifolderDetails();
     }
   }, [manifolderId, manifolderData, loadManifolderDetails]);
+
+  const loadSignatures = useCallback(async () => {
+    try {
+      setIsLoadingSignatures(true);
+      
+      const signatureData = await manifolderService.getManifolderSignatures(manifolderId, token!);
+
+      // Update signatures state
+      const newSignatures = {
+        technicien: signatureData.signatures.technicien ? { 
+          signature: '', // We don't store the actual signature data in the list
+          email: signatureData.signatures.technicien.email 
+        } : null,
+        control: signatureData.signatures.control ? { 
+          signature: '', 
+          email: signatureData.signatures.control.email 
+        } : null,
+        admin: signatureData.signatures.admin ? { 
+          signature: '', 
+          email: signatureData.signatures.admin.email 
+        } : null,
+      };
+      
+      setSignatures(newSignatures);
+      
+      // Calculate status locally from the signature data
+      const signatureCount = signatureData.totalSignatures;
+      setSignatureStatus({
+        signatureCount: signatureCount,
+        isComplete: signatureCount === 3,
+        remainingSignatures: 3 - signatureCount
+      });
+      
+    } catch (err: any) {
+      console.log('Failed to load signatures:', err.message);
+      // Don't show error alert for signatures as they're optional
+    } finally {
+      setIsLoadingSignatures(false);
+    }
+  }, [manifolderId, token]);
+
+  const handleSignatureComplete = async (role: string, signature: string, email: string) => {
+    try {
+      await manifolderService.saveSignature({
+        id_manifolder: manifolderId,
+        signature_role: role as 'technicien' | 'control' | 'admin',
+        signature: signature,
+        signer_email: email,
+      }, token!);
+
+      // Update local state
+      setSignatures(prev => ({
+        ...prev,
+        [role]: { signature, email }
+      }));
+
+      // Reload signature status
+      await loadSignatures();
+      
+      Alert.alert('Success', `${role.charAt(0).toUpperCase() + role.slice(1)} signature saved successfully!`);
+    } catch (err: any) {
+      Alert.alert('Error', err.message || 'Failed to save signature');
+    }
+  };
+
+  useEffect(() => {
+    // Load signatures when manifolder loads
+    if (manifolder) {
+      loadSignatures();
+    }
+  }, [manifolder, loadSignatures]);
 
   const checkPDFStatus = useCallback(async () => {
     try {
@@ -541,7 +630,7 @@ export default function ManifoldDetails({
         <View style={styles.card}>
           <View style={styles.cardHeader}>
             <Ionicons name="document-outline" size={24} color="#11224e" />
-            <Text style={styles.cardTitle}>Attached Document</Text>
+            <Text style={styles.cardTitle}>Upload Document</Text>
           </View>
           
           {manifolder.upload_doc ? (
@@ -589,6 +678,89 @@ export default function ManifoldDetails({
                 </View>
               )}
             </View>
+          )}
+        </View>
+
+        {/* Digital Signatures Card */}
+        <View style={styles.card}>
+          <View style={styles.cardHeader}>
+            <Ionicons name="create-outline" size={24} color="#11224e" />
+            <Text style={styles.cardTitle}>Signatures</Text>
+            {signatureStatus && (
+              <View style={styles.signatureStatusBadge}>
+                <Text style={styles.signatureStatusText}>
+                  {signatureStatus.signatureCount}/3
+                </Text>
+              </View>
+            )}
+          </View>
+          
+          {isLoadingSignatures ? (
+            <View style={styles.signatureLoadingContainer}>
+              <ActivityIndicator size="small" color="#11224e" />
+              <Text style={styles.signatureLoadingText}>Loading signatures...</Text>
+            </View>
+          ) : (
+            <>
+              {signatureStatus && (
+                <View style={styles.signatureStatusContainer}>
+                  <Text style={styles.signatureStatusLabel}>
+                    {signatureStatus.isComplete 
+                      ? '✅ All signatures completed' 
+                      : `📝 ${signatureStatus.remainingSignatures} signature(s) remaining`
+                    }
+                  </Text>
+                </View>
+              )}
+              
+              <View style={styles.signatureFieldsContainer}>
+                <SignatureField
+                  role="technicien"
+                  roleLabel="Technicien"
+                  onSignatureComplete={handleSignatureComplete}
+                  isCompleted={!!signatures.technicien}
+                  disabled={!!signatures.technicien}
+                  signerEmail={signatures.technicien?.email}
+                />
+                <SignatureField
+                  role="control"
+                  roleLabel="Contrôle"
+                  onSignatureComplete={handleSignatureComplete}
+                  isCompleted={!!signatures.control}
+                  disabled={!!signatures.control}
+                  signerEmail={signatures.control?.email}
+                />
+                <SignatureField
+                  role="admin"
+                  roleLabel="Admin"
+                  onSignatureComplete={handleSignatureComplete}
+                  isCompleted={!!signatures.admin}
+                  disabled={!!signatures.admin}
+                  signerEmail={signatures.admin?.email}
+                />
+              </View>
+              
+              {signatures.technicien || signatures.control || signatures.admin ? (
+                <View style={styles.signatureInfoContainer}>
+                  <Text style={styles.signatureInfoTitle}>Signed by:</Text>
+                  {signatures.technicien && (
+                    <Text style={styles.signatureInfoText}>
+                      • Technicien: {signatures.technicien.email}
+                    </Text>
+                  )}
+                  {signatures.control && (
+                    <Text style={styles.signatureInfoText}>
+                      • Contrôle: {signatures.control.email}
+                    </Text>
+                  )}
+                  {signatures.admin && (
+                    <Text style={styles.signatureInfoText}>
+                      • Admin: {signatures.admin.email}
+                    </Text>
+                  )}
+                </View>
+              ) : null}
+            </>
           )}
         </View>
 
@@ -911,5 +1083,67 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#f87b1b',
     fontWeight: '500',
+  },
+  // Signature section styles
+  signatureStatusBadge: {
+    backgroundColor: '#11224e',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    marginLeft: 8,
+  },
+  signatureStatusText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  signatureLoadingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 20,
+  },
+  signatureLoadingText: {
+    marginLeft: 8,
+    fontSize: 14,
+    color: '#8E8E93',
+  },
+  signatureStatusContainer: {
+    backgroundColor: '#F8FAFC',
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  signatureStatusLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#374151',
+    textAlign: 'center',
+  },
+  signatureFieldsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 8,
+    marginBottom: 16,
+  },
+  signatureInfoContainer: {
+    backgroundColor: '#F0FDF4',
+    borderRadius: 8,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: '#BBF7D0',
+  },
+  signatureInfoTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#166534',
+    marginBottom: 8,
+  },
+  signatureInfoText: {
+    fontSize: 13,
+    color: '#166534',
+    marginBottom: 4,
   },
 });
