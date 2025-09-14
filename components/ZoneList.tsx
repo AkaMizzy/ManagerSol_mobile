@@ -70,15 +70,19 @@ export default function ZoneList({ zones, onZonePress, onCreateInventaire }: Zon
 
   return (
     <View style={styles.container}>
-      <FlatList
-        data={zones}
-        keyExtractor={(item) => item.id}
-        renderItem={renderZoneItem}
-        ListHeaderComponent={renderHeader}
-        ListEmptyComponent={renderEmptyState}
-        contentContainerStyle={zones.length === 0 ? styles.emptyContainer : undefined}
-        showsVerticalScrollIndicator={false}
-      />
+      {renderHeader()}
+      {zones.length === 0 ? (
+        <View style={styles.emptyContainer}>
+          {renderEmptyState()}
+        </View>
+      ) : (
+        <FlatList
+          data={zones}
+          keyExtractor={(item) => item.id}
+          renderItem={renderZoneItem}
+          showsVerticalScrollIndicator={false}
+        />
+      )}
     </View>
   );
 }
@@ -158,8 +162,9 @@ const styles = StyleSheet.create({
     color: '#6b7280',
   },
   emptyContainer: {
-    flexGrow: 1,
+    flex: 1,
     justifyContent: 'center',
+    alignItems: 'center',
   },
   emptyState: {
     alignItems: 'center',

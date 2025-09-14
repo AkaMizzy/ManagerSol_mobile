@@ -34,6 +34,14 @@ export default function CreateInventaireModal({
   const [showZoneDropdown, setShowZoneDropdown] = useState(false);
   const [showDeclarationDropdown, setShowDeclarationDropdown] = useState(false);
 
+  // Debug logging
+  React.useEffect(() => {
+    if (visible) {
+      console.log('CreateInventaireModal - Zones:', zones);
+      console.log('CreateInventaireModal - Declarations:', declarations);
+    }
+  }, [visible, zones, declarations]);
+
   const handleSubmit = async () => {
     if (!selectedZone) {
       Alert.alert('Error', 'Please select a zone');
@@ -71,10 +79,12 @@ export default function CreateInventaireModal({
   };
 
   const renderDropdownItem = (item: UserZone | InventaireDeclaration, onSelect: () => void) => {
-    const title = 'zone_title' in item ? (item.zone_title || item.bloc_title) : item.title;
+    const title = 'zone_title' in item 
+      ? (item.zone_title || item.bloc_title || 'Unknown Zone') 
+      : (item.title || 'Unknown Declaration');
     const subtitle = 'zone_title' in item 
       ? (item.bloc_title ? `Bloc: ${item.bloc_title}` : 'Zone')
-      : item.declaration_type_title;
+      : (item.declaration_type_title || 'Declaration');
 
     return (
       <TouchableOpacity
@@ -137,11 +147,17 @@ export default function CreateInventaireModal({
 
             {showZoneDropdown && (
               <View style={styles.dropdown}>
-                {zones.map((zone) => 
-                  renderDropdownItem(zone, () => {
-                    setSelectedZone(zone);
-                    setShowZoneDropdown(false);
-                  })
+                {zones.length === 0 ? (
+                  <View style={styles.dropdownItem}>
+                    <Text style={styles.dropdownItemTitle}>No zones available</Text>
+                  </View>
+                ) : (
+                  zones.map((zone) => 
+                    renderDropdownItem(zone, () => {
+                      setSelectedZone(zone);
+                      setShowZoneDropdown(false);
+                    })
+                  )
                 )}
               </View>
             )}
@@ -172,11 +188,17 @@ export default function CreateInventaireModal({
 
             {showDeclarationDropdown && (
               <View style={styles.dropdown}>
-                {declarations.map((declaration) => 
-                  renderDropdownItem(declaration, () => {
-                    setSelectedDeclaration(declaration);
-                    setShowDeclarationDropdown(false);
-                  })
+                {declarations.length === 0 ? (
+                  <View style={styles.dropdownItem}>
+                    <Text style={styles.dropdownItemTitle}>No declarations available</Text>
+                  </View>
+                ) : (
+                  declarations.map((declaration) => 
+                    renderDropdownItem(declaration, () => {
+                      setSelectedDeclaration(declaration);
+                      setShowDeclarationDropdown(false);
+                    })
+                  )
                 )}
               </View>
             )}
@@ -268,12 +290,21 @@ const styles = StyleSheet.create({
     borderColor: '#d1d5db',
     marginTop: 4,
     maxHeight: 200,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
   dropdownItem: {
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingVertical: 16,
     borderBottomWidth: 1,
     borderBottomColor: '#f3f4f6',
+    minHeight: 56,
   },
   dropdownItemContent: {
     flex: 1,
