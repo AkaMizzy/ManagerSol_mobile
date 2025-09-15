@@ -1,13 +1,12 @@
 import { Ionicons } from '@expo/vector-icons';
 import React, { useState } from 'react';
 import {
-    Alert,
-    Modal,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  Modal,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { CreateInventaireData, InventaireDeclaration, UserZone } from '../services/inventaireService';
@@ -33,23 +32,18 @@ export default function CreateInventaireModal({
   const [selectedDeclaration, setSelectedDeclaration] = useState<InventaireDeclaration | null>(null);
   const [showZoneDropdown, setShowZoneDropdown] = useState(false);
   const [showDeclarationDropdown, setShowDeclarationDropdown] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  // Debug logging
-  React.useEffect(() => {
-    if (visible) {
-      console.log('CreateInventaireModal - Zones:', zones);
-      console.log('CreateInventaireModal - Declarations:', declarations);
-    }
-  }, [visible, zones, declarations]);
+  
 
   const handleSubmit = async () => {
     if (!selectedZone) {
-      Alert.alert('Error', 'Please select a zone');
+      setErrorMessage('Please select a zone to continue.');
       return;
     }
 
     if (!selectedDeclaration) {
-      Alert.alert('Error', 'Please select an inventaire declaration');
+      setErrorMessage('Please select an inventaire declaration.');
       return;
     }
 
@@ -64,9 +58,10 @@ export default function CreateInventaireModal({
       // Reset form
       setSelectedZone(null);
       setSelectedDeclaration(null);
+      setErrorMessage(null);
       onClose();
     } catch {
-      // Error handling is done in parent component
+      setErrorMessage('Failed to create inventaire. Please try again.');
     }
   };
 
@@ -79,14 +74,11 @@ export default function CreateInventaireModal({
   };
 
   const renderDropdownItem = (item: UserZone | InventaireDeclaration, onSelect: () => void) => {
-    const title = 'zone_title' in item 
-      ? (item.zone_title || item.bloc_title || 'Unknown Zone') 
+    const isZone = 'zone_title' in item;
+    const title = isZone
+      ? (item.zone_title || item.bloc_title || 'Unknown Zone')
       : (item.title || 'Unknown Declaration');
-    
-    // Only show subtitle for declarations, not for zones
-    const subtitle = 'zone_title' in item 
-      ? null 
-      : (item.declaration_type_title || 'Declaration');
+    const subtitle = isZone ? null : (item.declaration_type_title || 'Declaration');
 
     return (
       <TouchableOpacity
@@ -95,9 +87,15 @@ export default function CreateInventaireModal({
         onPress={onSelect}
         activeOpacity={0.7}
       >
-        <View style={styles.dropdownItemContent}>
-          <Text style={styles.dropdownItemTitle}>{title}</Text>
-          {subtitle && <Text style={styles.dropdownItemSubtitle}>{subtitle}</Text>}
+        <View style={styles.dropdownRow}>
+          <View style={styles.dropdownIconWrap}>
+            <Ionicons name={isZone ? 'location' : 'documents'} size={18} color="#11224e" />
+          </View>
+          <View style={styles.dropdownItemContent}>
+            <Text style={styles.dropdownItemTitle} numberOfLines={1}>{title}</Text>
+            {subtitle && <Text style={styles.dropdownItemSubtitle} numberOfLines={1}>{subtitle}</Text>}
+          </View>
+          <Ionicons name="chevron-forward" size={16} color="#9ca3af" />
         </View>
       </TouchableOpacity>
     );
@@ -116,34 +114,52 @@ export default function CreateInventaireModal({
           <TouchableOpacity onPress={handleClose} style={styles.closeButton}>
             <Ionicons name="close" size={24} color="#6b7280" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Create New Inventaire</Text>
+          <View style={styles.headerCenter}>
+            <Text style={styles.headerTitle}>Create New Inventaire</Text>
+            <Text style={styles.headerSubtitle}>Link an inventaire to a specific zone or bloc</Text>
+          </View>
           <View style={styles.placeholder} />
         </View>
 
+        {!!errorMessage && (
+          <View style={styles.alertBanner}>
+            <Ionicons name="warning" size={16} color="#b45309" />
+            <Text style={styles.alertBannerText}>{errorMessage}</Text>
+            <TouchableOpacity onPress={() => setErrorMessage(null)}>
+              <Ionicons name="close" size={16} color="#b45309" />
+            </TouchableOpacity>
+          </View>
+        )}
+
         <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-          {/* Zone Selection */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Select Zone *</Text>
+          {/* Zone Card */}
+          <View style={styles.card}>
+            <View style={styles.cardHeader}>
+              <View style={styles.cardIconWrap}>
+                <Ionicons name="location" size={18} color="#11224e" />
+              </View>
+              <View style={styles.cardHeaderText}>
+                <Text style={styles.cardTitle}>Zone</Text>
+                <Text style={styles.cardHint}>Choose the zone you want to inventory</Text>
+              </View>
+              {selectedZone && (
+                <View style={styles.pill}>
+                  <Ionicons name="checkmark" size={14} color="#16a34a" />
+                  <Text style={styles.pillText}>Selected</Text>
+                </View>
+              )}
+            </View>
+
             <TouchableOpacity
               style={styles.dropdownButton}
               onPress={() => setShowZoneDropdown(!showZoneDropdown)}
               activeOpacity={0.7}
             >
               <View style={styles.dropdownButtonContent}>
-                <Text style={[
-                  styles.dropdownButtonText,
-                  !selectedZone && styles.placeholderText
-                ]}>
-                  {selectedZone 
-                    ? (selectedZone.zone_title || selectedZone.bloc_title)
-                    : 'Choose a zone'
-                  }
+                <Text style={[styles.dropdownButtonText, !selectedZone && styles.placeholderText]}>
+                  {selectedZone ? (selectedZone.zone_title || selectedZone.bloc_title) : 'Choose a zone'}
                 </Text>
-                <Ionicons 
-                  name={showZoneDropdown ? "chevron-up" : "chevron-down"} 
-                  size={20} 
-                  color="#6b7280" 
-                />
+                <Ionicons name={showZoneDropdown ? 'chevron-up' : 'chevron-down'} size={20} color="#6b7280" />
               </View>
             </TouchableOpacity>
 
@@ -154,10 +170,11 @@ export default function CreateInventaireModal({
                     <Text style={styles.dropdownItemTitle}>No zones available</Text>
                   </View>
                 ) : (
-                  zones.map((zone) => 
+                  zones.map((zone) =>
                     renderDropdownItem(zone, () => {
                       setSelectedZone(zone);
                       setShowZoneDropdown(false);
+                      setErrorMessage(null);
                     })
                   )
                 )}
@@ -165,26 +182,34 @@ export default function CreateInventaireModal({
             )}
           </View>
 
-          {/* Declaration Selection */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Select Inventaire Declaration *</Text>
+          {/* Declaration Card */}
+          <View style={styles.card}>
+            <View style={styles.cardHeader}>
+              <View style={styles.cardIconWrap}>
+                <Ionicons name="document-text" size={18} color="#11224e" />
+              </View>
+              <View style={styles.cardHeaderText}>
+                <Text style={styles.cardTitle}>Inventaire</Text>
+                <Text style={styles.cardHint}>Select an existing inventaire declaration</Text>
+              </View>
+              {selectedDeclaration && (
+                <View style={styles.pill}>
+                  <Ionicons name="checkmark" size={14} color="#16a34a" />
+                  <Text style={styles.pillText}>Selected</Text>
+                </View>
+              )}
+            </View>
+
             <TouchableOpacity
               style={styles.dropdownButton}
               onPress={() => setShowDeclarationDropdown(!showDeclarationDropdown)}
               activeOpacity={0.7}
             >
               <View style={styles.dropdownButtonContent}>
-                <Text style={[
-                  styles.dropdownButtonText,
-                  !selectedDeclaration && styles.placeholderText
-                ]}>
+                <Text style={[styles.dropdownButtonText, !selectedDeclaration && styles.placeholderText]}>
                   {selectedDeclaration ? selectedDeclaration.title : 'Choose an inventaire'}
                 </Text>
-                <Ionicons 
-                  name={showDeclarationDropdown ? "chevron-up" : "chevron-down"} 
-                  size={20} 
-                  color="#6b7280" 
-                />
+                <Ionicons name={showDeclarationDropdown ? 'chevron-up' : 'chevron-down'} size={20} color="#6b7280" />
               </View>
             </TouchableOpacity>
 
@@ -195,10 +220,11 @@ export default function CreateInventaireModal({
                     <Text style={styles.dropdownItemTitle}>No declarations available</Text>
                   </View>
                 ) : (
-                  declarations.map((declaration) => 
+                  declarations.map((declaration) =>
                     renderDropdownItem(declaration, () => {
                       setSelectedDeclaration(declaration);
                       setShowDeclarationDropdown(false);
+                      setErrorMessage(null);
                     })
                   )
                 )}
@@ -206,21 +232,30 @@ export default function CreateInventaireModal({
             )}
           </View>
 
-          {/* Submit Button */}
+          <View style={{ height: 24 }} />
+        </ScrollView>
+
+        {/* Sticky Footer */}
+        <View style={styles.footer}>
           <TouchableOpacity
-            style={[
-              styles.submitButton,
-              (!selectedZone || !selectedDeclaration || loading) && styles.submitButtonDisabled
-            ]}
+            style={[styles.submitButton, (!selectedZone || !selectedDeclaration || loading) && styles.submitButtonDisabled]}
             onPress={handleSubmit}
             disabled={!selectedZone || !selectedDeclaration || loading}
             activeOpacity={0.8}
           >
-            <Text style={styles.submitButtonText}>
-              {loading ? 'Creating...' : 'Create Inventaire'}
-            </Text>
+            {loading ? (
+              <>
+                <Ionicons name="hourglass" size={16} color="#FFFFFF" />
+                <Text style={styles.submitButtonText}>Creating...</Text>
+              </>
+            ) : (
+              <>
+                <Ionicons name="save" size={16} color="#FFFFFF" />
+                <Text style={styles.submitButtonText}>Create Inventaire</Text>
+              </>
+            )}
           </TouchableOpacity>
-        </ScrollView>
+        </View>
       </SafeAreaView>
     </Modal>
   );
@@ -309,6 +344,19 @@ const styles = StyleSheet.create({
     borderBottomColor: '#f3f4f6',
     minHeight: 60,
   },
+  dropdownRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  dropdownIconWrap: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: '#f1f5f9',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   dropdownItemContent: {
     flex: 1,
     justifyContent: 'center',
@@ -330,8 +378,12 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     paddingVertical: 16,
     alignItems: 'center',
-    marginTop: 32,
-    marginBottom: 32,
+    justifyContent: 'center',
+    flexDirection: 'row',
+    gap: 8,
+    height: 48,
+    alignSelf: 'center',
+    width: '92%',
   },
   submitButtonDisabled: {
     backgroundColor: '#d1d5db',
@@ -340,5 +392,100 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: '#FFFFFF',
+  },
+  headerCenter: {
+    alignItems: 'center',
+    flex: 1,
+  },
+  headerSubtitle: {
+    fontSize: 12,
+    color: '#64748b',
+    marginTop: 2,
+  },
+  alertBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: '#fffbeb',
+    borderColor: '#f59e0b',
+    borderWidth: 1,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    marginHorizontal: 16,
+    marginTop: 8,
+    borderRadius: 10,
+  },
+  alertBannerText: {
+    color: '#b45309',
+    flex: 1,
+    fontSize: 12,
+  },
+  card: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 16,
+    marginTop: 16,
+    marginHorizontal: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 2,
+    borderWidth: 1,
+    borderColor: '#f1f5f9',
+  },
+  cardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  cardIconWrap: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: '#eef2ff',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 10,
+  },
+  cardHeaderText: {
+    flex: 1,
+  },
+  cardTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#11224e',
+  },
+  cardHint: {
+    fontSize: 12,
+    color: '#64748b',
+    marginTop: 2,
+  },
+  pill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#ecfdf5',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 999,
+  },
+  pillText: {
+    fontSize: 12,
+    color: '#065f46',
+    fontWeight: '600',
+  },
+  footer: {
+    paddingHorizontal: 16,
+    paddingTop: 8,
+    paddingBottom: 16,
+    backgroundColor: '#FFFFFF',
+    borderTopWidth: 1,
+    borderTopColor: '#e5e7eb',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
+    elevation: 3,
   },
 });
