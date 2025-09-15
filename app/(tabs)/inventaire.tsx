@@ -1,5 +1,5 @@
-  import React, { useCallback, useEffect, useState } from 'react';
-import { Alert, StyleSheet } from 'react-native';
+import React, { useCallback, useEffect, useState } from 'react';
+import { Alert, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AppHeader from '../../components/AppHeader';
 import CreateInventaireModal from '../../components/CreateInventaireModal';
@@ -11,8 +11,6 @@ export default function InventaireScreen() {
   const { user, token } = useAuth();
   const [zones, setZones] = useState<UserZone[]>([]);
   const [declarations, setDeclarations] = useState<InventaireDeclaration[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
   const [creating, setCreating] = useState(false);
 
@@ -30,9 +28,6 @@ export default function InventaireScreen() {
     } catch (error) {
       console.error('Error loading inventaire data:', error);
       Alert.alert('Error', 'Failed to load data. Please try again.');
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
     }
   }, [token]);
 
@@ -40,10 +35,6 @@ export default function InventaireScreen() {
     loadData();
   }, [loadData]);
 
-  const handleRefresh = useCallback(() => {
-    setRefreshing(true);
-    loadData();
-  }, [loadData]);
 
   const handleCreateInventaire = useCallback(() => {
     if (declarations.length === 0) {
@@ -77,27 +68,16 @@ export default function InventaireScreen() {
     Alert.alert(title, subtitle);
   }, []);
 
-  if (loading) {
-    return (
-      <SafeAreaView style={styles.container}>
-        <AppHeader user={user || undefined} />
-        <ZoneList 
-          zones={[]} 
-          onCreateInventaire={handleCreateInventaire}
-          onZonePress={handleZonePress}
-        />
-      </SafeAreaView>
-    );
-  }
-
   return (
     <SafeAreaView style={styles.container}>
       <AppHeader user={user || undefined} />
-      <ZoneList 
-        zones={zones}
-        onCreateInventaire={handleCreateInventaire}
-        onZonePress={handleZonePress}
-      />
+      <View style={styles.content}>
+        <ZoneList 
+          zones={zones}
+          onCreateInventaire={handleCreateInventaire}
+          onZonePress={handleZonePress}
+        />
+      </View>
       
       <CreateInventaireModal
         visible={modalVisible}
@@ -112,7 +92,13 @@ export default function InventaireScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F8FAFC' },
+  container: { 
+    flex: 1, 
+    backgroundColor: '#f8fafc' 
+  },
+  content: {
+    flex: 1,
+  },
 });
 
 

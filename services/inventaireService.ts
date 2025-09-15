@@ -7,6 +7,9 @@ export interface UserZone {
   id_bloc: string | null;
   zone_title: string | null;
   zone_id: string | null;
+  zone_logo?: string | null;
+  zone_latitude?: number | null;
+  zone_longitude?: number | null;
   bloc_title: string | null;
   bloc_id: string | null;
   created_at: string;

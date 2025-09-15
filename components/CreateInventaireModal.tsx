@@ -82,8 +82,10 @@ export default function CreateInventaireModal({
     const title = 'zone_title' in item 
       ? (item.zone_title || item.bloc_title || 'Unknown Zone') 
       : (item.title || 'Unknown Declaration');
+    
+    // Only show subtitle for declarations, not for zones
     const subtitle = 'zone_title' in item 
-      ? (item.bloc_title ? `Bloc: ${item.bloc_title}` : 'Zone')
+      ? null 
       : (item.declaration_type_title || 'Declaration');
 
     return (
@@ -95,7 +97,7 @@ export default function CreateInventaireModal({
       >
         <View style={styles.dropdownItemContent}>
           <Text style={styles.dropdownItemTitle}>{title}</Text>
-          <Text style={styles.dropdownItemSubtitle}>{subtitle}</Text>
+          {subtitle && <Text style={styles.dropdownItemSubtitle}>{subtitle}</Text>}
         </View>
       </TouchableOpacity>
     );
@@ -298,26 +300,30 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
+    overflow: 'hidden',
   },
   dropdownItem: {
-    paddingHorizontal: 16,
-    paddingVertical: 16,
+    paddingHorizontal: 20,
+    paddingVertical: 18,
     borderBottomWidth: 1,
     borderBottomColor: '#f3f4f6',
-    minHeight: 56,
+    minHeight: 60,
   },
   dropdownItemContent: {
     flex: 1,
+    justifyContent: 'center',
   },
   dropdownItemTitle: {
     fontSize: 16,
     fontWeight: '500',
     color: '#11224e',
-    marginBottom: 2,
+    lineHeight: 22,
   },
   dropdownItemSubtitle: {
     fontSize: 14,
     color: '#6b7280',
+    marginTop: 2,
+    lineHeight: 18,
   },
   submitButton: {
     backgroundColor: '#f87b1b',
