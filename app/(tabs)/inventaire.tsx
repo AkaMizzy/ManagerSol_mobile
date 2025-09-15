@@ -3,6 +3,7 @@ import { Alert, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AppHeader from '../../components/AppHeader';
 import CreateInventaireModal from '../../components/CreateInventaireModal';
+import ZoneInventaireViewer from '../../components/ZoneInventaireViewer';
 import ZoneList from '../../components/ZoneList';
 import { useAuth } from '../../contexts/AuthContext';
 import inventaireService, { CreateInventaireData, InventaireDeclaration, UserZone } from '../../services/inventaireService';
@@ -13,6 +14,8 @@ export default function InventaireScreen() {
   const [declarations, setDeclarations] = useState<InventaireDeclaration[]>([]);
   const [modalVisible, setModalVisible] = useState(false);
   const [creating, setCreating] = useState(false);
+  const [selectedZone, setSelectedZone] = useState<UserZone | null>(null);
+  const [viewerVisible, setViewerVisible] = useState(false);
 
   const loadData = useCallback(async () => {
     if (!token) return;
@@ -62,10 +65,8 @@ export default function InventaireScreen() {
   }, [token, loadData]);
 
   const handleZonePress = useCallback((zone: UserZone) => {
-    // For now, just show zone details
-    const title = zone.zone_title || zone.bloc_title || 'Unknown Zone';
-    const subtitle = zone.bloc_title ? `Bloc: ${zone.bloc_title}` : 'Zone';
-    Alert.alert(title, subtitle);
+    setSelectedZone(zone);
+    setViewerVisible(true);
   }, []);
 
   return (
@@ -86,6 +87,12 @@ export default function InventaireScreen() {
         zones={zones}
         declarations={declarations}
         loading={creating}
+      />
+
+      <ZoneInventaireViewer
+        visible={viewerVisible}
+        onClose={() => setViewerVisible(false)}
+        zone={selectedZone}
       />
     </SafeAreaView>
   );

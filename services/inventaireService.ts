@@ -39,6 +39,25 @@ export interface CreateInventaireData {
   id_inventaire: string;
 }
 
+// New type for per-zone fetch (includes declaration metadata)
+export interface InventaireByZoneItem {
+  id: string;
+  id_inventaire: string;
+  id_zone: string | null;
+  id_bloc: string | null;
+  inventaire_title: string;
+  declaration_type_title: string;
+  declaration_description: string | null;
+  declaration_date: string | null;
+  declaration_company_name: string | null;
+  declaration_latitude: number | null;
+  declaration_longitude: number | null;
+  item_qte?: number | null;
+  item_valider?: 0 | 1 | boolean | null;
+  zone_title: string | null;
+  bloc_title: string | null;
+}
+
 class InventaireService {
   private baseUrl = API_CONFIG.BASE_URL;
 
@@ -46,7 +65,7 @@ class InventaireService {
     if (!token) {
       throw new Error('Authentication token required');
     }
-    
+
     const response = await fetch(`${this.baseUrl}${endpoint}`, {
       ...options,
       headers: {
@@ -57,10 +76,15 @@ class InventaireService {
     });
 
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || 'Request failed');
+      let errorMsg = 'Request failed';
+      try {
+        const error = await response.json();
+        errorMsg = error.error || errorMsg;
+      } catch {}
+      throw new Error(errorMsg);
     }
 
+    if (response.status === 204) return null as any;
     return response.json();
   }
 
@@ -85,6 +109,19 @@ class InventaireService {
   // Get inventaire zones for current user
   async getUserInventaires(token: string): Promise<InventaireZone[]> {
     return this.makeRequest('/api/inventaire/user-inventaires', token);
+  }
+
+  // Get inventaires linked to a specific zone
+  async getInventairesByZone(zoneId: string, token: string): Promise<InventaireByZoneItem[]> {
+    return this.makeRequest(`/api/inventaire/by-zone/${zoneId}`, token);
+  }
+
+  // Save inventaire_zone_item (qte, valider)
+  async saveInventaireZoneItem(params: { id_inventaire_zone: string; qte: number | null; valider: boolean }, token: string): Promise<{ message: string; qte: number | null; valider: boolean }> {
+    return this.makeRequest('/api/inventaire/item/save', token, {
+      method: 'POST',
+      body: JSON.stringify(params),
+    });
   }
 }
 
