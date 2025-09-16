@@ -1,15 +1,16 @@
 import { Ionicons } from '@expo/vector-icons';
 import React, { useState } from 'react';
 import {
-  Modal,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    Image,
+    Modal,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { CreateInventaireData, InventaireDeclaration, UserZone } from '../services/inventaireService';
+import { CreateInventaireData, InventaireDeclaration, UserZone, ZoneBloc } from '../services/inventaireService';
 
 interface CreateInventaireModalProps {
   visible: boolean;
@@ -18,6 +19,7 @@ interface CreateInventaireModalProps {
   zones: UserZone[];
   declarations: InventaireDeclaration[];
   loading?: boolean;
+  onFetchBlocs?: (zoneId: string) => Promise<ZoneBloc[]>;
 }
 
 export default function CreateInventaireModal({
@@ -27,14 +29,38 @@ export default function CreateInventaireModal({
   zones,
   declarations,
   loading = false,
+  onFetchBlocs,
 }: CreateInventaireModalProps) {
   const [selectedZone, setSelectedZone] = useState<UserZone | null>(null);
+  const [selectedBloc, setSelectedBloc] = useState<ZoneBloc | null>(null);
   const [selectedDeclaration, setSelectedDeclaration] = useState<InventaireDeclaration | null>(null);
   const [showZoneDropdown, setShowZoneDropdown] = useState(false);
+  const [showBlocDropdown, setShowBlocDropdown] = useState(false);
   const [showDeclarationDropdown, setShowDeclarationDropdown] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [availableBlocs, setAvailableBlocs] = useState<ZoneBloc[]>([]);
+  const [loadingBlocs, setLoadingBlocs] = useState(false);
 
-  
+  const handleZoneSelect = async (zone: UserZone) => {
+    setSelectedZone(zone);
+    setSelectedBloc(null); // Reset bloc selection when zone changes
+    setShowZoneDropdown(false);
+    setErrorMessage(null);
+    
+    // Fetch blocs for the selected zone
+    if (onFetchBlocs && zone.id_zone) {
+      setLoadingBlocs(true);
+      try {
+        const blocs = await onFetchBlocs(zone.id_zone);
+        setAvailableBlocs(blocs);
+      } catch (error) {
+        setErrorMessage('Failed to load blocs for this zone');
+        setAvailableBlocs([]);
+      } finally {
+        setLoadingBlocs(false);
+      }
+    }
+  };
 
   const handleSubmit = async () => {
     if (!selectedZone) {
@@ -50,14 +76,16 @@ export default function CreateInventaireModal({
     const data: CreateInventaireData = {
       id_inventaire: selectedDeclaration.id,
       ...(selectedZone.id_zone && { id_zone: selectedZone.id_zone }),
-      ...(selectedZone.id_bloc && { id_bloc: selectedZone.id_bloc }),
+      ...(selectedBloc && { id_bloc: selectedBloc.id }),
     };
 
     try {
       await onSubmit(data);
       // Reset form
       setSelectedZone(null);
+      setSelectedBloc(null);
       setSelectedDeclaration(null);
+      setAvailableBlocs([]);
       setErrorMessage(null);
       onClose();
     } catch {
@@ -67,18 +95,27 @@ export default function CreateInventaireModal({
 
   const handleClose = () => {
     setSelectedZone(null);
+    setSelectedBloc(null);
     setSelectedDeclaration(null);
     setShowZoneDropdown(false);
+    setShowBlocDropdown(false);
     setShowDeclarationDropdown(false);
+    setAvailableBlocs([]);
+    setErrorMessage(null);
     onClose();
   };
 
-  const renderDropdownItem = (item: UserZone | InventaireDeclaration, onSelect: () => void) => {
+  const renderDropdownItem = (item: UserZone | InventaireDeclaration | ZoneBloc, onSelect: () => void) => {
     const isZone = 'zone_title' in item;
+    const isBloc = 'intitule' in item;
     const title = isZone
       ? (item.zone_title || item.bloc_title || 'Unknown Zone')
+      : isBloc
+      ? (item.intitule || 'Unknown Bloc')
       : (item.title || 'Unknown Declaration');
-    const subtitle = isZone ? null : (item.declaration_type_title || 'Declaration');
+    const subtitle = isZone ? null : isBloc ? 'Bloc' : (item.declaration_type_title || 'Declaration');
+    const iconName = isZone ? 'location' : isBloc ? 'cube' : 'documents';
+    const zoneLogo = isZone ? (item as UserZone).zone_logo : null;
 
     return (
       <TouchableOpacity
@@ -89,7 +126,15 @@ export default function CreateInventaireModal({
       >
         <View style={styles.dropdownRow}>
           <View style={styles.dropdownIconWrap}>
-            <Ionicons name={isZone ? 'location' : 'documents'} size={18} color="#11224e" />
+            {isZone && zoneLogo ? (
+              <Image 
+                source={{ uri: zoneLogo }} 
+                style={styles.dropdownLogo}
+                resizeMode="cover"
+              />
+            ) : (
+              <Ionicons name={iconName} size={18} color="#11224e" />
+            )}
           </View>
           <View style={styles.dropdownItemContent}>
             <Text style={styles.dropdownItemTitle} numberOfLines={1}>{title}</Text>
@@ -156,9 +201,22 @@ export default function CreateInventaireModal({
               activeOpacity={0.7}
             >
               <View style={styles.dropdownButtonContent}>
-                <Text style={[styles.dropdownButtonText, !selectedZone && styles.placeholderText]}>
-                  {selectedZone ? (selectedZone.zone_title || selectedZone.bloc_title) : 'Choose a zone'}
-                </Text>
+                <View style={styles.dropdownButtonLeft}>
+                  {selectedZone?.zone_logo ? (
+                    <Image 
+                      source={{ uri: selectedZone.zone_logo }} 
+                      style={styles.dropdownButtonLogo}
+                      resizeMode="cover"
+                    />
+                  ) : (
+                    <View style={styles.dropdownButtonIconWrap}>
+                      <Ionicons name="location" size={16} color="#11224e" />
+                    </View>
+                  )}
+                  <Text style={[styles.dropdownButtonText, !selectedZone && styles.placeholderText]}>
+                    {selectedZone ? (selectedZone.zone_title || selectedZone.bloc_title) : 'Choose a zone'}
+                  </Text>
+                </View>
                 <Ionicons name={showZoneDropdown ? 'chevron-up' : 'chevron-down'} size={20} color="#6b7280" />
               </View>
             </TouchableOpacity>
@@ -171,9 +229,73 @@ export default function CreateInventaireModal({
                   </View>
                 ) : (
                   zones.map((zone) =>
-                    renderDropdownItem(zone, () => {
-                      setSelectedZone(zone);
-                      setShowZoneDropdown(false);
+                    renderDropdownItem(zone, () => handleZoneSelect(zone))
+                  )
+                )}
+              </View>
+            )}
+          </View>
+
+          {/* Bloc Card */}
+          <View style={styles.card}>
+            <View style={styles.cardHeader}>
+              <View style={styles.cardIconWrap}>
+                <Ionicons name="cube" size={18} color="#11224e" />
+              </View>
+              <View style={styles.cardHeaderText}>
+                <Text style={styles.cardTitle}>Bloc (Optional)</Text>
+                <Text style={styles.cardHint}>Choose a specific bloc within the selected zone</Text>
+              </View>
+              {selectedBloc && (
+                <View style={styles.pill}>
+                  <Ionicons name="checkmark" size={14} color="#16a34a" />
+                  <Text style={styles.pillText}>Selected</Text>
+                </View>
+              )}
+            </View>
+
+            <TouchableOpacity
+              style={[
+                styles.dropdownButton,
+                (!selectedZone || loadingBlocs) && styles.dropdownButtonDisabled
+              ]}
+              onPress={() => selectedZone && !loadingBlocs && setShowBlocDropdown(!showBlocDropdown)}
+              activeOpacity={0.7}
+              disabled={!selectedZone || loadingBlocs}
+            >
+              <View style={styles.dropdownButtonContent}>
+                <Text style={[
+                  styles.dropdownButtonText, 
+                  (!selectedBloc && !loadingBlocs) && styles.placeholderText
+                ]}>
+                  {loadingBlocs 
+                    ? 'Loading blocs...' 
+                    : selectedBloc 
+                    ? selectedBloc.intitule 
+                    : !selectedZone 
+                    ? 'Select a zone first' 
+                    : 'Choose a bloc (optional)'
+                  }
+                </Text>
+                <Ionicons 
+                  name={showBlocDropdown ? 'chevron-up' : 'chevron-down'} 
+                  size={20} 
+                  color={(!selectedZone || loadingBlocs) ? "#d1d5db" : "#6b7280"} 
+                />
+              </View>
+            </TouchableOpacity>
+
+            {showBlocDropdown && selectedZone && !loadingBlocs && (
+              <View style={styles.dropdown}>
+                {availableBlocs.length === 0 ? (
+                  <View style={styles.dropdownItem}>
+                    <Text style={styles.dropdownItemTitle}>No blocs available for this zone</Text>
+                  </View>
+                ) : (
+                  availableBlocs.map((bloc) =>
+                    renderDropdownItem(bloc, () => {
+                      setSelectedBloc(bloc);
+                      setShowBlocDropdown(false);
                       setErrorMessage(null);
                     })
                   )
@@ -306,11 +428,34 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#d1d5db',
   },
+  dropdownButtonDisabled: {
+    backgroundColor: '#f9fafb',
+    borderColor: '#e5e7eb',
+  },
   dropdownButtonContent: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     padding: 16,
+  },
+  dropdownButtonLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    gap: 12,
+  },
+  dropdownButtonIconWrap: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: '#f1f5f9',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  dropdownButtonLogo: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
   },
   dropdownButtonText: {
     fontSize: 16,
@@ -356,6 +501,11 @@ const styles = StyleSheet.create({
     backgroundColor: '#f1f5f9',
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  dropdownLogo: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
   },
   dropdownItemContent: {
     flex: 1,

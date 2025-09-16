@@ -22,6 +22,11 @@ export interface InventaireDeclaration {
   declaration_type_title: string;
 }
 
+export interface ZoneBloc {
+  id: string;
+  intitule: string;
+}
+
 export interface InventaireZone {
   id: string;
   id_inventaire: string;
@@ -96,6 +101,11 @@ class InventaireService {
   // Get inventaire-type declarations
   async getInventaireDeclarations(token: string): Promise<InventaireDeclaration[]> {
     return this.makeRequest('/api/inventaire/declarations', token);
+  }
+
+  // Get blocs for a specific zone
+  async getBlocsByZone(zoneId: string, token: string): Promise<ZoneBloc[]> {
+    return this.makeRequest(`/api/inventaire/zones/${zoneId}/blocs`, token);
   }
 
   // Create new inventaire_zone entry

@@ -87,6 +87,10 @@ export default function InventaireScreen() {
         zones={zones}
         declarations={declarations}
         loading={creating}
+        onFetchBlocs={async (zoneId: string) => {
+          if (!token) throw new Error('No token available');
+          return inventaireService.getBlocsByZone(zoneId, token);
+        }}
       />
 
       <ZoneInventaireViewer
