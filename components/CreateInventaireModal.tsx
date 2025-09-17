@@ -237,7 +237,7 @@ export default function CreateInventaireModal({
           </View>
 
           {/* Bloc Card */}
-          <View style={styles.card}>
+          <View style={[styles.card, !selectedZone && styles.cardDisabled]}>
             <View style={styles.cardHeader}>
               <View style={styles.cardIconWrap}>
                 <Ionicons name="cube" size={18} color="#11224e" />
@@ -253,6 +253,12 @@ export default function CreateInventaireModal({
                 </View>
               )}
             </View>
+            {!selectedZone && (
+              <View style={styles.disabledBanner}>
+                <Ionicons name="lock-closed" size={14} color="#6b7280" />
+                <Text style={styles.disabledBannerText}>Select a zone first to choose a bloc</Text>
+              </View>
+            )}
 
             <TouchableOpacity
               style={[
@@ -584,6 +590,9 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#f1f5f9',
   },
+  cardDisabled: {
+    opacity: 0.6,
+  },
   cardHeader: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -637,5 +646,22 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.05,
     shadowRadius: 6,
     elevation: 3,
+  },
+  disabledBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: '#f9fafb',
+    borderColor: '#e5e7eb',
+    borderWidth: 1,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 10,
+    marginBottom: 8,
+  },
+  disabledBannerText: {
+    color: '#6b7280',
+    fontSize: 12,
+    flex: 1,
   },
 });
