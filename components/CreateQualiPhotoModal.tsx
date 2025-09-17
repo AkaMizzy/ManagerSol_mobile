@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import React, { useEffect, useMemo, useState } from 'react';
 import { Alert, Image, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import DateTimePickerModal from 'react-native-modal-datetime-picker';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 type Props = {
@@ -25,6 +26,20 @@ export default function CreateQualiPhotoModal({ visible, onClose, onSuccess }: P
   const [loadingZones, setLoadingZones] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [projectOpen, setProjectOpen] = useState(false);
+  const [zoneOpen, setZoneOpen] = useState(false);
+  const [isDatePickerVisible, setDatePickerVisible] = useState(false);
+
+  function formatDate(date: Date) {
+    const pad = (n: number) => (n < 10 ? `0${n}` : `${n}`);
+    const y = date.getFullYear();
+    const m = pad(date.getMonth() + 1);
+    const d = pad(date.getDate());
+    const hh = pad(date.getHours());
+    const mm = pad(date.getMinutes());
+    const ss = pad(date.getSeconds());
+    return `${y}-${m}-${d} ${hh}:${mm}:${ss}`;
+  }
 
   useEffect(() => {
     if (!visible) return;
@@ -34,6 +49,9 @@ export default function CreateQualiPhotoModal({ visible, onClose, onSuccess }: P
       .then(setProjects)
       .catch(() => setProjects([]))
       .finally(() => setLoadingProjects(false));
+    setProjectOpen(false);
+    setZoneOpen(false);
+    setDateTaken(formatDate(new Date()));
   }, [visible, token]);
 
   useEffect(() => {
@@ -101,6 +119,8 @@ export default function CreateQualiPhotoModal({ visible, onClose, onSuccess }: P
     setComment('');
     setPhoto(null);
     setError(null);
+    setProjectOpen(false);
+    setZoneOpen(false);
     onClose();
   };
 
@@ -136,26 +156,30 @@ export default function CreateQualiPhotoModal({ visible, onClose, onSuccess }: P
               <View style={styles.cardHeaderText}><Text style={styles.cardTitle}>Projet</Text><Text style={styles.cardHint}>Choisir le projet</Text></View>
               {selectedProject && <View style={styles.pill}><Ionicons name="checkmark" size={14} color="#16a34a" /><Text style={styles.pillText}>Choisi</Text></View>}
             </View>
-            <Pressable style={styles.dropdownButton} onPress={() => {}}>
+            <Pressable style={styles.dropdownButton} onPress={() => { setProjectOpen(v => !v); setZoneOpen(false); }}>
               <View style={styles.dropdownButtonContent}>
                 <Text style={[styles.dropdownButtonText, !selectedProject && styles.placeholderText]}>
                   {selectedProject ? (projects.find(p => p.id === selectedProject)?.title || 'Projet') : 'Sélectionner un projet'}
                 </Text>
               </View>
             </Pressable>
-            <View style={styles.dropdown}>
-              {(loadingProjects ? [] : projects).map(p => (
-                <Pressable key={p.id} style={styles.dropdownItem} onPress={() => setSelectedProject(p.id)}>
-                  <View style={styles.dropdownRow}>
-                    <View style={styles.dropdownIconWrap}><Ionicons name="briefcase" size={18} color="#11224e" /></View>
-                    <View style={styles.dropdownItemContent}><Text style={styles.dropdownItemTitle} numberOfLines={1}>{p.title}</Text></View>
-                    <Ionicons name="chevron-forward" size={16} color="#9ca3af" />
-                  </View>
-                </Pressable>
-              ))}
-              {loadingProjects && <View style={styles.dropdownItem}><Text style={styles.dropdownItemTitle}>Chargement...</Text></View>}
-              {!loadingProjects && projects.length === 0 && <View style={styles.dropdownItem}><Text style={styles.dropdownItemTitle}>Aucun projet</Text></View>}
-            </View>
+            {projectOpen && (
+              <View style={styles.dropdown}>
+                <ScrollView showsVerticalScrollIndicator={true}>
+                  {(loadingProjects ? [] : projects).map(p => (
+                    <Pressable key={p.id} style={styles.dropdownItem} onPress={() => { setSelectedProject(p.id); setProjectOpen(false); setZoneOpen(false); }}>
+                      <View style={styles.dropdownRow}>
+                        <View style={styles.dropdownIconWrap}><Ionicons name="briefcase" size={18} color="#11224e" /></View>
+                        <View style={styles.dropdownItemContent}><Text style={styles.dropdownItemTitle} numberOfLines={1}>{p.title}</Text></View>
+                        <Ionicons name="chevron-forward" size={16} color="#9ca3af" />
+                      </View>
+                    </Pressable>
+                  ))}
+                  {loadingProjects && <View style={styles.dropdownItem}><Text style={styles.dropdownItemTitle}>Chargement...</Text></View>}
+                  {!loadingProjects && projects.length === 0 && <View style={styles.dropdownItem}><Text style={styles.dropdownItemTitle}>Aucun projet</Text></View>}
+                </ScrollView>
+              </View>
+            )}
           </View>
 
           {/* Zone */}
@@ -165,26 +189,28 @@ export default function CreateQualiPhotoModal({ visible, onClose, onSuccess }: P
               <View style={styles.cardHeaderText}><Text style={styles.cardTitle}>Zone</Text><Text style={styles.cardHint}>Choisir la zone</Text></View>
               {selectedZone && <View style={styles.pill}><Ionicons name="checkmark" size={14} color="#16a34a" /><Text style={styles.pillText}>Choisie</Text></View>}
             </View>
-            <Pressable style={[styles.dropdownButton, !selectedProject && styles.dropdownButtonDisabled]} disabled={!selectedProject}>
+            <Pressable style={[styles.dropdownButton, !selectedProject && styles.dropdownButtonDisabled]} disabled={!selectedProject} onPress={() => { if (!selectedProject) return; setZoneOpen(v => !v); setProjectOpen(false); }}>
               <View style={styles.dropdownButtonContent}>
                 <Text style={[styles.dropdownButtonText, !selectedZone && styles.placeholderText]}>
                   {selectedZone ? (zones.find(z => z.id === selectedZone)?.title || 'Zone') : (selectedProject ? 'Sélectionner une zone' : 'Sélectionner un projet d\'abord')}
                 </Text>
               </View>
             </Pressable>
-            {selectedProject && (
+            {selectedProject && zoneOpen && (
               <View style={styles.dropdown}>
-                {(loadingZones ? [] : zones).map(z => (
-                  <Pressable key={z.id} style={styles.dropdownItem} onPress={() => setSelectedZone(z.id)}>
-                    <View style={styles.dropdownRow}>
-                      <View style={styles.dropdownIconWrap}>{z.logo ? <Image source={{ uri: z.logo }} style={styles.dropdownLogo} /> : <Ionicons name="location" size={18} color="#11224e" />}</View>
-                      <View style={styles.dropdownItemContent}><Text style={styles.dropdownItemTitle} numberOfLines={1}>{z.title}</Text></View>
-                      <Ionicons name="chevron-forward" size={16} color="#9ca3af" />
-                    </View>
-                  </Pressable>
-                ))}
-                {loadingZones && <View style={styles.dropdownItem}><Text style={styles.dropdownItemTitle}>Chargement...</Text></View>}
-                {!loadingZones && zones.length === 0 && <View style={styles.dropdownItem}><Text style={styles.dropdownItemTitle}>Aucune zone</Text></View>}
+                <ScrollView showsVerticalScrollIndicator={true}>
+                  {(loadingZones ? [] : zones).map(z => (
+                    <Pressable key={z.id} style={styles.dropdownItem} onPress={() => { setSelectedZone(z.id); setZoneOpen(false); }}>
+                      <View style={styles.dropdownRow}>
+                        <View style={styles.dropdownIconWrap}>{z.logo ? <Image source={{ uri: z.logo }} style={styles.dropdownLogo} /> : <Ionicons name="location" size={18} color="#11224e" />}</View>
+                        <View style={styles.dropdownItemContent}><Text style={styles.dropdownItemTitle} numberOfLines={1}>{z.title}</Text></View>
+                        <Ionicons name="chevron-forward" size={16} color="#9ca3af" />
+                      </View>
+                    </Pressable>
+                  ))}
+                  {loadingZones && <View style={styles.dropdownItem}><Text style={styles.dropdownItemTitle}>Chargement...</Text></View>}
+                  {!loadingZones && zones.length === 0 && <View style={styles.dropdownItem}><Text style={styles.dropdownItemTitle}>Aucune zone</Text></View>}
+                </ScrollView>
               </View>
             )}
           </View>
@@ -218,10 +244,10 @@ export default function CreateQualiPhotoModal({ visible, onClose, onSuccess }: P
               <View style={styles.cardHeaderText}><Text style={styles.cardTitle}>Détails</Text><Text style={styles.cardHint}>Date (optionnelle) et commentaire</Text></View>
             </View>
             <View style={{ gap: 10 }}>
-              <View style={styles.inputWrap}>
+              <Pressable style={styles.inputWrap} onPress={() => setDatePickerVisible(true)}>
                 <Ionicons name="calendar-outline" size={16} color="#6b7280" />
-                <TextInput placeholder="YYYY-MM-DD HH:mm:ss (optionnel)" placeholderTextColor="#9ca3af" value={dateTaken} onChangeText={setDateTaken} style={styles.input} />
-              </View>
+                <Text style={styles.input}>{dateTaken || 'Sélectionner la date'}</Text>
+              </Pressable>
               <View style={[styles.inputWrap, { alignItems: 'flex-start' }]}>
                 <Ionicons name="chatbubble-ellipses-outline" size={16} color="#6b7280" style={{ marginTop: 4 }} />
                 <TextInput placeholder="Commentaire (optionnel)" placeholderTextColor="#9ca3af" value={comment} onChangeText={setComment} style={[styles.input, { height: 100 }]} multiline />
@@ -231,6 +257,14 @@ export default function CreateQualiPhotoModal({ visible, onClose, onSuccess }: P
 
           <View style={{ height: 24 }} />
         </ScrollView>
+
+        <DateTimePickerModal
+          isVisible={isDatePickerVisible}
+          mode="datetime"
+          date={new Date()}
+          onConfirm={(date) => { setDateTaken(formatDate(date)); setDatePickerVisible(false); }}
+          onCancel={() => setDatePickerVisible(false)}
+        />
 
         <View style={styles.footer}>
           <TouchableOpacity style={[styles.submitButton, !canSave && styles.submitButtonDisabled]} disabled={!canSave} onPress={handleSubmit}>
