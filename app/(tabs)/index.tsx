@@ -27,7 +27,7 @@ export default function DashboardScreen() {
   const [dayModalVisible, setDayModalVisible] = useState(false);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [dayEvents, setDayEvents] = useState<any[]>([]);
-  const [stats, setStats] = useState<{ pending: number; today: number; completed: number; retard: number; canceled: number } | null>(null);
+  const [, setStats] = useState<{ pending: number; today: number; completed: number; retard: number; canceled: number } | null>(null);
   const [todayActivities, setTodayActivities] = useState<any[]>([]);
   const [overdueActivities, setOverdueActivities] = useState<any[]>([]);
   const [upcomingActivities, setUpcomingActivities] = useState<any[]>([]);
@@ -166,16 +166,31 @@ export default function DashboardScreen() {
 
         {/* Create Event CTA */}
         <View style={{ paddingHorizontal: 20, marginTop: 12 }}>
+          <View style={[styles.quickActionsFrame, { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }]}>
+            <Pressable
+              onPress={() => router.push('/(tabs)/qualiphoto')}
+              style={styles.quickAction}
+              accessibilityRole="button"
+              accessibilityLabel="Ouvrir QualiPhoto"
+            >
+              <Ionicons name="camera" size={20} color="#f87b1b" />
+              <Text style={styles.linkButton}>QualiPhotos</Text>
+            </Pressable>
 
-          <View style={{ alignItems: 'flex-end' }}>
-            <Text onPress={() => setEventModalVisible(true)} style={styles.linkButton} accessibilityRole="button"> Ajouter activité</Text>
+            <Pressable
+              onPress={() => setEventModalVisible(true)}
+              accessibilityRole="button"
+              accessibilityLabel="Ajouter activité"
+            >
+              <Text style={styles.linkButton}>Ajouter activité</Text>
+            </Pressable>
           </View>
         </View>
 
         {/* Calendar */}
         <CalendarComp
           eventsByDate={eventsByDate}
-          onMonthChange={useCallback(async (startIso, endIso) => {
+          onMonthChange={useCallback(async (startIso: string, endIso: string) => {
             try {
               if (!token) return;
               const res = await fetch(`${API_CONFIG.BASE_URL}/calendar?start_date=${startIso}&end_date=${endIso}`, {
@@ -528,6 +543,24 @@ const styles = StyleSheet.create({
     color: '#f87b1b',
     fontSize: 14,
     fontWeight: '700',
+  },
+  quickAction: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  quickActionsFrame: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E5E5EA',
+    borderRadius: 24,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 1,
   },
   actionsContainer: {
     flexDirection: 'row',
