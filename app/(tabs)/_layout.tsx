@@ -55,6 +55,12 @@ export default function TabLayout() {
           title: 'Inventaire',
         }}
       />
+      <Tabs.Screen
+        name="qualiphoto"
+        options={{
+          title: 'QualiPhoto',
+        }}
+      />
       {/* Profile tab removed; accessible via header icon */}
     </Tabs>
   );
