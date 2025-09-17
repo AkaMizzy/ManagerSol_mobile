@@ -1,9 +1,10 @@
 import AppHeader from '@/components/AppHeader';
 import CreateQualiPhotoModal from '@/components/CreateQualiPhotoModal';
+import QualiPhotoDetail from '@/components/QualiPhotoDetail';
 import { useAuth } from '@/contexts/AuthContext';
 import qualiphotoService, { QualiPhotoItem, QualiProject, QualiZone } from '@/services/qualiphotoService';
 import { Ionicons } from '@expo/vector-icons';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, FlatList, Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -24,13 +25,23 @@ export default function QualiPhotoGalleryScreen() {
   const [selectedProject, setSelectedProject] = useState<string | undefined>(undefined);
   const [selectedZone, setSelectedZone] = useState<string | undefined>(undefined);
   const [modalVisible, setModalVisible] = useState(false);
+  const [detailVisible, setDetailVisible] = useState(false);
+  const [selectedItem, setSelectedItem] = useState<QualiPhotoItem | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  // Guards to prevent re-entrant and out-of-order updates
+  const fetchingRef = useRef(false);
+  const requestIdRef = useRef(0);
 
   const canLoadMore = useMemo(() => photos.length < total, [photos.length, total]);
 
-  const load = useCallback(async (reset = false) => {
+  const fetchPhotos = useCallback(async (reset = false) => {
     if (!token) return;
-    if (isLoading) return;
+    if (fetchingRef.current) return;
+    fetchingRef.current = true;
     setIsLoading(true);
+    setErrorMessage(null);
+    const requestId = ++requestIdRef.current;
     try {
       const currentPage = reset ? 1 : page;
       const { items, total: t } = await qualiphotoService.list({
@@ -39,25 +50,31 @@ export default function QualiPhotoGalleryScreen() {
         page: currentPage,
         limit,
       }, token);
+      if (requestId !== requestIdRef.current) return;
       setTotal(t);
       setPhotos(prev => reset ? items : [...prev, ...items]);
     } catch (e) {
-       
-      console.error('Failed to load QualiPhoto', e);
+      if (requestId === requestIdRef.current) {
+        console.error('Failed to load QualiPhoto', e);
+        setErrorMessage('Failed to load photos. Pull to retry.');
+      }
     } finally {
-      setIsLoading(false);
+      if (requestId === requestIdRef.current) {
+        fetchingRef.current = false;
+        setIsLoading(false);
+      }
     }
-  }, [token, page, limit, selectedProject, selectedZone, isLoading]);
+  }, [token, selectedProject, selectedZone, page, limit]);
 
   const refresh = useCallback(async () => {
     if (!token) return;
     setIsRefreshing(true);
     try {
-      await load(true);
+      await fetchPhotos(true);
     } finally {
       setIsRefreshing(false);
     }
-  }, [token, load]);
+  }, [token, fetchPhotos]);
 
   // Load projects on mount/token change
   useEffect(() => {
@@ -85,8 +102,8 @@ export default function QualiPhotoGalleryScreen() {
   // Refetch photos on filter change
   useEffect(() => {
     setPage(1);
-    load(true);
-  }, [selectedProject, selectedZone]);
+    fetchPhotos(true);
+  }, [selectedProject, selectedZone, fetchPhotos]);
 
   const onEndReached = useCallback(() => {
     if (isLoading || !canLoadMore) return;
@@ -94,12 +111,17 @@ export default function QualiPhotoGalleryScreen() {
   }, [isLoading, canLoadMore]);
 
   useEffect(() => {
-    if (page > 1) load(false);
-  }, [page]);
+    if (page > 1) fetchPhotos(false);
+  }, [page, fetchPhotos]);
 
   const renderItem = useCallback(({ item }: { item: QualiPhotoItem }) => (
     <View style={styles.card}>
-      <Pressable style={({ pressed }) => [styles.imageWrap, pressed && styles.pressed] }>
+      <Pressable
+        style={({ pressed }) => [styles.imageWrap, pressed && styles.pressed] }
+        accessibilityRole="button"
+        accessibilityLabel="Open photo details"
+        onPress={() => { setSelectedItem(item); setDetailVisible(true); }}
+      >
         <Image source={{ uri: item.photo }} style={styles.image} resizeMode="cover" />
       </Pressable>
       <View style={styles.meta}>
@@ -111,7 +133,6 @@ export default function QualiPhotoGalleryScreen() {
 
   const keyExtractor = useCallback((item: QualiPhotoItem) => item.id, []);
 
-  const totalProjects = projects.length;
   const subtitleText = `${total} photos`;
 
   return (
@@ -196,7 +217,17 @@ export default function QualiPhotoGalleryScreen() {
           onEndReached={onEndReached}
           refreshing={isRefreshing}
           onRefresh={refresh}
-          ListFooterComponent={isLoading ? <ActivityIndicator color="#11224e" style={{ marginVertical: 12 }} /> : null}
+          ListEmptyComponent={
+            isLoading ? (
+              <View style={styles.emptyWrap}><ActivityIndicator color="#11224e" /></View>
+            ) : (
+              <View style={styles.emptyWrap}>
+                <Text style={styles.emptyTitle}>{errorMessage ? 'Unable to load photos' : 'No photos yet'}</Text>
+                {errorMessage ? <Text style={styles.emptySubtitle}>{errorMessage}</Text> : <Text style={styles.emptySubtitle}>Pull to refresh or create a new photo.</Text>}
+              </View>
+            )
+          }
+          ListFooterComponent={isLoading && photos.length > 0 ? <ActivityIndicator color="#11224e" style={{ marginVertical: 12 }} /> : null}
         />
       </View>
 
@@ -206,8 +237,14 @@ export default function QualiPhotoGalleryScreen() {
         onSuccess={() => {
           setModalVisible(false);
           setPage(1);
-          load(true);
+          fetchPhotos(true);
         }}
+      />
+
+      <QualiPhotoDetail
+        visible={detailVisible}
+        item={selectedItem}
+        onClose={() => { setDetailVisible(false); setSelectedItem(null); }}
       />
     </SafeAreaView>
   );
@@ -361,6 +398,24 @@ const styles = StyleSheet.create({
   listContent: {
     paddingVertical: 12,
     gap: 12,
+  },
+  emptyWrap: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 48,
+    paddingHorizontal: 16,
+  },
+  emptyTitle: {
+    color: '#111827',
+    fontWeight: '700',
+    fontSize: 16,
+    marginBottom: 6,
+  },
+  emptySubtitle: {
+    color: '#6b7280',
+    fontSize: 13,
+    textAlign: 'center',
   },
   card: {
     flex: 1,
