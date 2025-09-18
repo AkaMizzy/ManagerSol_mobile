@@ -5,6 +5,7 @@ import { Audio } from 'expo-av';
 import * as ImagePicker from 'expo-image-picker';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, Image, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import MapView, { Marker } from 'react-native-maps';
 import DateTimePickerModal from 'react-native-modal-datetime-picker';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -26,6 +27,9 @@ export default function CreateQualiPhotoModal({ visible, onClose, onSuccess, ini
   const [comment, setComment] = useState<string>('');
   const [photo, setPhoto] = useState<{ uri: string; name: string; type: string } | null>(null);
   const [voiceNote, setVoiceNote] = useState<{ uri: string; name: string; type: string } | null>(null);
+  const [latitude, setLatitude] = useState<number | null>(null);
+  const [longitude, setLongitude] = useState<number | null>(null);
+  const [isMapVisible, setMapVisible] = useState(false);
   const [recording, setRecording] = useState<Audio.Recording | null>(null);
   const [sound, setSound] = useState<Audio.Sound | null>(null);
   const [isRecording, setIsRecording] = useState(false);
@@ -122,6 +126,8 @@ export default function CreateQualiPhotoModal({ visible, onClose, onSuccess, ini
         date_taken: dateTaken || undefined,
         photo,
         voice_note: voiceNote || undefined,
+        latitude: latitude || undefined,
+        longitude: longitude || undefined,
       }, token);
       onSuccess && onSuccess(created);
       // reset
@@ -131,6 +137,8 @@ export default function CreateQualiPhotoModal({ visible, onClose, onSuccess, ini
       setComment('');
       setPhoto(null);
       setVoiceNote(null);
+      setLatitude(null);
+      setLongitude(null);
       if (sound) {
         sound.unloadAsync();
         setSound(null);
@@ -150,6 +158,8 @@ export default function CreateQualiPhotoModal({ visible, onClose, onSuccess, ini
     setComment('');
     setPhoto(null);
     setVoiceNote(null);
+    setLatitude(null);
+    setLongitude(null);
     if (sound) {
       sound.unloadAsync();
       setSound(null);
@@ -322,6 +332,36 @@ export default function CreateQualiPhotoModal({ visible, onClose, onSuccess, ini
               )}
             </View>
 
+            {/* Map */}
+            <View style={styles.card}>
+                <View style={styles.cardHeader}>
+                    <View style={styles.cardIconWrap}><Ionicons name="map" size={18} color="#11224e" /></View>
+                    <View style={styles.cardHeaderText}>
+                        <Text style={styles.cardTitle}>Localisation</Text>
+                        <Text style={styles.cardHint}>Optionnel: choisir un point sur la carte</Text>
+                    </View>
+                    {latitude && longitude && <View style={styles.pill}><Ionicons name="checkmark" size={14} color="#16a34a" /><Text style={styles.pillText}>Défini</Text></View>}
+                </View>
+                {latitude && longitude ? (
+                    <View style={{ gap: 8 }}>
+                        <Text style={styles.coordText}>Lat: {latitude.toFixed(5)}, Lon: {longitude.toFixed(5)}</Text>
+                        <View style={{ flexDirection: 'row', gap: 8 }}>
+                            <Pressable style={styles.secondaryButton} onPress={() => { setLatitude(null); setLongitude(null); }}>
+                                <Text style={styles.secondaryButtonText}>Effacer</Text>
+                            </Pressable>
+                            <Pressable style={styles.secondaryButton} onPress={() => setMapVisible(true)}>
+                                <Text style={styles.secondaryButtonText}>Modifier</Text>
+                            </Pressable>
+                        </View>
+                    </View>
+                ) : (
+                    <Pressable style={styles.captureButton} onPress={() => setMapVisible(true)}>
+                        <Ionicons name="map" size={18} color="#FFFFFF" />
+                        <Text style={styles.captureButtonText}>Choisir sur la carte</Text>
+                    </Pressable>
+                )}
+            </View>
+
             {/* Photo */}
             <View style={styles.card}>
               <View style={styles.cardHeader}>
@@ -406,6 +446,35 @@ export default function CreateQualiPhotoModal({ visible, onClose, onSuccess, ini
             </View>
           </ScrollView>
 
+          <Modal visible={isMapVisible} animationType="slide" onRequestClose={() => setMapVisible(false)}>
+            <SafeAreaView style={{ flex: 1 }}>
+              <View style={{ flex: 1 }}>
+                <MapView
+                  style={{ flex: 1 }}
+                  initialRegion={{
+                    latitude: latitude || 48.8566,
+                    longitude: longitude || 2.3522,
+                    latitudeDelta: 0.0922,
+                    longitudeDelta: 0.0421,
+                  }}
+                  onPress={(e) => {
+                    setLatitude(e.nativeEvent.coordinate.latitude);
+                    setLongitude(e.nativeEvent.coordinate.longitude);
+                  }}
+                >
+                  {latitude && longitude && (
+                    <Marker coordinate={{ latitude, longitude }} />
+                  )}
+                </MapView>
+                <View style={styles.mapFooter}>
+                    <TouchableOpacity style={styles.mapButton} onPress={() => setMapVisible(false)}>
+                        <Text style={styles.mapButtonText}>Confirmer la localisation</Text>
+                    </TouchableOpacity>
+                </View>
+              </View>
+            </SafeAreaView>
+          </Modal>
+
           <DateTimePickerModal
             isVisible={isDatePickerVisible}
             mode="datetime"
@@ -474,6 +543,10 @@ const styles = StyleSheet.create({
   playButton: {},
   audioMeta: { flex: 1, color: '#1e293b' },
   deleteButton: {},
+  coordText: { fontSize: 14, color: '#4b5563', textAlign: 'center', marginBottom: 8 },
+  mapFooter: { position: 'absolute', bottom: 0, left: 0, right: 0, padding: 24, backgroundColor: 'transparent' },
+  mapButton: { backgroundColor: '#11224e', paddingVertical: 16, borderRadius: 12, alignItems: 'center' },
+  mapButtonText: { color: '#FFFFFF', fontWeight: 'bold', fontSize: 16 },
 });
 
 

@@ -10,6 +10,8 @@ export type QualiPhotoItem = {
   project_title?: string;
   zone_title?: string;
   voice_note?: string;
+  latitude?: number | null;
+  longitude?: number | null;
 };
 
 export type QualiPhotoListResponse = {
@@ -38,6 +40,8 @@ type CreateQualiPhotoPayload = {
   date_taken?: string;
   photo: { uri: string; name: string; type: string };
   voice_note?: { uri: string; name: string; type: string };
+  latitude?: number;
+  longitude?: number;
 };
 
 class QualiPhotoService {
@@ -81,6 +85,8 @@ class QualiPhotoService {
     formData.append('id_zone', payload.id_zone);
     if (payload.commentaire) formData.append('commentaire', payload.commentaire);
     if (payload.date_taken) formData.append('date_taken', payload.date_taken);
+    if (payload.latitude) formData.append('latitude', String(payload.latitude));
+    if (payload.longitude) formData.append('longitude', String(payload.longitude));
 
     formData.append('photo', {
       uri: payload.photo.uri,
