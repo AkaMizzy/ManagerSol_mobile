@@ -1,10 +1,14 @@
-import { QualiPhotoItem } from '@/services/qualiphotoService';
+import qualiphotoService, { QualiPhotoItem } from '@/services/qualiphotoService';
 import { Ionicons } from '@expo/vector-icons';
 import { Audio } from 'expo-av';
 import React, { useEffect, useMemo, useState } from 'react';
 import { Image, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+// Import the FORM directly, not the modal wrapper
+import { CreateChildQualiPhotoForm } from './CreateChildQualiPhotoModal';
+
+import { useAuth } from '@/contexts/AuthContext';
 
 type Props = {
   visible: boolean;
@@ -12,11 +16,32 @@ type Props = {
   item?: QualiPhotoItem | null;
 };
 
- export default function QualiPhotoDetail({ visible, onClose, item }: Props) {
+ export default function QualiPhotoDetail({ visible, onClose, item: initialItem }: Props) {
+  const { token } = useAuth();
   const insets = useSafeAreaInsets();
   const [sound, setSound] = useState<Audio.Sound | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isMapDetailVisible, setMapDetailVisible] = useState(false);
+  const [isChildModalVisible, setChildModalVisible] = useState(false);
+  const [children, setChildren] = useState<QualiPhotoItem[]>([]);
+  const [isLoadingChildren, setIsLoadingChildren] = useState(false);
+  const [item, setItem] = useState<QualiPhotoItem | null>(initialItem || null);
+
+  useEffect(() => {
+    setItem(initialItem || null);
+  }, [initialItem]);
+
+  useEffect(() => {
+    if (item && item.before === 1 && token) {
+      setIsLoadingChildren(true);
+      qualiphotoService.getChildren(item.id, token)
+        .then(setChildren)
+        .catch(() => setChildren([]))
+        .finally(() => setIsLoadingChildren(false));
+    } else {
+      setChildren([]);
+    }
+  }, [item, token]);
 
   const subtitle = useMemo(() => {
     if (!item) return '';
@@ -71,6 +96,17 @@ type Props = {
       setIsPlaying(false);
     }
   }, [visible, sound]);
+
+  const handleChildSuccess = () => {
+    setChildModalVisible(false);
+    if (item && token) {
+        setIsLoadingChildren(true);
+        qualiphotoService.getChildren(item.id, token)
+            .then(setChildren)
+            .catch(() => setChildren([]))
+            .finally(() => setIsLoadingChildren(false));
+    }
+  };
 
    const renderMapView = () => (
     <>
@@ -171,6 +207,32 @@ type Props = {
                   </TouchableOpacity>
                 </View>
               )}
+              
+              {item.before === 1 && (
+                <View style={styles.metaCard}>
+                  <TouchableOpacity style={styles.addChildButton} onPress={() => setChildModalVisible(true)}>
+                    <Ionicons name="add-circle-outline" size={20} color="#FFFFFF" />
+                    <Text style={styles.addChildButtonText}>Add Before/After Picture</Text>
+                  </TouchableOpacity>
+                  {children.length > 0 && <Text style={styles.childListTitle}>Before/After Pictures</Text>}
+                  {isLoadingChildren && <Text>Loading...</Text>}
+                  {!isLoadingChildren && children.length === 0 && item.before === 1 && (
+                      <Text style={styles.noChildrenText}>No before/after pictures yet.</Text>
+                  )}
+                  {children.map((child) => (
+                    <TouchableOpacity key={child.id} style={styles.childItem} onPress={() => setItem(child)}>
+                      <Image source={{ uri: child.photo }} style={styles.childThumbnail} />
+                      <Text style={styles.childComment} numberOfLines={2}>{child.commentaire || 'No comment'}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              )}
+              {item.id_qualiphoto_parent && (
+                  <TouchableOpacity style={styles.backToParentButton} onPress={() => setItem(initialItem || null)}>
+                      <Ionicons name="arrow-back" size={16} color="#11224e" />
+                      <Text style={styles.backToParentButtonText}>Back to Parent Photo</Text>
+                  </TouchableOpacity>
+              )}
             </View>
           )}
         </ScrollView>
@@ -180,7 +242,17 @@ type Props = {
    return (
      <Modal visible={visible} onRequestClose={onClose} animationType="slide" presentationStyle="fullScreen">
       <SafeAreaView edges={['bottom']} style={styles.container}>
-        {isMapDetailVisible ? renderMapView() : renderDetailView()}
+        {item && isChildModalVisible ? (
+          <CreateChildQualiPhotoForm
+            parentItem={item}
+            onSuccess={handleChildSuccess}
+            onClose={() => setChildModalVisible(false)}
+          />
+        ) : isMapDetailVisible ? (
+          renderMapView()
+        ) : (
+          renderDetailView()
+        )}
       </SafeAreaView>
     </Modal>
   );
@@ -330,6 +402,64 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#1e293b',
     marginBottom: 4,
+  },
+  addChildButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: '#11224e',
+    paddingVertical: 12,
+    borderRadius: 10,
+    marginBottom: 16,
+  },
+  addChildButtonText: {
+    color: '#FFFFFF',
+    fontWeight: 'bold',
+  },
+  childListTitle: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#1e293b',
+    marginBottom: 8,
+    borderTopWidth: 1,
+    borderTopColor: '#e5e7eb',
+    paddingTop: 12,
+  },
+  childItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingVertical: 8,
+  },
+  childThumbnail: {
+    width: 50,
+    height: 50,
+    borderRadius: 8,
+    backgroundColor: '#f3f4f6',
+  },
+  childComment: {
+    flex: 1,
+    fontSize: 13,
+    color: '#374151',
+  },
+  noChildrenText: {
+    textAlign: 'center',
+    color: '#6b7280',
+    paddingVertical: 16,
+    fontSize: 13,
+  },
+  backToParentButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 8,
+      paddingVertical: 12,
+      marginTop: 8,
+  },
+  backToParentButtonText: {
+      color: '#11224e',
+      fontWeight: '600',
   }
 });
 

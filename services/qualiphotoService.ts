@@ -12,6 +12,9 @@ export type QualiPhotoItem = {
   voice_note?: string;
   latitude?: number | null;
   longitude?: number | null;
+  id_qualiphoto_parent?: string | null;
+  before?: number;
+  after?: number;
 };
 
 export type QualiPhotoListResponse = {
@@ -42,6 +45,7 @@ type CreateQualiPhotoPayload = {
   voice_note?: { uri: string; name: string; type: string };
   latitude?: number;
   longitude?: number;
+  id_qualiphoto_parent?: string;
 };
 
 class QualiPhotoService {
@@ -70,6 +74,14 @@ class QualiPhotoService {
     return this.makeRequest<QualiPhotoListResponse>(url.toString().replace(this.baseUrl, ''), token);
   }
 
+  async getChildren(parentId: string, token: string): Promise<QualiPhotoItem[]> {
+    const url = new URL(`${this.baseUrl}/qualiphoto`);
+    url.searchParams.set('id_qualiphoto_parent', parentId);
+    url.searchParams.set('limit', '100'); // Get all children for now
+    const response = await this.makeRequest<QualiPhotoListResponse>(url.toString().replace(this.baseUrl, ''), token);
+    return response.items;
+  }
+
   async getProjects(token: string): Promise<QualiProject[]> {
     // Reuse existing backend endpoint for company projects
     return this.makeRequest<QualiProject[]>(`/company-projects`, token, { method: 'GET' });
@@ -87,6 +99,7 @@ class QualiPhotoService {
     if (payload.date_taken) formData.append('date_taken', payload.date_taken);
     if (payload.latitude) formData.append('latitude', String(payload.latitude));
     if (payload.longitude) formData.append('longitude', String(payload.longitude));
+    if (payload.id_qualiphoto_parent) formData.append('id_qualiphoto_parent', payload.id_qualiphoto_parent);
 
     formData.append('photo', {
       uri: payload.photo.uri,
