@@ -8,6 +8,20 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { ActivityIndicator, FlatList, Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+function formatDateForGrid(dateStr?: string | null): string {
+  if (!dateStr) return '';
+  try {
+    const date = new Date(dateStr.replace(' ', 'T'));
+    return new Intl.DateTimeFormat('en-GB', {
+      month: 'short',
+      day: '2-digit',
+      year: 'numeric',
+    }).format(date);
+  } catch {
+    return '';
+  }
+}
+
 export default function QualiPhotoGalleryScreen() {
   const { user, token } = useAuth();
   const [photos, setPhotos] = useState<QualiPhotoItem[]>([]);
@@ -128,7 +142,10 @@ export default function QualiPhotoGalleryScreen() {
       </Pressable>
       <View style={styles.meta}>
         {item.project_title ? <Text style={styles.metaText} numberOfLines={1}>{item.project_title}</Text> : null}
-        {item.zone_title ? <Text style={styles.metaSubText} numberOfLines={1}>{item.zone_title}</Text> : null}
+        <View style={styles.metaRow}>
+          {item.zone_title ? <Text style={styles.metaSubText} numberOfLines={1}>{item.zone_title}</Text> : null}
+          {item.date_taken ? <Text style={styles.metaDate}>{formatDateForGrid(item.date_taken)}</Text> : null}
+        </View>
       </View>
     </View>
   ), []);
@@ -453,10 +470,24 @@ const styles = StyleSheet.create({
   metaText: {
     color: '#111827',
     fontWeight: '600',
+    fontSize: 13,
+  },
+  metaRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 2,
   },
   metaSubText: {
     color: '#6b7280',
     fontSize: 12,
+    flex: 1, // Allow text to shrink
+  },
+  metaDate: {
+    color: '#9ca3af',
+    fontSize: 11,
+    fontWeight: '500',
+    marginLeft: 4, // Space between zone and date
   },
 });
 
