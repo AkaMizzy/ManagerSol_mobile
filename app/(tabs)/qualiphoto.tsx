@@ -206,7 +206,7 @@ export default function QualiPhotoGalleryScreen() {
                 disabled={isCreateDisabled}
                 style={[styles.addIconButton, isCreateDisabled && styles.addIconButtonDisabled]}
               >
-              <Ionicons name="add-circle-outline" size={32} color="#f87b1b" />
+              <Ionicons name="camera-outline" size={32} color="#f87b1b" />
             </Pressable>
           </View>
           {isCreateDisabled && (

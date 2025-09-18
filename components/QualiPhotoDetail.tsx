@@ -174,7 +174,7 @@ type Props = {
               <View style={styles.metaCard}>
                 <MetaRow label="Project" value={item.project_title || '—'} />
                 <MetaRow label="Zone" value={item.zone_title || '—'} />
-                {item.user_name && <MetaRow label="Prise par" value={item.user_name} />}
+                {item.user_name && <MetaRow label="Prise par" value={`${item.user_name} ${item.user_lastname || ''}`.trim()} />}
                 {typeof item.commentaire === 'string' && item.commentaire.trim().length > 0 ? (
                   <MetaRow label="Commentaire" value={item.commentaire} multiline />
                 ) : null}
@@ -219,12 +219,19 @@ type Props = {
                   {!isLoadingChildren && children.length === 0 && item.before === 1 && (
                       <Text style={styles.noChildrenText}>No &apos;after&apos; photos have been added yet.</Text>
                   )}
-                  {children.map((child) => (
-                    <TouchableOpacity key={child.id} style={styles.childItem} onPress={() => setItem(child)}>
-                      <Image source={{ uri: child.photo }} style={styles.childThumbnail} />
-                      <Text style={styles.childComment} numberOfLines={2}>{child.commentaire || 'No comment'}</Text>
-                    </TouchableOpacity>
-                  ))}
+                  <View style={styles.childListContainer}>
+                    {children.map((child) => (
+                      <TouchableOpacity key={child.id} style={styles.childItem} onPress={() => setItem(child)}>
+                        <Image source={{ uri: child.photo }} style={styles.childThumbnail} />
+                        <View style={styles.childItemContent}>
+                          <Text style={styles.childComment} numberOfLines={3}>{child.commentaire || 'No comment'}</Text>
+                          {child.date_taken && (
+                            <Text style={styles.childDate}>{formatDate(child.date_taken)}</Text>
+                          )}
+                        </View>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
                 </View>
               )}
               {item.id_qualiphoto_parent && (
@@ -426,22 +433,34 @@ const styles = StyleSheet.create({
     borderTopColor: '#e5e7eb',
     paddingTop: 12,
   },
-  childItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  childListContainer: {
+    marginTop: 8,
     gap: 12,
-    paddingVertical: 8,
+  },
+  childItem: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    overflow: 'hidden',
   },
   childThumbnail: {
-    width: 50,
-    height: 50,
-    borderRadius: 8,
+    width: '100%',
+    aspectRatio: 16/9,
     backgroundColor: '#f3f4f6',
   },
+  childItemContent: {
+    padding: 12,
+  },
   childComment: {
-    flex: 1,
     fontSize: 13,
     color: '#374151',
+    fontWeight: '500',
+    marginBottom: 4,
+  },
+  childDate: {
+    fontSize: 11,
+    color: '#6b7280',
   },
   noChildrenText: {
     textAlign: 'center',

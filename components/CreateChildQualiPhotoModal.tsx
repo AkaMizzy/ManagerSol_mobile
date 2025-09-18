@@ -1,9 +1,10 @@
 import { useAuth } from '@/contexts/AuthContext';
 import qualiphotoService, { QualiPhotoItem } from '@/services/qualiphotoService';
 import { Ionicons } from '@expo/vector-icons';
+import { Audio } from 'expo-av';
 import * as ImagePicker from 'expo-image-picker';
-import React, { useMemo, useState } from 'react';
-import { ActivityIndicator, Alert, Image, KeyboardAvoidingView, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { ActivityIndicator, Alert, Image, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 type FormProps = {
@@ -18,10 +19,23 @@ export function CreateChildQualiPhotoForm({ onClose, onSuccess, parentItem }: Fo
   const insets = useSafeAreaInsets();
   const [comment, setComment] = useState('');
   const [photo, setPhoto] = useState<{ uri: string; name: string; type: string } | null>(null);
+  const [voiceNote, setVoiceNote] = useState<{ uri: string; name: string; type: string } | null>(null);
+  const [recording, setRecording] = useState<Audio.Recording | null>(null);
+  const [sound, setSound] = useState<Audio.Sound | null>(null);
+  const [isRecording, setIsRecording] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [recordingDuration, setRecordingDuration] = useState(0);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const durationIntervalRef = useRef<number | null>(null);
 
   const canSave = useMemo(() => !!photo && !submitting, [photo, submitting]);
+
+  function formatDuration(seconds: number) {
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
+  }
 
   const handlePickPhoto = async () => {
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
@@ -49,6 +63,7 @@ export function CreateChildQualiPhotoForm({ onClose, onSuccess, parentItem }: Fo
         latitude: parentItem.latitude ?? undefined,
         longitude: parentItem.longitude ?? undefined,
         id_qualiphoto_parent: parentItem.id,
+        voice_note: voiceNote || undefined,
       }, token);
       onSuccess(created);
       onClose(); // Use onClose directly now
@@ -58,6 +73,73 @@ export function CreateChildQualiPhotoForm({ onClose, onSuccess, parentItem }: Fo
       setSubmitting(false);
     }
   };
+
+  async function startRecording() {
+    try {
+      const { status } = await Audio.requestPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission Denied', 'Microphone access is required to record audio.');
+        return;
+      }
+      await Audio.setAudioModeAsync({ allowsRecordingIOS: true, playsInSilentModeIOS: true });
+      const { recording } = await Audio.Recording.createAsync(Audio.RecordingOptionsPresets.HIGH_QUALITY);
+      setRecording(recording);
+      setIsRecording(true);
+      durationIntervalRef.current = setInterval(() => {
+        setRecordingDuration(prev => prev + 1);
+      }, 1000);
+    } catch (err) {
+      console.error('Failed to start recording', err);
+    }
+  }
+
+  async function stopRecording() {
+    if (!recording) return;
+    setIsRecording(false);
+    if (durationIntervalRef.current) clearInterval(durationIntervalRef.current);
+    await recording.stopAndUnloadAsync();
+    const uri = recording.getURI();
+    if (uri) {
+      setVoiceNote({ uri, name: `voicenote-${Date.now()}.m4a`, type: 'audio/m4a' });
+    }
+    setRecordingDuration(0);
+    setRecording(null);
+  }
+
+  async function playSound() {
+    if (!voiceNote) return;
+    if (isPlaying && sound) {
+      await sound.pauseAsync();
+      setIsPlaying(false);
+      return;
+    }
+    if (sound) {
+      await sound.playAsync();
+      setIsPlaying(true);
+      return;
+    }
+    const { sound: newSound } = await Audio.Sound.createAsync({ uri: voiceNote.uri });
+    setSound(newSound);
+    setIsPlaying(true);
+    newSound.setOnPlaybackStatusUpdate((status) => {
+      if (status.isLoaded && status.didJustFinish) {
+        setIsPlaying(false);
+        newSound.setPositionAsync(0);
+      }
+    });
+    await newSound.playAsync();
+  }
+
+  const resetVoiceNote = () => {
+    if (sound) sound.unloadAsync();
+    setVoiceNote(null);
+    setSound(null);
+    setIsPlaying(false);
+  };
+
+  useEffect(() => {
+    return sound ? () => { sound.unloadAsync(); } : undefined;
+  }, [sound]);
 
   return (
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
@@ -78,9 +160,21 @@ export function CreateChildQualiPhotoForm({ onClose, onSuccess, parentItem }: Fo
             <View style={styles.alertBanner}><Text style={styles.alertBannerText}>{error}</Text></View>
           )}
 
+          {/* Context Section */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Original Photo</Text>
+            <View style={styles.contextCard}>
+              <Image source={{ uri: parentItem.photo }} style={styles.contextImage} />
+              <View style={styles.contextTextWrap}>
+                <Text style={styles.contextProject} numberOfLines={1}>{parentItem.project_title}</Text>
+                <Text style={styles.contextZone} numberOfLines={1}>{parentItem.zone_title}</Text>
+              </View>
+            </View>
+          </View>
+
           {/* Photo Section */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Photo</Text>
+            <Text style={styles.sectionTitle}>New &apos;After&apos; Photo</Text>
             {photo ? (
               <View style={styles.photoPreviewContainer}>
                 <Image source={{ uri: photo.uri }} style={styles.photoPreview} />
@@ -102,6 +196,34 @@ export function CreateChildQualiPhotoForm({ onClose, onSuccess, parentItem }: Fo
                 </View>
                 <Text style={styles.captureButtonText}>Tap to Take Photo</Text>
                 <Text style={styles.captureButtonSubtext}>A new photo is required</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+
+          {/* Voice Note Section */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Note Vocale (Optionnel)</Text>
+            {isRecording ? (
+              <View style={styles.recordingWrap}>
+                <Text style={styles.recordingText}>Enregistrement... {formatDuration(recordingDuration)}</Text>
+                <Pressable style={styles.stopButton} onPress={stopRecording}>
+                  <Ionicons name="stop-circle" size={32} color="#dc2626" />
+                </Pressable>
+              </View>
+            ) : voiceNote ? (
+              <View style={styles.audioPlayerWrap}>
+                <Pressable style={styles.playButton} onPress={playSound}>
+                  <Ionicons name={isPlaying ? 'pause-circle' : 'play-circle'} size={40} color="#11224e" />
+                </Pressable>
+                <Text style={styles.audioMeta}>Note vocale enregistrée.</Text>
+                <Pressable style={styles.deleteButton} onPress={resetVoiceNote}>
+                  <Ionicons name="trash-outline" size={24} color="#dc2626" />
+                </Pressable>
+              </View>
+            ) : (
+              <TouchableOpacity style={styles.recordButton} onPress={startRecording}>
+                <Ionicons name="mic-outline" size={22} color="#374151" />
+                <Text style={styles.recordButtonText}>Enregistrer une note</Text>
               </TouchableOpacity>
             )}
           </View>
@@ -211,6 +333,31 @@ const styles = StyleSheet.create({
     color: '#374151',
     marginBottom: 12,
   },
+  contextCard: {
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    overflow: 'hidden',
+  },
+  contextImage: {
+    width: '100%',
+    aspectRatio: 16/9,
+    backgroundColor: '#f3f4f6'
+  },
+  contextTextWrap: {
+    padding: 12,
+  },
+  contextProject: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#1f2937'
+  },
+  contextZone: {
+    fontSize: 13,
+    color: '#6b7280',
+    marginTop: 2,
+  },
   photoPreviewContainer: {
     borderRadius: 12,
     backgroundColor: '#ffffff',
@@ -254,6 +401,52 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#374151'
   },
+  recordButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    height: 52,
+    backgroundColor: '#f3f4f6',
+    borderRadius: 10,
+  },
+  recordButtonText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#374151'
+  },
+  recordingWrap: { 
+    flexDirection: 'row', 
+    justifyContent: 'space-between', 
+    alignItems: 'center', 
+    backgroundColor: '#fef2f2', 
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 10 
+  },
+  recordingText: { 
+    color: '#dc2626', 
+    fontWeight: '600' 
+  },
+  stopButton: { 
+    padding: 4 
+  },
+  audioPlayerWrap: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    gap: 12, 
+    backgroundColor: '#f1f5f9', 
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 10 
+  },
+  playButton: {},
+  audioMeta: { 
+    flex: 1, 
+    color: '#1e293b',
+    fontWeight: '500'
+  },
+  deleteButton: {},
   captureButton: { 
     backgroundColor: '#ffffff', 
     borderRadius: 12, 

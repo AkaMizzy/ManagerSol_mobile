@@ -17,6 +17,7 @@ export type QualiPhotoItem = {
   after?: number;
   id_user?: string;
   user_name?: string;
+  user_lastname?: string;
 };
 
 export type QualiPhotoListResponse = {
