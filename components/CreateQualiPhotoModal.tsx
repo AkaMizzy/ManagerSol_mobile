@@ -331,6 +331,28 @@ export default function CreateQualiPhotoModal({ visible, onClose, onSuccess, ini
                 </View>
               )}
             </View>
+            
+            {/* Photo */}
+            <View style={styles.card}>
+              <View style={styles.cardHeader}>
+                <View style={styles.cardIconWrap}><Ionicons name="camera" size={18} color="#11224e" /></View>
+                <View style={styles.cardHeaderText}><Text style={styles.cardTitle}>Photo</Text><Text style={styles.cardHint}>Prendre une photo ou choisir depuis la galerie</Text></View>
+              </View>
+              {photo ? (
+                <View style={{ gap: 8 }}>
+                  <Image source={{ uri: photo.uri }} style={{ width: '100%', aspectRatio: 4/3, borderRadius: 12 }} />
+                  <View style={{ flexDirection: 'row', gap: 8 }}>
+                    <Pressable style={styles.secondaryButton} onPress={() => setPhoto(null)}><Text style={styles.secondaryButtonText}>Supprimer</Text></Pressable>
+                    <Pressable style={styles.secondaryButton} onPress={handlePickPhoto}><Text style={styles.secondaryButtonText}>Reprendre</Text></Pressable>
+                  </View>
+                </View>
+              ) : (
+                <Pressable style={styles.captureButton} onPress={handlePickPhoto}>
+                  <Ionicons name="camera" size={18} color="#FFFFFF" />
+                  <Text style={styles.captureButtonText}>Prendre une photo</Text>
+                </Pressable>
+              )}
+            </View>
 
             {/* Map */}
             <View style={styles.card}>
@@ -362,27 +384,7 @@ export default function CreateQualiPhotoModal({ visible, onClose, onSuccess, ini
                 )}
             </View>
 
-            {/* Photo */}
-            <View style={styles.card}>
-              <View style={styles.cardHeader}>
-                <View style={styles.cardIconWrap}><Ionicons name="camera" size={18} color="#11224e" /></View>
-                <View style={styles.cardHeaderText}><Text style={styles.cardTitle}>Photo</Text><Text style={styles.cardHint}>Prendre une photo ou choisir depuis la galerie</Text></View>
-              </View>
-              {photo ? (
-                <View style={{ gap: 8 }}>
-                  <Image source={{ uri: photo.uri }} style={{ width: '100%', aspectRatio: 4/3, borderRadius: 12 }} />
-                  <View style={{ flexDirection: 'row', gap: 8 }}>
-                    <Pressable style={styles.secondaryButton} onPress={() => setPhoto(null)}><Text style={styles.secondaryButtonText}>Supprimer</Text></Pressable>
-                    <Pressable style={styles.secondaryButton} onPress={handlePickPhoto}><Text style={styles.secondaryButtonText}>Reprendre</Text></Pressable>
-                  </View>
-                </View>
-              ) : (
-                <Pressable style={styles.captureButton} onPress={handlePickPhoto}>
-                  <Ionicons name="camera" size={18} color="#FFFFFF" />
-                  <Text style={styles.captureButtonText}>Prendre une photo</Text>
-                </Pressable>
-              )}
-            </View>
+            
 
             {/* Voice Note */}
             <View style={styles.card}>

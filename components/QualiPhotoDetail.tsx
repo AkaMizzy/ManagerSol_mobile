@@ -1,7 +1,9 @@
 import { QualiPhotoItem } from '@/services/qualiphotoService';
 import { Ionicons } from '@expo/vector-icons';
-import React, { useMemo } from 'react';
+import { Audio } from 'expo-av';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Image, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import MapView, { Marker } from 'react-native-maps';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 type Props = {
@@ -12,6 +14,10 @@ type Props = {
 
  export default function QualiPhotoDetail({ visible, onClose, item }: Props) {
   const insets = useSafeAreaInsets();
+  const [sound, setSound] = useState<Audio.Sound | null>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [isMapDetailVisible, setMapDetailVisible] = useState(false);
+
   const subtitle = useMemo(() => {
     if (!item) return '';
     const project = item.project_title || '—';
@@ -19,7 +25,55 @@ type Props = {
     return `${project} • ${zone}`;
   }, [item]);
 
+  async function playSound() {
+    if (!item?.voice_note) return;
+
+    if (isPlaying && sound) {
+      await sound.pauseAsync();
+      setIsPlaying(false);
+      return;
+    }
+
+    if (sound) {
+      await sound.replayAsync();
+      setIsPlaying(true);
+      return;
+    }
+
+    try {
+      const { sound: newSound } = await Audio.Sound.createAsync({ uri: item.voice_note });
+      setSound(newSound);
+      setIsPlaying(true);
+
+      newSound.setOnPlaybackStatusUpdate((status) => {
+        if (status.isLoaded && status.didJustFinish) {
+          setIsPlaying(false);
+          newSound.setPositionAsync(0);
+        }
+      });
+
+      await newSound.playAsync();
+    } catch (e) {
+      console.error("Failed to play sound", e);
+    }
+  }
+
+  useEffect(() => {
+    return () => {
+      sound?.unloadAsync();
+    };
+  }, [sound]);
+
+  useEffect(() => {
+    if (!visible) {
+      sound?.unloadAsync();
+      setSound(null);
+      setIsPlaying(false);
+    }
+  }, [visible, sound]);
+
    return (
+    <>
      <Modal visible={visible} onRequestClose={onClose} animationType="slide" presentationStyle="fullScreen">
       <SafeAreaView edges={['bottom']} style={styles.container}>
         <View style={{ height: insets.top }} />
@@ -46,6 +100,18 @@ type Props = {
                 <Image source={{ uri: item.photo }} resizeMode="contain" style={styles.image} />
               </View>
 
+              {item.voice_note ? (
+                <View style={styles.playerCard}>
+                  <Pressable style={styles.playButton} onPress={playSound}>
+                    <Ionicons name={isPlaying ? 'pause-circle' : 'play-circle'} size={48} color="#11224e" />
+                  </Pressable>
+                  <View style={styles.playerMeta}>
+                    <Text style={styles.playerTitle}>Note Vocale</Text>
+                    <Text style={styles.playerSubtitle}>{isPlaying ? 'Lecture...' : 'Prêt à jouer'}</Text>
+                  </View>
+                </View>
+              ) : null}
+
               <View style={styles.metaCard}>
                 <MetaRow label="Project" value={item.project_title || '—'} />
                 <MetaRow label="Zone" value={item.zone_title || '—'} />
@@ -56,11 +122,61 @@ type Props = {
                   <MetaRow label="Date taken" value={formatDate(item.date_taken)} />
                 ) : null}
               </View>
+
+              {item?.latitude && item?.longitude && (
+                <View style={styles.metaCard}>
+                  <Text style={styles.mapTitle}>Localisation</Text>
+                  <Pressable onPress={() => setMapDetailVisible(true)}>
+                    <MapView
+                      style={styles.mapPreview}
+                      scrollEnabled={false}
+                      zoomEnabled={false}
+                      pitchEnabled={false}
+                      rotateEnabled={false}
+                      initialRegion={{
+                        latitude: item.latitude,
+                        longitude: item.longitude,
+                        latitudeDelta: 0.005,
+                        longitudeDelta: 0.005,
+                      }}
+                    >
+                      <Marker coordinate={{ latitude: item.latitude, longitude: item.longitude }} />
+                    </MapView>
+                  </Pressable>
+                </View>
+              )}
             </View>
           )}
         </ScrollView>
       </SafeAreaView>
     </Modal>
+    {item?.latitude && item?.longitude && (
+        <Modal visible={isMapDetailVisible} onRequestClose={() => setMapDetailVisible(false)} animationType="slide">
+            <SafeAreaView style={styles.container}>
+                <View style={styles.header}>
+                    <Pressable onPress={() => setMapDetailVisible(false)} style={styles.closeBtn}>
+                        <Ionicons name="close" size={24} color="#11224e" />
+                    </Pressable>
+                    <View style={styles.headerTitles}>
+                        <Text style={styles.title}>Localisation de la Photo</Text>
+                    </View>
+                    <View style={{ width: 40 }} />
+                </View>
+                <MapView
+                    style={{ flex: 1 }}
+                    initialRegion={{
+                        latitude: item.latitude,
+                        longitude: item.longitude,
+                        latitudeDelta: 0.01,
+                        longitudeDelta: 0.01,
+                    }}
+                >
+                    <Marker coordinate={{ latitude: item.latitude, longitude: item.longitude }} />
+                </MapView>
+            </SafeAreaView>
+        </Modal>
+    )}
+    </>
   );
 }
 
@@ -173,6 +289,42 @@ const styles = StyleSheet.create({
   metaMultiline: {
     lineHeight: 20,
   },
+  playerCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f1f5f9',
+    borderRadius: 12,
+    padding: 12,
+    gap: 12,
+  },
+  playButton: {
+    // styles for the play button
+  },
+  playerMeta: {
+    flex: 1,
+  },
+  playerTitle: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#1e293b',
+  },
+  playerSubtitle: {
+    fontSize: 12,
+    color: '#64748b',
+    marginTop: 2,
+  },
+  mapPreview: {
+    width: '100%',
+    height: 150,
+    borderRadius: 8,
+    marginTop: 8,
+  },
+  mapTitle: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#1e293b',
+    marginBottom: 4,
+  }
 });
 
 
