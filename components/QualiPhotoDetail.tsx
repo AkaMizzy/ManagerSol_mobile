@@ -2,7 +2,7 @@ import { QualiPhotoItem } from '@/services/qualiphotoService';
 import { Ionicons } from '@expo/vector-icons';
 import { Audio } from 'expo-av';
 import React, { useEffect, useMemo, useState } from 'react';
-import { Image, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Image, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -72,10 +72,34 @@ type Props = {
     }
   }, [visible, sound]);
 
-   return (
+   const renderMapView = () => (
     <>
-     <Modal visible={visible} onRequestClose={onClose} animationType="slide" presentationStyle="fullScreen">
-      <SafeAreaView edges={['bottom']} style={styles.container}>
+        <View style={{ height: insets.top }} />
+        <View style={styles.header}>
+            <Pressable onPress={() => setMapDetailVisible(false)} style={styles.closeBtn}>
+                <Ionicons name="arrow-back" size={24} color="#11224e" />
+            </Pressable>
+            <View style={styles.headerTitles}>
+                <Text style={styles.title}>Localisation de la Photo</Text>
+            </View>
+            <View style={{ width: 40 }} />
+        </View>
+        <MapView
+            style={{ flex: 1 }}
+            initialRegion={{
+                latitude: item!.latitude!,
+                longitude: item!.longitude!,
+                latitudeDelta: 0.01,
+                longitudeDelta: 0.01,
+            }}
+        >
+            <Marker coordinate={{ latitude: item!.latitude!, longitude: item!.longitude! }} />
+        </MapView>
+    </>
+   );
+
+   const renderDetailView = () => (
+    <>
         <View style={{ height: insets.top }} />
         <View style={styles.header}>
           <Pressable
@@ -126,57 +150,39 @@ type Props = {
               {item?.latitude && item?.longitude && (
                 <View style={styles.metaCard}>
                   <Text style={styles.mapTitle}>Localisation</Text>
-                  <Pressable onPress={() => setMapDetailVisible(true)}>
-                    <MapView
-                      style={styles.mapPreview}
-                      scrollEnabled={false}
-                      zoomEnabled={false}
-                      pitchEnabled={false}
-                      rotateEnabled={false}
-                      initialRegion={{
-                        latitude: item.latitude,
-                        longitude: item.longitude,
-                        latitudeDelta: 0.005,
-                        longitudeDelta: 0.005,
-                      }}
-                    >
-                      <Marker coordinate={{ latitude: item.latitude, longitude: item.longitude }} />
-                    </MapView>
-                  </Pressable>
+                  <TouchableOpacity activeOpacity={0.7} onPress={() => setMapDetailVisible(true)}>
+                    <View pointerEvents="none">
+                      <MapView
+                        style={styles.mapPreview}
+                        scrollEnabled={false}
+                        zoomEnabled={false}
+                        pitchEnabled={false}
+                        rotateEnabled={false}
+                        initialRegion={{
+                          latitude: item.latitude,
+                          longitude: item.longitude,
+                          latitudeDelta: 0.005,
+                          longitudeDelta: 0.005,
+                        }}
+                      >
+                        <Marker coordinate={{ latitude: item.latitude, longitude: item.longitude }} />
+                      </MapView>
+                    </View>
+                  </TouchableOpacity>
                 </View>
               )}
             </View>
           )}
         </ScrollView>
+    </>
+   );
+
+   return (
+     <Modal visible={visible} onRequestClose={onClose} animationType="slide" presentationStyle="fullScreen">
+      <SafeAreaView edges={['bottom']} style={styles.container}>
+        {isMapDetailVisible ? renderMapView() : renderDetailView()}
       </SafeAreaView>
     </Modal>
-    {item?.latitude && item?.longitude && (
-        <Modal visible={isMapDetailVisible} onRequestClose={() => setMapDetailVisible(false)} animationType="slide">
-            <SafeAreaView style={styles.container}>
-                <View style={styles.header}>
-                    <Pressable onPress={() => setMapDetailVisible(false)} style={styles.closeBtn}>
-                        <Ionicons name="close" size={24} color="#11224e" />
-                    </Pressable>
-                    <View style={styles.headerTitles}>
-                        <Text style={styles.title}>Localisation de la Photo</Text>
-                    </View>
-                    <View style={{ width: 40 }} />
-                </View>
-                <MapView
-                    style={{ flex: 1 }}
-                    initialRegion={{
-                        latitude: item.latitude,
-                        longitude: item.longitude,
-                        latitudeDelta: 0.01,
-                        longitudeDelta: 0.01,
-                    }}
-                >
-                    <Marker coordinate={{ latitude: item.latitude, longitude: item.longitude }} />
-                </MapView>
-            </SafeAreaView>
-        </Modal>
-    )}
-    </>
   );
 }
 

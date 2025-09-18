@@ -423,6 +423,7 @@ const styles = StyleSheet.create({
   },
   card: {
     flex: 1,
+    maxWidth: '49%', // Prevent single item from stretching full width
     marginHorizontal: 4,
     marginVertical: 8,
     backgroundColor: '#ffffff',
