@@ -9,6 +9,7 @@ export type QualiPhotoItem = {
   date_taken?: string | null;
   project_title?: string;
   zone_title?: string;
+  voice_note?: string;
 };
 
 export type QualiPhotoListResponse = {
@@ -30,6 +31,15 @@ export type QualiZone = {
   logo?: string | null;
 };
 
+type CreateQualiPhotoPayload = {
+  id_project?: string;
+  id_zone: string;
+  commentaire?: string;
+  date_taken?: string;
+  photo: { uri: string; name: string; type: string };
+  voice_note?: { uri: string; name: string; type: string };
+};
+
 class QualiPhotoService {
   private baseUrl = API_CONFIG.BASE_URL;
 
@@ -48,7 +58,7 @@ class QualiPhotoService {
   }
 
   async list(params: { id_project?: string; id_zone?: string; page?: number; limit?: number }, token: string): Promise<QualiPhotoListResponse> {
-    const url = new URL(`${this.baseUrl}/api/qualiphoto`);
+    const url = new URL(`${this.baseUrl}/qualiphoto`);
     if (params.id_project) url.searchParams.set('id_project', params.id_project);
     if (params.id_zone) url.searchParams.set('id_zone', params.id_zone);
     url.searchParams.set('page', String(params.page ?? 1));
@@ -62,21 +72,36 @@ class QualiPhotoService {
   }
 
   async getZonesByProject(projectId: string, token: string): Promise<QualiZone[]> {
-    return this.makeRequest<QualiZone[]>(`/api/projects/${projectId}/zones`, token, { method: 'GET' });
+    return this.makeRequest<QualiZone[]>(`/projects/${projectId}/zones`, token, { method: 'GET' });
   }
 
-  async create(params: { id_project?: string; id_zone: string; commentaire?: string; date_taken?: string; photo: { uri: string; name: string; type: string } }, token: string): Promise<any> {
-    const form = new FormData();
-    if (params.id_project) form.append('id_project', params.id_project);
-    form.append('id_zone', params.id_zone);
-    if (params.commentaire) form.append('commentaire', params.commentaire);
-    if (params.date_taken) form.append('date_taken', params.date_taken);
-    form.append('photo', params.photo as any);
+  async create(payload: CreateQualiPhotoPayload, token: string): Promise<Partial<QualiPhotoItem>> {
+    const formData = new FormData();
+    if (payload.id_project) formData.append('id_project', payload.id_project);
+    formData.append('id_zone', payload.id_zone);
+    if (payload.commentaire) formData.append('commentaire', payload.commentaire);
+    if (payload.date_taken) formData.append('date_taken', payload.date_taken);
 
-    const res = await fetch(`${this.baseUrl}/api/qualiphoto`, {
+    formData.append('photo', {
+      uri: payload.photo.uri,
+      name: payload.photo.name,
+      type: payload.photo.type,
+    } as any);
+
+    if (payload.voice_note) {
+      formData.append('voice_note', {
+        uri: payload.voice_note.uri,
+        name: payload.voice_note.name,
+        type: payload.voice_note.type,
+      } as any);
+    }
+
+    const res = await fetch(`${API_CONFIG.BASE_URL}/qualiphoto`, {
       method: 'POST',
-      headers: { Authorization: `Bearer ${token}` },
-      body: form,
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      body: formData,
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data?.error || 'Failed to create QualiPhoto');

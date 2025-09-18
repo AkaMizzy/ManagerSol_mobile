@@ -33,6 +33,8 @@ export default function QualiPhotoGalleryScreen() {
   const fetchingRef = useRef(false);
   const requestIdRef = useRef(0);
 
+  const isCreateDisabled = !selectedProject || !selectedZone;
+
   const canLoadMore = useMemo(() => photos.length < total, [photos.length, total]);
 
   const fetchPhotos = useCallback(async (reset = false) => {
@@ -144,10 +146,6 @@ export default function QualiPhotoGalleryScreen() {
             <Ionicons name="images-outline" size={24} color="#11224e" />
             <Text style={styles.subtitle}>{subtitleText}</Text>
           </View>
-          <Pressable accessibilityRole="button" accessibilityLabel="Add QualiPhoto" onPress={() => setModalVisible(true)} style={styles.addButton}>
-            <Ionicons name="add-circle" size={20} color="#f87b1b" />
-            <Text style={styles.addButtonText}>Create</Text>
-          </Pressable>
         </View>
 
         <View style={styles.filterContainer}>
@@ -162,7 +160,7 @@ export default function QualiPhotoGalleryScreen() {
               {projectOpen && (
                 <View style={styles.selectMenu}>
                   <ScrollView>
-                    <Pressable style={styles.selectItem} onPress={() => { setSelectedProject(undefined); setProjectOpen(false); }}>
+                    <Pressable style={styles.selectItem} onPress={() => { setSelectedProject(undefined); setSelectedZone(undefined); setProjectOpen(false); }}>
                       <Text style={styles.selectItemText}>All projects</Text>
                     </Pressable>
                     {(loadingProjects ? [] : projects).map(p => (
@@ -201,7 +199,21 @@ export default function QualiPhotoGalleryScreen() {
                 </View>
               )}
             </View>
+            <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Add QualiPhoto"
+                onPress={() => setModalVisible(true)}
+                disabled={isCreateDisabled}
+                style={[styles.addIconButton, isCreateDisabled && styles.addIconButtonDisabled]}
+              >
+              <Ionicons name="add-circle-outline" size={32} color="#f87b1b" />
+            </Pressable>
           </View>
+          {isCreateDisabled && (
+            <Text style={styles.filterHint}>
+              Please select a project and zone to create a photo.
+            </Text>
+          )}
         </View>
       </View>
 
@@ -234,6 +246,8 @@ export default function QualiPhotoGalleryScreen() {
       <CreateQualiPhotoModal
         visible={modalVisible}
         onClose={() => setModalVisible(false)}
+        initialProjectId={selectedProject}
+        initialZoneId={selectedZone}
         onSuccess={() => {
           setModalVisible(false);
           setPage(1);
@@ -277,30 +291,20 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#8E8E93',
   },
-  addButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#f87b1b',
-    borderRadius: 20,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    marginLeft: 12,
-    shadowColor: '#f87b1b',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.12,
-    shadowRadius: 3,
-    elevation: 2,
+  addIconButton: {
+    paddingLeft: 8,
   },
-  addButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#f87b1b',
-    marginLeft: 6,
+  addIconButtonDisabled: {
+    opacity: 0.4,
   },
   filterContainer: {
     marginTop: 4,
+  },
+  filterHint: {
+    marginTop: 8,
+    fontSize: 12,
+    color: '#6b7280',
+    textAlign: 'center',
   },
   filtersRow: {
     flexDirection: 'row',
