@@ -5,16 +5,18 @@ export type QualiPhotoItem = {
   id_project: string;
   id_zone: string;
   photo: string;
-  commentaire?: string | null;
-  date_taken?: string | null;
+  commentaire: string | null;
+  date_taken: string | null;
+  voice_note: string | null;
   project_title?: string;
   zone_title?: string;
-  voice_note?: string;
-  latitude?: number | null;
-  longitude?: number | null;
+  latitude: number | null;
+  longitude: number | null;
   id_qualiphoto_parent?: string | null;
   before?: number;
   after?: number;
+  id_user?: string;
+  user_name?: string;
 };
 
 export type QualiPhotoListResponse = {

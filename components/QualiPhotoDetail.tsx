@@ -5,7 +5,6 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Image, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-// Import the FORM directly, not the modal wrapper
 import { CreateChildQualiPhotoForm } from './CreateChildQualiPhotoModal';
 
 import { useAuth } from '@/contexts/AuthContext';
@@ -175,6 +174,7 @@ type Props = {
               <View style={styles.metaCard}>
                 <MetaRow label="Project" value={item.project_title || '—'} />
                 <MetaRow label="Zone" value={item.zone_title || '—'} />
+                {item.user_name && <MetaRow label="Prise par" value={item.user_name} />}
                 {typeof item.commentaire === 'string' && item.commentaire.trim().length > 0 ? (
                   <MetaRow label="Commentaire" value={item.commentaire} multiline />
                 ) : null}
@@ -212,12 +212,12 @@ type Props = {
                 <View style={styles.metaCard}>
                   <TouchableOpacity style={styles.addChildButton} onPress={() => setChildModalVisible(true)}>
                     <Ionicons name="add-circle-outline" size={20} color="#FFFFFF" />
-                    <Text style={styles.addChildButtonText}>Add Before/After Picture</Text>
+                    <Text style={styles.addChildButtonText}>Add &apos;After&apos; Photo</Text>
                   </TouchableOpacity>
-                  {children.length > 0 && <Text style={styles.childListTitle}>Before/After Pictures</Text>}
+                  {children.length > 0 && <Text style={styles.childListTitle}>&apos;After&apos; Photos</Text>}
                   {isLoadingChildren && <Text>Loading...</Text>}
                   {!isLoadingChildren && children.length === 0 && item.before === 1 && (
-                      <Text style={styles.noChildrenText}>No before/after pictures yet.</Text>
+                      <Text style={styles.noChildrenText}>No &apos;after&apos; photos have been added yet.</Text>
                   )}
                   {children.map((child) => (
                     <TouchableOpacity key={child.id} style={styles.childItem} onPress={() => setItem(child)}>
@@ -230,7 +230,7 @@ type Props = {
               {item.id_qualiphoto_parent && (
                   <TouchableOpacity style={styles.backToParentButton} onPress={() => setItem(initialItem || null)}>
                       <Ionicons name="arrow-back" size={16} color="#11224e" />
-                      <Text style={styles.backToParentButtonText}>Back to Parent Photo</Text>
+                      <Text style={styles.backToParentButtonText}>Back to Original Photo</Text>
                   </TouchableOpacity>
               )}
             </View>
