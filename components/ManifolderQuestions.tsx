@@ -4,6 +4,7 @@ import declarationService from '@/services/declarationService';
 import manifolderService from '@/services/manifolderService';
 import { ManifolderDetailsForDeclaration } from '@/types/declaration';
 import { ManifolderAnswer, ManifolderQuestion, Zone } from '@/types/manifolder';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
@@ -726,7 +727,7 @@ export default function ManifolderQuestions({
     return (
       <SafeAreaView style={styles.emptyContainer} edges={['bottom']}>
         <View style={styles.questionIcon}>
-          <Text style={styles.questionIconText}>?</Text>
+          <Ionicons name="document-text-outline" size={20} color="#11224e" />
         </View>
         <Text style={styles.emptyTitle}>No Questions Available</Text>
         <Text style={styles.emptyDescription}>
@@ -751,7 +752,7 @@ export default function ManifolderQuestions({
         <View style={styles.header}>
           <View style={styles.headerContent}>
             <View style={styles.questionIcon}>
-              <Text style={styles.questionIconText}>?</Text>
+              <Ionicons name="document-text-outline" size={20} color="#11224e" />
             </View>
             <View style={styles.headerText}>
               <Text style={styles.headerTitle}>
@@ -773,24 +774,24 @@ export default function ManifolderQuestions({
         </View>
         
         {/* Signature Status Banner */}
-        {signatureStatus && (
+        {signatureStatus && signatureStatus.isComplete && (
           <View style={[
             styles.signatureStatusBanner,
-            signatureStatus.isComplete ? styles.signatureStatusBannerComplete : styles.signatureStatusBannerIncomplete
+            styles.signatureStatusBannerComplete
           ]}>
             <View style={styles.signatureStatusContent}>
-              <Text style={styles.signatureStatusIcon}>
-                {signatureStatus.isComplete ? '🔒' : '📝'}
-              </Text>
+              <Ionicons 
+                name={"lock-closed"} 
+                size={24} 
+                color={'#DC2626'}
+                style={styles.signatureStatusIcon}
+              />
               <View style={styles.signatureStatusText}>
                 <Text style={styles.signatureStatusTitle}>
-                  {signatureStatus.isComplete ? 'Questions Locked' : 'Signatures Required'}
+                  {'Questions Locked'}
                 </Text>
                 <Text style={styles.signatureStatusDescription}>
-                  {signatureStatus.isComplete 
-                    ? 'All signatures completed. Questions cannot be modified.'
-                    : `${signatureStatus.remainingSignatures} signature(s) remaining to lock questions.`
-                  }
+                  {'All signatures completed. Questions cannot be modified.'}
                 </Text>
               </View>
             </View>
@@ -871,36 +872,36 @@ export default function ManifolderQuestions({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F2F2F7',
+    backgroundColor: '#F8FAFC',
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#F2F2F7',
+    backgroundColor: '#F8FAFC',
   },
   loadingText: {
     marginTop: 12,
     fontSize: 16,
-    color: '#8E8E93',
+    color: '#94A3B8',
   },
   emptyContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 32,
-    backgroundColor: '#F2F2F7',
+    backgroundColor: '#F8FAFC',
   },
   emptyTitle: {
     fontSize: 20,
     fontWeight: '600',
-    color: '#1C1C1E',
+    color: '#1E293B',
     marginTop: 16,
     textAlign: 'center',
   },
   emptyDescription: {
     fontSize: 16,
-    color: '#8E8E93',
+    color: '#64748B',
     marginTop: 8,
     textAlign: 'center',
     lineHeight: 22,
@@ -908,8 +909,10 @@ const styles = StyleSheet.create({
   header: {
     backgroundColor: '#FFFFFF',
     paddingHorizontal: 20,
-    paddingVertical: 16,
-    marginBottom: 8,
+    paddingTop: 20,
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F5F9',
   },
   headerContent: {
     flexDirection: 'row',
@@ -918,11 +921,11 @@ const styles = StyleSheet.create({
   questionIcon: {
     width: 40,
     height: 40,
-    borderRadius: 20,
-    backgroundColor: '#007AFF',
+    borderRadius: 12,
+    backgroundColor: '#F1F5F9',
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
+    marginRight: 16,
   },
   questionIconText: {
     color: '#FFFFFF',
@@ -935,16 +938,15 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#1C1C1E',
+    color: '#11224e',
   },
   headerSubtitle: {
     fontSize: 14,
-    color: '#8E8E93',
+    color: '#64748B',
     marginTop: 2,
   },
   counterContainer: {
-    marginTop: 12,
-    alignItems: 'center',
+    marginTop: 16,
   },
   // Signature Status Banner Styles
   signatureStatusBanner: {
@@ -976,7 +978,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   signatureStatusIcon: {
-    fontSize: 24,
     marginRight: 12,
   },
   signatureStatusText: {
@@ -1007,23 +1008,26 @@ const styles = StyleSheet.create({
     padding: 16,
     paddingTop: 8,
     paddingBottom: 20, // Extra bottom padding for tab bar clearance
+    backgroundColor: '#FFFFFF',
+    borderTopWidth: 1,
+    borderTopColor: '#F1F5F9',
   },
   submitButton: {
-    backgroundColor: '#34C759',
+    backgroundColor: '#f87b1b',
     paddingVertical: 16,
     borderRadius: 12,
     alignItems: 'center',
-    shadowColor: '#34C759',
+    shadowColor: '#f87b1b',
     shadowOffset: {
       width: 0,
-      height: 2,
+      height: 4,
     },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    elevation: 4,
   },
   submitButtonDisabled: {
-    backgroundColor: '#8E8E93',
+    backgroundColor: '#94A3B8',
     shadowOpacity: 0,
     elevation: 0,
   },

@@ -243,23 +243,23 @@ export default function ManifolderTab() {
         <View style={styles.header}>
           <View style={styles.headerContent}>
             <Pressable onPress={handleBackToList} style={styles.backButton}>
-            <Ionicons name="arrow-back" size={24} color="#11224e" />
+              <Ionicons name="arrow-back" size={24} color="#11224e" />
             </Pressable>
             <View style={styles.headerTitleContainer}>
-              <Text style={styles.headerTitle}>{selectedManifolderData?.title || 'Questions'}</Text>
+              <Text style={styles.headerTitle} numberOfLines={1}>{selectedManifolderData?.title || 'Questions'}</Text>
               <View style={styles.headerDetails}>
                 <View style={styles.headerDetailItem}>
-                  <Text style={styles.headerDetailIcon}>🏢</Text>
+                  <Ionicons name="briefcase-outline" size={16} color="#6B7280" />
                   <Text style={styles.headerDetailText} numberOfLines={1}>{selectedManifolderData?.project_title || 'No project'}</Text>
                 </View>
                 <View style={styles.headerDetailSeparator} />
                 <View style={styles.headerDetailItem}>
-                  <Text style={styles.headerDetailIcon}>📍</Text>
+                  <Ionicons name="location-outline" size={16} color="#6B7280" />
                   <Text style={styles.headerDetailText} numberOfLines={1}>{selectedManifolderData?.zone_title || 'No zone'}</Text>
                 </View>
                 <View style={styles.headerDetailSeparator} />
                 <View style={styles.headerDetailItem}>
-                  <Text style={styles.headerDetailIcon}>📋</Text>
+                  <Ionicons name="document-text-outline" size={16} color="#6B7280" />
                   <Text style={styles.headerDetailText} numberOfLines={1}>{selectedManifolderData?.type_title || 'No type'}</Text>
                 </View>
               </View>
@@ -307,33 +307,28 @@ const styles = StyleSheet.create({
   header: {
     backgroundColor: '#FFFFFF',
     paddingHorizontal: 20,
-    paddingVertical: 20,
+    paddingVertical: 15,
     borderBottomWidth: 1,
     borderBottomColor: '#E5E5EA',
-  },
-  headerContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  headerContentDetails: {
-    justifyContent: 'flex-start',
-  },
-  backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
-    justifyContent: 'center',
-    alignItems: 'center',
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
       height: 2,
     },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.05,
     shadowRadius: 4,
     elevation: 3,
+  },
+  headerContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  headerContentDetails: {
+    justifyContent: 'flex-start',
+  },
+  backButton: {
+    justifyContent: 'center',
+    alignItems: 'center',
     marginRight: 12,
     padding: 8,
   },
@@ -343,9 +338,10 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   headerTitle: {
-    fontSize: 26,
+    fontSize: 22,
     fontWeight: '700',
     color: '#1C1C1E',
+    textAlign: 'center',
   },
   headerTitleContainer: {
     flex: 1,
@@ -370,24 +366,24 @@ const styles = StyleSheet.create({
   headerDetailItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    flex: 1,
+    gap: 6,
+    flexShrink: 1,
     justifyContent: 'center',
   },
   headerDetailIcon: {
     fontSize: 16,
   },
   headerDetailText: {
-    fontSize: 14,
+    fontSize: 13,
     color: '#6B7280',
-    fontWeight: '600',
-    flex: 1,
+    fontWeight: '500',
+    flexShrink: 1,
   },
   headerDetailSeparator: {
     width: 1,
     height: 16,
     backgroundColor: '#E5E7EB',
-    marginHorizontal: 6,
+    marginHorizontal: 8,
   },
   createButton: {
     flexDirection: 'row',
