@@ -284,26 +284,12 @@ export default function ManifolderQuestions({
     }
   };
 
-  const handleCopyQuestion = async (questionId: string) => {
+  const handleCopyQuestion = async (questionId: string, manifolderId: string) => {
     if (!token) return;
 
     try {
       // Call backend API to duplicate the question
-      const response = await fetch(`${API_CONFIG.BASE_URL}/task-elements/${questionId}/duplicate`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({}),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to duplicate question');
-      }
-
-      const result = await response.json();
+      const result = await manifolderService.duplicateManifolderQuestion(questionId, manifolderId, token);
       const newQuestion = result.newElement;
 
       // Add the new question to the questions list
@@ -815,6 +801,7 @@ export default function ManifolderQuestions({
           {supportedQuestions.map((question) => (
             <QuestionAccordion
               key={question.id}
+              manifolderId={manifolderId}
               question={question}
               value={answers[question.id]}
               quantity={quantities[question.id]}

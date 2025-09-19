@@ -151,7 +151,8 @@ export default function ManifolderTab() {
     setSelectedManifolderData(undefined);
   };
 
-  const handleGoToQuestions = () => {
+  const handleGoToQuestions = (manifolderId: string) => {
+    setSelectedManifolder(manifolderId);
     setCurrentView('questions');
   };
 
@@ -617,7 +618,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: '#f87b1b',
     shadowColor: '#000',
     shadowOffset: {
       width: 0,

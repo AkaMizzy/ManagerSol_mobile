@@ -109,7 +109,10 @@ export default function CreateManifolderModal({
       }
 
       resetForm();
-      onSuccess(result);
+      onSuccess({
+        manifolderId: result.manifolderId,
+        code_formatted: result.code_formatted,
+      });
     } catch (e: any) {
       Alert.alert('Erreur', e.message || 'La création du manifolder a échoué');
     } finally {

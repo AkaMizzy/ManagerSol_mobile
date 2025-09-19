@@ -1,6 +1,6 @@
 import API_CONFIG from '@/app/config/api';
 import { Project, Zone } from '@/types/declaration';
-import { CreateManifolderData, ManifolderAnswer, ManifolderAnswerWithDetails, ManifolderListItem, ManifolderQuestionsResponse, ManifolderType } from '@/types/manifolder';
+import { CreateManifolderData, ManifolderAnswer, ManifolderAnswerWithDetails, ManifolderListItem, ManifolderQuestion, ManifolderQuestionsResponse, ManifolderType } from '@/types/manifolder';
 
 class ManifolderService {
   private baseUrl = API_CONFIG.BASE_URL;
@@ -100,6 +100,13 @@ class ManifolderService {
   deleteManifolderAnswer(answerId: string, token: string): Promise<{ message: string; answerId: string; }> {
     return this.request(`/manifolder-details/answers/${answerId}`, token, {
       method: 'DELETE',
+    });
+  }
+
+  duplicateManifolderQuestion(questionId: string, manifolderId: string, token: string): Promise<{ message: string; newElement: ManifolderQuestion }> {
+    return this.request(`/task-elements/${questionId}/duplicate`, token, {
+      method: 'POST',
+      body: JSON.stringify({ manifolderId }),
     });
   }
 

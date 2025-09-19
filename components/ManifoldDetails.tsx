@@ -24,7 +24,7 @@ interface ManifoldDetailsProps {
   manifolderId: string;
   manifolderData?: ManifolderListItem;
   onBack: () => void;
-  onGoToQuestions?: () => void;
+  onGoToQuestions?: (manifolderId: string) => void;
 }
 
 interface ManifolderDetailData extends ManifolderListItem {
@@ -149,8 +149,6 @@ export default function ManifoldDetails({
 
       // Reload signature status
       await loadSignatures();
-      
-      Alert.alert('Success', `${role.charAt(0).toUpperCase() + role.slice(1)} signature saved successfully!`);
     } catch (err: any) {
       Alert.alert('Error', err.message || 'Failed to save signature');
     }
@@ -518,7 +516,7 @@ export default function ManifoldDetails({
         <View style={styles.primaryActionsCard}>
           <View style={styles.primaryActionsContainer}>
             {onGoToQuestions && (
-              <Pressable style={styles.primaryActionButton} onPress={onGoToQuestions}>
+              <Pressable style={styles.primaryActionButton} onPress={() => onGoToQuestions(manifolderId)}>
                 <Ionicons name="list-outline" size={20} color="#FFFFFF" />
                 <Text style={styles.primaryActionButtonText}>Go to Questions</Text>
               </Pressable>

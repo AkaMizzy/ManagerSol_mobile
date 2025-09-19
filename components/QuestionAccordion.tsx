@@ -29,10 +29,11 @@ interface QuestionAccordionProps {
   selectedStatus?: number;
   availableZones: Zone[];
   defaultZoneId: string;
+  manifolderId: string;
   onValueChange: (questionId: string, value: any, quantity?: number, zoneId?: string, status?: number) => void;
   isExpanded?: boolean;
   onToggleExpand: (questionId: string) => void;
-  onCopyQuestion?: (questionId: string) => void;
+  onCopyQuestion?: (questionId: string, manifolderId: string) => void;
   onResetQuestion?: (questionId: string) => void;
   onSubmitAnswer?: (questionId: string) => void;
   onCreateDeclaration?: (questionId: string) => void;
@@ -50,6 +51,7 @@ export default function QuestionAccordion({
   selectedStatus,
   availableZones,
   defaultZoneId,
+  manifolderId,
   onValueChange,
   isExpanded = false,
   onToggleExpand,
@@ -689,7 +691,7 @@ export default function QuestionAccordion({
               {onCopyQuestion && (
                 <Pressable
                   style={styles.copyButton}
-                  onPress={() => onCopyQuestion(question.id)}
+                  onPress={() => onCopyQuestion(question.id, manifolderId)}
                   accessibilityRole="button"
                   accessibilityLabel="Copy question"
                 >
