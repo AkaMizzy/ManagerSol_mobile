@@ -25,7 +25,7 @@ export default function RecentQualiphotos() {
         const response = await qualiphotoService.list({ limit: 3, page: 1 }, token);
         setPhotos(response.items);
       } catch (e) {
-        setError('Failed to load recent photos.');
+        setError('Échec du chargement des photos récentes.');
         console.error(e);
       } finally {
         setIsLoading(false);
@@ -62,9 +62,9 @@ export default function RecentQualiphotos() {
   return (
     <View style={styles.section}>
       <View style={styles.sectionHeader}>
-        <Text style={styles.sectionTitle}>Recent Qualiphotos</Text>
+        <Text style={styles.sectionTitle}>Qualiphotos Récentes</Text>
         <Pressable onPress={navigateToQualiphoto}>
-          <Text style={styles.seeAll}>See All</Text>
+          <Text style={styles.seeAll}>Voir tout</Text>
         </Pressable>
       </View>
       <View style={styles.grid}>

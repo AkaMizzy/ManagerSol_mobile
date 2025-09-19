@@ -40,7 +40,7 @@ export function CreateChildQualiPhotoForm({ onClose, onSuccess, parentItem }: Fo
   const handlePickPhoto = async () => {
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
     if (status !== 'granted') {
-      Alert.alert('Permission', 'Camera permission is required.');
+      Alert.alert('Permission', 'L\'autorisation d\'accéder à la caméra est requise.');
       return;
     }
     const result = await ImagePicker.launchCameraAsync({ allowsEditing: true, aspect: [4,3], quality: 0.8 });
@@ -68,7 +68,7 @@ export function CreateChildQualiPhotoForm({ onClose, onSuccess, parentItem }: Fo
       onSuccess(created);
       onClose(); // Use onClose directly now
     } catch (e: any) {
-      setError(e?.message || 'Failed to save child photo.');
+      setError(e?.message || 'Échec de l\'enregistrement de la photo "après".');
     } finally {
       setSubmitting(false);
     }
@@ -78,7 +78,7 @@ export function CreateChildQualiPhotoForm({ onClose, onSuccess, parentItem }: Fo
     try {
       const { status } = await Audio.requestPermissionsAsync();
       if (status !== 'granted') {
-        Alert.alert('Permission Denied', 'Microphone access is required to record audio.');
+        Alert.alert('Permission refusée', 'L\'accès au microphone est requis pour enregistrer l\'audio.');
         return;
       }
       await Audio.setAudioModeAsync({ allowsRecordingIOS: true, playsInSilentModeIOS: true });
@@ -148,7 +148,7 @@ export function CreateChildQualiPhotoForm({ onClose, onSuccess, parentItem }: Fo
         <View style={styles.header}>
           <View style={{ width: 44 }} />
           <View style={styles.headerCenter}>
-            <Text style={styles.headerTitle}>Add &apos;After&apos; Photo</Text>
+            <Text style={styles.headerTitle}>Ajouter une photo &apos;Après&apos;</Text>
           </View>
           <TouchableOpacity onPress={onClose} style={styles.closeButton}>
             <Ionicons name="close-circle" size={28} color="#d1d5db" />
@@ -162,7 +162,7 @@ export function CreateChildQualiPhotoForm({ onClose, onSuccess, parentItem }: Fo
 
           {/* Context Section */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Original Photo</Text>
+            <Text style={styles.sectionTitle}>Photo originale</Text>
             <View style={styles.contextCard}>
               <Image source={{ uri: parentItem.photo }} style={styles.contextImage} />
               <View style={styles.contextTextWrap}>
@@ -174,18 +174,18 @@ export function CreateChildQualiPhotoForm({ onClose, onSuccess, parentItem }: Fo
 
           {/* Photo Section */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>New &apos;After&apos; Photo</Text>
+            <Text style={styles.sectionTitle}>Nouvelle photo &apos;Après&apos;</Text>
             {photo ? (
               <View style={styles.photoPreviewContainer}>
                 <Image source={{ uri: photo.uri }} style={styles.photoPreview} />
                 <View style={styles.photoActions}>
                   <TouchableOpacity style={styles.retakeButton} onPress={handlePickPhoto}>
                     <Ionicons name="camera-reverse-outline" size={20} color="#374151" />
-                    <Text style={styles.retakeButtonText}>Retake</Text>
+                    <Text style={styles.retakeButtonText}>Reprendre</Text>
                   </TouchableOpacity>
                   <TouchableOpacity style={styles.removeButton} onPress={() => setPhoto(null)}>
                     <Ionicons name="trash-outline" size={20} color="#ef4444" />
-                    <Text style={[styles.retakeButtonText, { color: '#ef4444' }]}>Remove</Text>
+                    <Text style={[styles.retakeButtonText, { color: '#ef4444' }]}>Supprimer</Text>
                   </TouchableOpacity>
                 </View>
               </View>
@@ -194,8 +194,8 @@ export function CreateChildQualiPhotoForm({ onClose, onSuccess, parentItem }: Fo
                 <View style={styles.captureButtonIcon}>
                   <Ionicons name="camera" size={24} color="#11224e" />
                 </View>
-                <Text style={styles.captureButtonText}>Tap to Take Photo</Text>
-                <Text style={styles.captureButtonSubtext}>A new photo is required</Text>
+                <Text style={styles.captureButtonText}>Appuyez pour prendre une photo</Text>
+                <Text style={styles.captureButtonSubtext}>Une nouvelle photo est requise</Text>
               </TouchableOpacity>
             )}
           </View>
@@ -230,9 +230,9 @@ export function CreateChildQualiPhotoForm({ onClose, onSuccess, parentItem }: Fo
 
           {/* Comment Section */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Comment</Text>
+            <Text style={styles.sectionTitle}>Commentaire</Text>
             <TextInput
-              placeholder="Add an optional comment..."
+              placeholder="Ajoutez un commentaire (facultatif)..."
               value={comment}
               onChangeText={setComment}
               style={styles.input}
@@ -249,7 +249,7 @@ export function CreateChildQualiPhotoForm({ onClose, onSuccess, parentItem }: Fo
             ) : (
               <>
                 <Ionicons name="checkmark-circle-outline" size={22} color="#FFFFFF" />
-                <Text style={styles.submitButtonText}>Save &apos;After&apos; Photo</Text>
+                <Text style={styles.submitButtonText}>Enregistrer la photo &apos;Après&apos;</Text>
               </>
             )}
           </TouchableOpacity>

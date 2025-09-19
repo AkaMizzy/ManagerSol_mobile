@@ -1,5 +1,3 @@
-//_layout.tsx
-
 import AuthWrapper from '@/components/AuthWrapper';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { useColorScheme } from '@/hooks/useColorScheme';

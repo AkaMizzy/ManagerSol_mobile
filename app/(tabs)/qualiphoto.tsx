@@ -12,7 +12,7 @@ function formatDateForGrid(dateStr?: string | null): string {
   if (!dateStr) return '';
   try {
     const date = new Date(dateStr.replace(' ', 'T'));
-    return new Intl.DateTimeFormat('en-GB', {
+    return new Intl.DateTimeFormat('fr-FR', {
       month: 'short',
       day: '2-digit',
       year: 'numeric',
@@ -72,7 +72,7 @@ export default function QualiPhotoGalleryScreen() {
     } catch (e) {
       if (requestId === requestIdRef.current) {
         console.error('Failed to load QualiPhoto', e);
-        setErrorMessage('Failed to load photos. Pull to retry.');
+        setErrorMessage('Échec du chargement des photos. Tirez pour réessayer.');
       }
     } finally {
       if (requestId === requestIdRef.current) {
@@ -135,7 +135,7 @@ export default function QualiPhotoGalleryScreen() {
       <Pressable
         style={({ pressed }) => [styles.imageWrap, pressed && styles.pressed] }
         accessibilityRole="button"
-        accessibilityLabel="Open photo details"
+        accessibilityLabel="Ouvrir les détails de la photo"
         onPress={() => { setSelectedItem(item); setDetailVisible(true); }}
       >
         <Image source={{ uri: item.photo }} style={styles.image} resizeMode="cover" />
@@ -169,24 +169,24 @@ export default function QualiPhotoGalleryScreen() {
           <View style={styles.filtersRow}>
             {/* Project dropdown */}
             <View style={styles.dropdownWrap}>
-              <Pressable accessibilityRole="button" accessibilityLabel="Select project" onPress={() => { setProjectOpen(v => !v); setZoneOpen(false); }} style={styles.selectBtn}>
+              <Pressable accessibilityRole="button" accessibilityLabel="Sélectionner un projet" onPress={() => { setProjectOpen(v => !v); setZoneOpen(false); }} style={styles.selectBtn}>
                 <Text style={[styles.selectText, !selectedProject && styles.selectPlaceholder]}>
-                  {selectedProject ? (projects.find(p => p.id === selectedProject)?.title || 'Project') : 'Select project'}
+                  {selectedProject ? (projects.find(p => p.id === selectedProject)?.title || 'Projet') : 'Sélectionner un projet'}
                 </Text>
               </Pressable>
               {projectOpen && (
                 <View style={styles.selectMenu}>
                   <ScrollView>
                     <Pressable style={styles.selectItem} onPress={() => { setSelectedProject(undefined); setSelectedZone(undefined); setProjectOpen(false); }}>
-                      <Text style={styles.selectItemText}>All projects</Text>
+                      <Text style={styles.selectItemText}>Tous les projets</Text>
                     </Pressable>
                     {(loadingProjects ? [] : projects).map(p => (
                       <Pressable key={p.id} style={styles.selectItem} onPress={() => { setSelectedProject(p.id); setProjectOpen(false); }}>
                         <Text numberOfLines={1} style={styles.selectItemText}>{p.title}</Text>
                       </Pressable>
                     ))}
-                    {loadingProjects && <View style={styles.selectItem}><Text style={styles.selectItemText}>Loading...</Text></View>}
-                    {!loadingProjects && projects.length === 0 && <View style={styles.selectItem}><Text style={styles.selectItemText}>No projects</Text></View>}
+                    {loadingProjects && <View style={styles.selectItem}><Text style={styles.selectItemText}>Chargement...</Text></View>}
+                    {!loadingProjects && projects.length === 0 && <View style={styles.selectItem}><Text style={styles.selectItemText}>Aucun projet</Text></View>}
                   </ScrollView>
                 </View>
               )}
@@ -194,31 +194,31 @@ export default function QualiPhotoGalleryScreen() {
 
             {/* Zone dropdown */}
             <View style={[styles.dropdownWrap, !selectedProject && styles.dropdownDisabled]}>
-              <Pressable accessibilityRole="button" accessibilityLabel="Select zone" disabled={!selectedProject} onPress={() => { if (!selectedProject) return; setZoneOpen(v => !v); setProjectOpen(false); }} style={[styles.selectBtn, !selectedProject && styles.selectBtnDisabled]}>
+              <Pressable accessibilityRole="button" accessibilityLabel="Sélectionner une zone" disabled={!selectedProject} onPress={() => { if (!selectedProject) return; setZoneOpen(v => !v); setProjectOpen(false); }} style={[styles.selectBtn, !selectedProject && styles.selectBtnDisabled]}>
                 <Text style={[styles.selectText, !selectedZone && styles.selectPlaceholder]}>
-                  {selectedZone ? (zones.find(z => z.id === selectedZone)?.title || 'Zone') : (selectedProject ? 'Select zone' : 'Select project first')}
+                  {selectedZone ? (zones.find(z => z.id === selectedZone)?.title || 'Zone') : (selectedProject ? 'Sélectionner une zone' : 'Sélectionner un projet d\'abord')}
                 </Text>
               </Pressable>
               {selectedProject && zoneOpen && (
                 <View style={styles.selectMenu}>
                   <ScrollView>
                     <Pressable style={styles.selectItem} onPress={() => { setSelectedZone(undefined); setZoneOpen(false); }}>
-                      <Text style={styles.selectItemText}>All zones</Text>
+                      <Text style={styles.selectItemText}>Toutes les zones</Text>
                     </Pressable>
                     {(loadingZones ? [] : zones).map(z => (
                       <Pressable key={z.id} style={styles.selectItem} onPress={() => { setSelectedZone(z.id); setZoneOpen(false); }}>
                         <Text numberOfLines={1} style={styles.selectItemText}>{z.title}</Text>
                       </Pressable>
                     ))}
-                    {loadingZones && <View style={styles.selectItem}><Text style={styles.selectItemText}>Loading...</Text></View>}
-                    {!loadingZones && zones.length === 0 && <View style={styles.selectItem}><Text style={styles.selectItemText}>No zones</Text></View>}
+                    {loadingZones && <View style={styles.selectItem}><Text style={styles.selectItemText}>Chargement...</Text></View>}
+                    {!loadingZones && zones.length === 0 && <View style={styles.selectItem}><Text style={styles.selectItemText}>Aucune zone</Text></View>}
                   </ScrollView>
                 </View>
               )}
             </View>
             <Pressable
                 accessibilityRole="button"
-                accessibilityLabel="Add QualiPhoto"
+                accessibilityLabel="Ajouter une QualiPhoto"
                 onPress={() => setModalVisible(true)}
                 disabled={isCreateDisabled}
                 style={[styles.addIconButton, isCreateDisabled && styles.addIconButtonDisabled]}
@@ -228,7 +228,7 @@ export default function QualiPhotoGalleryScreen() {
           </View>
           {isCreateDisabled && (
             <Text style={styles.filterHint}>
-              Please select a project and zone to create a photo.
+              Veuillez sélectionner un projet et une zone pour créer une photo.
             </Text>
           )}
         </View>
@@ -251,12 +251,18 @@ export default function QualiPhotoGalleryScreen() {
               <View style={styles.emptyWrap}><ActivityIndicator color="#11224e" /></View>
             ) : (
               <View style={styles.emptyWrap}>
-                <Text style={styles.emptyTitle}>{errorMessage ? 'Unable to load photos' : 'No photos yet'}</Text>
-                {errorMessage ? <Text style={styles.emptySubtitle}>{errorMessage}</Text> : <Text style={styles.emptySubtitle}>Pull to refresh or create a new photo.</Text>}
+                <Text style={styles.emptyTitle}>{errorMessage ? 'Impossible de charger les photos' : 'Aucune photo pour le moment'}</Text>
+                {errorMessage ? <Text style={styles.emptySubtitle}>{errorMessage}</Text> : <Text style={styles.emptySubtitle}>Tirez pour actualiser ou créer une nouvelle photo.</Text>}
               </View>
             )
           }
-          ListFooterComponent={isLoading && photos.length > 0 ? <ActivityIndicator color="#11224e" style={{ marginVertical: 12 }} /> : null}
+          ListFooterComponent={
+            <>
+              {isLoading && photos.length > 0 ? <ActivityIndicator color="#11224e" style={{ marginVertical: 12 }} /> : null}
+              {/* Spacer for custom tab bar */}
+              <View style={{ height: 50 }} />
+            </>
+          }
         />
       </View>
 

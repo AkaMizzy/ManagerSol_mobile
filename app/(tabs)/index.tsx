@@ -107,10 +107,10 @@ export default function DashboardScreen() {
 
     // Default status-based logic for other cases
     switch (status) {
-      case 0: return { icon: 'time', color: '#FF9500', text: 'Pending' };
-      case 1: return { icon: 'checkmark-circle', color: '#34C759', text: 'Completed' };
-      case 2: return { icon: 'close-circle', color: '#FF3B30', text: 'Canceled' };
-      default: return { icon: 'help-circle', color: '#8E8E93', text: 'Unknown' };
+      case 0: return { icon: 'time', color: '#FF9500', text: 'En attente' };
+      case 1: return { icon: 'checkmark-circle', color: '#34C759', text: 'Terminé' };
+      case 2: return { icon: 'close-circle', color: '#FF3B30', text: 'Annulé' };
+      default: return { icon: 'help-circle', color: '#8E8E93', text: 'Inconnu' };
     }
   };
 
@@ -245,7 +245,7 @@ export default function DashboardScreen() {
                 style={styles.tasksButton}
                 onPress={() => router.push('/(tabs)/tasks')}
                 accessibilityRole="button"
-                accessibilityLabel="Navigate to tasks"
+                accessibilityLabel="Accéder aux tâches"
               >
                 <Text style={styles.tasksButtonText}>Activités</Text>
               </Pressable>
@@ -263,7 +263,7 @@ export default function DashboardScreen() {
                     </View>
                     <View style={styles.activityContent}>
                       <Text style={styles.activityText}>
-                        {activity.title || 'Untitled Activity'}
+                        {activity.title || 'Activité sans titre'}
                       </Text>
                       <Text style={styles.activityTime}>
                         {formatTime(activity.date_planification)} • {statusInfo.text}
@@ -302,7 +302,7 @@ export default function DashboardScreen() {
                     </View>
                     <View style={styles.activityContent}>
                       <Text style={styles.activityText}>
-                        {activity.title || 'Untitled Activity'}
+                        {activity.title || 'Activité sans titre'}
                       </Text>
                       <Text style={styles.activityTime}>
                         {formatTime(activity.date_planification)} • {statusInfo.text}
@@ -339,7 +339,7 @@ export default function DashboardScreen() {
                     </View>
                     <View style={styles.activityContent}>
                       <Text style={styles.activityText}>
-                        {activity.title || 'Untitled Activity'}
+                        {activity.title || 'Activité sans titre'}
                       </Text>
                       <Text style={styles.activityTime}>
                         {formatTime(activity.date_planification)} • {statusInfo.text}
@@ -362,6 +362,9 @@ export default function DashboardScreen() {
             )}
           </View>
         </View>
+
+        {/* Spacer for custom tab bar */}
+        <View style={{ height: 100 }} />
       </ScrollView>
       <CreateCalendarEventModal
         visible={eventModalVisible}
@@ -379,7 +382,7 @@ export default function DashboardScreen() {
             },
             token
           );
-          Alert.alert('Success', 'Event created successfully');
+          Alert.alert('Succès', 'Événement créé avec succès');
           // Optimistically update indicators on the calendar
           try {
             const key = vals.date; // use the submitted local ISO (YYYY-MM-DD) to avoid TZ shifts
@@ -410,7 +413,6 @@ const styles = StyleSheet.create({
   },
   scrollView: {
     flex: 1,
-    paddingBottom: 150, // Increased space for tab bar to accommodate duplicate section
   },
 
   statsContainer: {

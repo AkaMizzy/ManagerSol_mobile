@@ -139,14 +139,14 @@ type Props = {
         <View style={styles.header}>
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="Close details"
+            accessibilityLabel="Fermer les détails"
             onPress={onClose}
             style={styles.closeBtn}
           >
             <Ionicons name="close" size={24} color="#11224e" />
           </Pressable>
           <View style={styles.headerTitles}>
-            <Text style={styles.title}>Photo Details</Text>
+            <Text style={styles.title}>Détails de la Photo</Text>
             {!!item && <Text numberOfLines={1} style={styles.subtitle}>{subtitle}</Text>}
           </View>
           <View style={{ width: 40 }} />
@@ -172,14 +172,14 @@ type Props = {
               ) : null}
 
               <View style={styles.metaCard}>
-                <MetaRow label="Project" value={item.project_title || '—'} />
+                <MetaRow label="Projet" value={item.project_title || '—'} />
                 <MetaRow label="Zone" value={item.zone_title || '—'} />
                 {item.user_name && <MetaRow label="Prise par" value={`${item.user_name} ${item.user_lastname || ''}`.trim()} />}
                 {typeof item.commentaire === 'string' && item.commentaire.trim().length > 0 ? (
                   <MetaRow label="Commentaire" value={item.commentaire} multiline />
                 ) : null}
                 {item.date_taken ? (
-                  <MetaRow label="Date taken" value={formatDate(item.date_taken)} />
+                  <MetaRow label="Date de prise" value={formatDate(item.date_taken)} />
                 ) : null}
               </View>
 
@@ -212,19 +212,19 @@ type Props = {
                 <View style={styles.metaCard}>
                   <TouchableOpacity style={styles.addChildButton} onPress={() => setChildModalVisible(true)}>
                     <Ionicons name="add-circle-outline" size={20} color="#FFFFFF" />
-                    <Text style={styles.addChildButtonText}>Add &apos;After&apos; Photo</Text>
+                    <Text style={styles.addChildButtonText}>Ajouter une photo &apos;Après&apos;</Text>
                   </TouchableOpacity>
-                  {children.length > 0 && <Text style={styles.childListTitle}>&apos;After&apos; Photos</Text>}
-                  {isLoadingChildren && <Text>Loading...</Text>}
+                  {children.length > 0 && <Text style={styles.childListTitle}>Photos &apos;Après&apos;</Text>}
+                  {isLoadingChildren && <Text>Chargement...</Text>}
                   {!isLoadingChildren && children.length === 0 && item.before === 1 && (
-                      <Text style={styles.noChildrenText}>No &apos;after&apos; photos have been added yet.</Text>
+                      <Text style={styles.noChildrenText}>Aucune photo &apos;après&apos; n&apos;a encore été ajoutée.</Text>
                   )}
                   <View style={styles.childListContainer}>
                     {children.map((child) => (
                       <TouchableOpacity key={child.id} style={styles.childItem} onPress={() => setItem(child)}>
                         <Image source={{ uri: child.photo }} style={styles.childThumbnail} />
                         <View style={styles.childItemContent}>
-                          <Text style={styles.childComment} numberOfLines={3}>{child.commentaire || 'No comment'}</Text>
+                          <Text style={styles.childComment} numberOfLines={3}>{child.commentaire || 'Aucun commentaire'}</Text>
                           {child.date_taken && (
                             <Text style={styles.childDate}>{formatDate(child.date_taken)}</Text>
                           )}
@@ -237,7 +237,7 @@ type Props = {
               {item.id_qualiphoto_parent && (
                   <TouchableOpacity style={styles.backToParentButton} onPress={() => setItem(initialItem || null)}>
                       <Ionicons name="arrow-back" size={16} color="#11224e" />
-                      <Text style={styles.backToParentButtonText}>Back to Original Photo</Text>
+                      <Text style={styles.backToParentButtonText}>Retour à la photo originale</Text>
                   </TouchableOpacity>
               )}
             </View>
@@ -279,7 +279,7 @@ function formatDate(dateStr: string) {
   const replaced = dateStr.replace(' ', 'T');
   const date = new Date(replaced);
   if (isNaN(date.getTime())) return dateStr;
-  return new Intl.DateTimeFormat(undefined, {
+  return new Intl.DateTimeFormat('fr-FR', {
     year: 'numeric',
     month: 'short',
     day: '2-digit',

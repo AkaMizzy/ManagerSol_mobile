@@ -1,4 +1,4 @@
-import React, { useLayoutEffect, useMemo, useRef, useState } from 'react';
+import React, { useLayoutEffect, useMemo, useRef, useState, useEffect } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View, useWindowDimensions } from 'react-native';
 
 interface DayCell {
@@ -41,7 +41,6 @@ interface Props {
 export default function CalendarComp({ eventsByDate = {}, onMonthChange, onDayPress }: Props) {
   const [visibleMonth, setVisibleMonth] = useState<Date>(new Date());
   const { width } = useWindowDimensions();
-  const hasInitialized = useRef(false);
 
   // Build a stable 6x7 matrix (Mon → Sun per row) to avoid wrapping issues
   const weeks = useMemo(() => {
@@ -68,26 +67,15 @@ export default function CalendarComp({ eventsByDate = {}, onMonthChange, onDayPr
   const goNext = () => setVisibleMonth(p => new Date(p.getFullYear(), p.getMonth() + 1, 1));
   const goToday = () => setVisibleMonth(new Date());
 
-  // Initial load effect - runs immediately when component mounts
-  useLayoutEffect(() => {
-    if (!onMonthChange || hasInitialized.current) return;
+  // Effect to handle month changes, including the initial load
+  useEffect(() => {
+    if (!onMonthChange) return;
     const start = new Date(visibleMonth.getFullYear(), visibleMonth.getMonth(), 1);
     const end = new Date(visibleMonth.getFullYear(), visibleMonth.getMonth() + 1, 0);
     const startIso = `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, '0')}-01`;
     const endIso = `${end.getFullYear()}-${String(end.getMonth() + 1).padStart(2, '0')}-${String(end.getDate()).padStart(2, '0')}`;
     onMonthChange(startIso, endIso);
-    hasInitialized.current = true;
-  }, []); // Empty dependency array - only run on mount
-
-  // Month change effect - runs when visibleMonth changes (but not on initial load)
-  React.useEffect(() => {
-    if (!onMonthChange || !hasInitialized.current) return;
-    const start = new Date(visibleMonth.getFullYear(), visibleMonth.getMonth(), 1);
-    const end = new Date(visibleMonth.getFullYear(), visibleMonth.getMonth() + 1, 0);
-    const startIso = `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, '0')}-01`;
-    const endIso = `${end.getFullYear()}-${String(end.getMonth() + 1).padStart(2, '0')}-${String(end.getDate()).padStart(2, '0')}`;
-    onMonthChange(startIso, endIso);
-  }, [visibleMonth]); // Only depend on visibleMonth, not onMonthChange
+  }, [visibleMonth, onMonthChange]); // Reruns when month or callback changes
 
   return (
     <View style={styles.wrapper}>
