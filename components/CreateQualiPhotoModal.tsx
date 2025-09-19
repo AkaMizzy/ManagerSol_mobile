@@ -394,57 +394,62 @@ export default function CreateQualiPhotoModal({ visible, onClose, onSuccess, ini
               </>
             )}
             
-            {/* Photo */}
+            {/* Media Card */}
             <View style={styles.card}>
               <View style={styles.cardHeader}>
                 <View style={styles.cardIconWrap}><Ionicons name="camera" size={18} color="#11224e" /></View>
-                <View style={styles.cardHeaderText}><Text style={styles.cardTitle}>Photo</Text><Text style={styles.cardHint}>Prendre une photo ou choisir depuis la galerie</Text></View>
+                <View style={styles.cardHeaderText}>
+                  <Text style={styles.cardTitle}>Média</Text>
+                  <Text style={styles.cardHint}>Ajouter une photo et une note vocale optionnelle</Text>
+                </View>
               </View>
+
+              {/* Photo Input Area */}
               {photo ? (
-                <View style={{ gap: 8 }}>
-                  <Image source={{ uri: photo.uri }} style={{ width: '100%', aspectRatio: 4/3, borderRadius: 12 }} />
-                  <View style={{ flexDirection: 'row', gap: 8 }}>
-                    <Pressable style={styles.secondaryButton} onPress={() => setPhoto(null)}><Text style={styles.secondaryButtonText}>Supprimer</Text></Pressable>
-                    <Pressable style={styles.secondaryButton} onPress={handlePickPhoto}><Text style={styles.secondaryButtonText}>Reprendre</Text></Pressable>
+                <View style={styles.imagePreviewContainer}>
+                  <Image source={{ uri: photo.uri }} style={styles.imagePreview} />
+                  <View style={styles.imageActions}>
+                    <TouchableOpacity style={[styles.iconButton, styles.iconButtonSecondary]} onPress={handlePickPhoto}>
+                      <Ionicons name="camera-reverse-outline" size={20} color="#11224e" />
+                    </TouchableOpacity>
+                    <TouchableOpacity style={[styles.iconButton, styles.iconButtonSecondary]} onPress={() => setPhoto(null)}>
+                      <Ionicons name="trash-outline" size={20} color="#dc2626" />
+                    </TouchableOpacity>
                   </View>
                 </View>
               ) : (
-                <Pressable style={styles.captureButton} onPress={handlePickPhoto}>
-                  <Ionicons name="camera" size={18} color="#FFFFFF" />
-                  <Text style={styles.captureButtonText}>Prendre une photo</Text>
-                </Pressable>
+                <TouchableOpacity style={styles.photoPickerButton} onPress={handlePickPhoto}>
+                  <Ionicons name="camera-outline" size={24} color="#475569" />
+                  <Text style={styles.photoPickerText}>Ajouter une Photo</Text>
+                </TouchableOpacity>
               )}
-            </View>
 
-            {/* Voice Note */}
-            <View style={styles.card}>
-              <View style={styles.cardHeader}>
-                <View style={styles.cardIconWrap}><Ionicons name="mic" size={18} color="#11224e" /></View>
-                <View style={styles.cardHeaderText}><Text style={styles.cardTitle}>Note vocale</Text><Text style={styles.cardHint}>Optionnel: enregistrer un mémo</Text></View>
+              {/* Voice Note Area */}
+              <View style={styles.voiceNoteContainer}>
+                {isRecording ? (
+                  <View style={styles.recordingWrap}>
+                    <Text style={styles.recordingText}>Enregistrement... {formatDuration(recordingDuration)}</Text>
+                    <TouchableOpacity style={styles.stopButton} onPress={stopRecording}>
+                      <Ionicons name="stop-circle" size={24} color="#dc2626" />
+                    </TouchableOpacity>
+                  </View>
+                ) : voiceNote ? (
+                  <View style={styles.audioPlayerWrap}>
+                    <TouchableOpacity style={styles.playButton} onPress={playSound}>
+                      <Ionicons name={isPlaying ? 'pause-circle' : 'play-circle'} size={32} color="#11224e" />
+                    </TouchableOpacity>
+                    <Text style={styles.audioMeta}>Note vocale enregistrée.</Text>
+                    <TouchableOpacity style={styles.deleteButton} onPress={resetVoiceNote}>
+                      <Ionicons name="trash-outline" size={20} color="#dc2626" />
+                    </TouchableOpacity>
+                  </View>
+                ) : (
+                  <TouchableOpacity style={styles.voiceRecordButton} onPress={startRecording}>
+                    <Ionicons name="mic-outline" size={18} color="#11224e" />
+                    <Text style={styles.voiceRecordButtonText}>Ajouter une note vocale</Text>
+                  </TouchableOpacity>
+                )}
               </View>
-              {isRecording ? (
-                <View style={styles.recordingWrap}>
-                  <Text style={styles.recordingText}>Enregistrement... {formatDuration(recordingDuration)}</Text>
-                  <Pressable style={styles.stopButton} onPress={stopRecording}>
-                    <Ionicons name="stop-circle" size={24} color="#dc2626" />
-                  </Pressable>
-                </View>
-              ) : voiceNote ? (
-                <View style={styles.audioPlayerWrap}>
-                  <Pressable style={styles.playButton} onPress={playSound}>
-                    <Ionicons name={isPlaying ? 'pause-circle' : 'play-circle'} size={32} color="#11224e" />
-                  </Pressable>
-                  <Text style={styles.audioMeta}>Note vocale enregistrée.</Text>
-                  <Pressable style={styles.deleteButton} onPress={resetVoiceNote}>
-                    <Ionicons name="trash-outline" size={20} color="#dc2626" />
-                  </Pressable>
-                </View>
-              ) : (
-                <Pressable style={styles.captureButton} onPress={startRecording}>
-                  <Ionicons name="mic" size={18} color="#FFFFFF" />
-                  <Text style={styles.captureButtonText}>Enregistrer une note vocale</Text>
-                </Pressable>
-              )}
             </View>
 
             {/* Optional Details */}
@@ -588,6 +593,64 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '500',
     color: '#6b7280',
+  },
+  photoPickerButton: {
+    borderWidth: 2,
+    borderColor: '#d1d5db',
+    borderStyle: 'dashed',
+    borderRadius: 12,
+    paddingVertical: 32,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#f8fafc',
+    gap: 8,
+  },
+  photoPickerText: {
+    color: '#475569',
+    fontWeight: '600',
+  },
+  imagePreviewContainer: {
+    position: 'relative',
+  },
+  imagePreview: {
+    width: '100%',
+    aspectRatio: 16/10,
+    borderRadius: 12,
+  },
+  imageActions: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    flexDirection: 'row',
+    gap: 8,
+  },
+  iconButton: {
+    padding: 10,
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    borderRadius: 99,
+  },
+  iconButtonSecondary: {
+    backgroundColor: '#f1f5f9',
+    borderRadius: 99,
+    padding: 8,
+    borderWidth: 1,
+    borderColor: '#e2e8f0'
+  },
+  voiceNoteContainer: {
+    marginTop: 12,
+  },
+  voiceRecordButton: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 12,
+    backgroundColor: '#f1f5f9',
+    borderRadius: 10,
+    gap: 8,
+  },
+  voiceRecordButtonText: {
+    color: '#11224e',
+    fontWeight: '600',
   },
   submitButton: { backgroundColor: '#f87b1b', borderRadius: 12, paddingVertical: 16, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 8, height: 48, alignSelf: 'center', width: '92%' },
   submitButtonDisabled: { backgroundColor: '#d1d5db' },
