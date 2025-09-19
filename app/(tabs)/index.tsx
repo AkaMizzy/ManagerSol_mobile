@@ -17,6 +17,7 @@ import AppHeader from '../../components/AppHeader';
 import CalendarComp from '../../components/CalendarComp';
 import CreateCalendarEventModal from '../../components/CreateCalendarEventModal';
 import DayEventsModal from '../../components/DayEventsModal';
+import RecentQualiphotos from '../../components/RecentQualiphotos';
 import API_CONFIG from '../config/api';
 
 export default function DashboardScreen() {
@@ -227,6 +228,9 @@ export default function DashboardScreen() {
             }
           }}
         />
+
+        {/* Recent Qualiphotos */}
+        <RecentQualiphotos />
 
         {/* Recent Activity */}
         <View style={styles.section}>
