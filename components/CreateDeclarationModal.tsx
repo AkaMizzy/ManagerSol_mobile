@@ -5,7 +5,9 @@ import React, { useEffect, useState } from 'react';
 import {
   Alert,
   Dimensions,
+  KeyboardAvoidingView,
   Modal,
+  Platform,
   ScrollView,
   StyleSheet,
   Text,
@@ -13,7 +15,6 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-// import MapView, { Marker } from 'react-native-maps';
 import DateTimePickerModal from 'react-native-modal-datetime-picker';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { WebView } from 'react-native-webview';
@@ -69,13 +70,10 @@ export default function CreateDeclarationModal({
   const [showDeclarantModal, setShowDeclarantModal] = useState(false);
   const [declarantSearchQuery, setDeclarantSearchQuery] = useState('');
   
-  // Photo handling state
   const [selectedPhotos, setSelectedPhotos] = useState<{ uri: string; type: string; name: string }[]>([]);
   
-  // Location state
   const [showLocationInput, setShowLocationInput] = useState(false);
 
-  // Date helper functions
   const toISODate = (d: Date) => {
     return d.toISOString().split('T')[0];
   };
@@ -83,23 +81,22 @@ export default function CreateDeclarationModal({
   const formatDisplayDate = (iso?: string) => {
     if (!iso) return '';
     const date = new Date(iso);
-    return date.toLocaleDateString('en-US', { 
+    return date.toLocaleDateString('fr-FR', { 
       year: 'numeric', 
       month: 'short', 
       day: 'numeric' 
     });
   };
 
-  // Reset form when modal opens/closes
   useEffect(() => {
     if (visible) {
       const initialFormData: CreateDeclarationData = {
-        title: manifolderDetails ? `Declaration for ${manifolderDetails.manifolderDetail.questionTitle}` : '',
+        title: manifolderDetails ? `Déclaration pour ${manifolderDetails.manifolderDetail.questionTitle}` : '',
         id_declaration_type: '',
         severite: 5,
         id_zone: manifolderDetails ? manifolderDetails.manifolder.defaultZoneId : '',
-        description: manifolderDetails ? `Related to manifolder question: ${manifolderDetails.manifolderDetail.questionTitle}` : '',
-        date_declaration: '',
+        description: manifolderDetails ? `Lié à la question du manifolder: ${manifolderDetails.manifolderDetail.questionTitle}` : '',
+        date_declaration: toISODate(new Date()),
         code_declaration: '',
         id_declarent: currentUser?.id,
         latitude: undefined,
@@ -119,25 +116,25 @@ export default function CreateDeclarationModal({
     const newErrors: Record<string, string> = {};
 
     if (!formData.title.trim()) {
-      newErrors.title = 'Title is required';
+      newErrors.title = 'Le titre est requis';
     }
     if (!formData.id_declaration_type) {
-      newErrors.id_declaration_type = 'Declaration type is required';
+      newErrors.id_declaration_type = 'Le type de déclaration est requis';
     }
     if (!formData.id_zone) {
-      newErrors.id_zone = 'Zone is required';
+      newErrors.id_zone = 'La zone est requise';
     }
     if (!formData.description.trim()) {
-      newErrors.description = 'Description is required';
+      newErrors.description = 'La description est requise';
     }
     if (!formData.date_declaration) {
-      newErrors.date_declaration = 'Declaration date is required';
+      newErrors.date_declaration = 'La date de déclaration est requise';
     }
     if (!formData.code_declaration.trim()) {
-      newErrors.code_declaration = 'Declaration code is required';
+      newErrors.code_declaration = 'Le code de déclaration est requis';
     }
     if (formData.severite < 0 || formData.severite > 10) {
-      newErrors.severite = 'Severity must be between 0 and 10';
+      newErrors.severite = 'La sévérité doit être entre 0 et 10';
     }
 
     setErrors(newErrors);
@@ -152,29 +149,22 @@ export default function CreateDeclarationModal({
         ...formData,
         photos: selectedPhotos.length > 0 ? selectedPhotos : undefined
       };
-      
-      console.log('🔍 Submitting declaration with data:', dataWithPhotos);
-      console.log('🔍 Selected photos count:', selectedPhotos.length);
-      if (selectedPhotos.length > 0) {
-        console.log('🔍 Photo details:', selectedPhotos.map(p => ({ name: p.name, type: p.type, uri: p.uri.substring(0, 50) + '...' })));
-      }
-      
       await onSubmit(dataWithPhotos);
       onClose();
     } catch (error) {
       console.error('❌ Failed to create declaration:', error);
-      Alert.alert('Error', 'Failed to create declaration. Please try again.');
+      Alert.alert('Erreur', 'La création de la déclaration a échoué. Veuillez réessayer.');
     }
   };
 
   const getDeclarationTypeTitle = (id: string) => {
     const type = declarationTypes.find(t => t.id === id);
-    return type ? type.title : 'Select declaration type';
+    return type ? type.title : 'Sélectionner le type';
   };
 
   const getZoneTitle = (id: string) => {
     const zone = zones.find(z => z.id === id);
-    return zone ? zone.title : 'Select zone';
+    return zone ? zone.title : 'Sélectionner la zone';
   };
 
   const getZoneLogo = (id: string) => {
@@ -185,17 +175,15 @@ export default function CreateDeclarationModal({
 
   const getProjectTitle = (id: string) => {
     const project = projects.find(p => p.id === id);
-    return project ? project.title : 'Select project';
+    return project ? project.title : 'Sélectionner le projet';
   };
 
   const getDeclarantName = (id: string) => {
-    // First check if it's the current user
     if (id === currentUser?.id) {
       return `${currentUser.firstname} ${currentUser.lastname}`;
     }
-    // Then check company users
     const user = companyUsers.find(u => u.id === id);
-    return user ? `${user.firstname} ${user.lastname}` : 'Select declarant';
+    return user ? `${user.firstname} ${user.lastname}` : 'Sélectionner le déclarant';
   };
 
   const getFilteredDeclarants = () => {
@@ -220,7 +208,7 @@ export default function CreateDeclarationModal({
     if (formData.latitude && formData.longitude) {
       return `${formData.latitude.toFixed(6)}, ${formData.longitude.toFixed(6)}`;
     }
-    return 'Tap map to select location';
+    return 'Appuyez pour sélectionner la localisation';
   };
 
   // OpenStreetMap HTML with Leaflet
@@ -251,7 +239,7 @@ export default function CreateDeclarationModal({
           bottom: 20px;
           left: 50%;
           transform: translateX(-50%);
-          background: #007AFF;
+          background: #f87b1b;
           color: white;
           border: none;
           padding: 12px 24px;
@@ -266,10 +254,10 @@ export default function CreateDeclarationModal({
     <body>
       <div id="map"></div>
       <div class="location-info">
-        <strong>Selected Location:</strong><br>
-        <span id="coordinates">Tap on map to select</span>
+        <strong>Localisation Sélectionnée:</strong><br>
+        <span id="coordinates">Appuyez sur la carte pour sélectionner</span>
       </div>
-      <button class="select-button" onclick="selectLocation()">Select This Location</button>
+      <button class="select-button" onclick="selectLocation()">Sélectionner cette localisation</button>
       
       <script>
         let map, marker, selectedLat, selectedLng;
@@ -389,14 +377,13 @@ export default function CreateDeclarationModal({
   };
 
   const getSeverityText = (severity: number) => {
-    if (severity >= 7) return 'High';
-    if (severity >= 5) return 'Medium';
-    return 'Low';
+    if (severity >= 7) return 'Haute';
+    if (severity >= 5) return 'Moyenne';
+    return 'Basse';
   };
 
   const updateFormData = (field: keyof CreateDeclarationData, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
-    // Clear error when user starts typing
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: '' }));
     }
@@ -405,7 +392,7 @@ export default function CreateDeclarationModal({
   const requestPermissions = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
-      Alert.alert('Permission Required', 'Please grant camera roll permissions to select photos.');
+      Alert.alert('Permission Requise', 'Veuillez autoriser l\'accès à la galerie pour sélectionner des photos.');
       return false;
     }
     return true;
@@ -420,7 +407,6 @@ export default function CreateDeclarationModal({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
         allowsMultipleSelection: true,
         quality: 0.8,
-        aspect: [4, 3],
       });
 
       if (!result.canceled && result.assets) {
@@ -434,14 +420,14 @@ export default function CreateDeclarationModal({
       }
     } catch (error) {
       console.error('Error picking images:', error);
-      Alert.alert('Error', 'Failed to select images. Please try again.');
+      Alert.alert('Erreur', 'La sélection des images a échoué. Veuillez réessayer.');
     }
   };
 
   const takePhoto = async () => {
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
     if (status !== 'granted') {
-      Alert.alert('Permission Required', 'Please grant camera permissions to take photos.');
+      Alert.alert('Permission Requise', 'Veuillez autoriser l\'accès à la caméra pour prendre des photos.');
       return;
     }
 
@@ -449,7 +435,6 @@ export default function CreateDeclarationModal({
       const result = await ImagePicker.launchCameraAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
         quality: 0.8,
-        aspect: [4, 3],
       });
 
       if (!result.canceled && result.assets && result.assets[0]) {
@@ -463,7 +448,7 @@ export default function CreateDeclarationModal({
       }
     } catch (error) {
       console.error('Error taking photo:', error);
-      Alert.alert('Error', 'Failed to take photo. Please try again.');
+      Alert.alert('Erreur', 'La prise de photo a échoué. Veuillez réessayer.');
     }
   };
 
@@ -473,12 +458,12 @@ export default function CreateDeclarationModal({
 
   const showPhotoOptions = () => {
     Alert.alert(
-      'Add Photos',
-      'Choose how you want to add photos',
+      'Ajouter des Photos',
+      'Choisissez comment ajouter des photos',
       [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Take Photo', onPress: takePhoto },
-        { text: 'Choose from Library', onPress: pickImages },
+        { text: 'Annuler', style: 'cancel' },
+        { text: 'Prendre une Photo', onPress: takePhoto },
+        { text: 'Choisir de la Galerie', onPress: pickImages },
       ]
     );
   };
@@ -490,443 +475,299 @@ export default function CreateDeclarationModal({
       presentationStyle="pageSheet"
       onRequestClose={onClose}
     >
-      <SafeAreaView style={styles.container}>
-        {/* Header */}
-        <View style={styles.header}>
-          <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-            <Ionicons name="close" size={24} color="#1C1C1E" />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Create Declaration</Text>
-          <View style={styles.placeholder} />
-        </View>
-
-        {/* Manifolder Information */}
-        {manifolderDetails && (
-          <View style={styles.manifolderInfoContainer}>
-            <View style={styles.manifolderInfoHeader}>
-              <Ionicons name="document-text-outline" size={20} color="#f87b1b" />
-              <Text style={styles.manifolderInfoTitle}>Related to Manifolder</Text>
-            </View>
-            <View style={styles.manifolderInfoContent}>
-              <Text style={styles.manifolderInfoText}>
-                <Text style={styles.manifolderInfoLabel}>Manifolder:</Text> {manifolderDetails.manifolder.title}
-              </Text>
-              <Text style={styles.manifolderInfoText}>
-                <Text style={styles.manifolderInfoLabel}>Question:</Text> {manifolderDetails.manifolderDetail.questionTitle}
-              </Text>
-              
-            </View>
-          </View>
-        )}
-
-        {/* Form */}
-        <ScrollView style={styles.form} showsVerticalScrollIndicator={false}>
-          {/* Declaration Code */}
-          <View style={styles.fieldContainer}>
-            <Text style={styles.fieldLabel}>Code *</Text>
-            <TextInput
-              style={[styles.textInput, errors.code_declaration && styles.textAreaError]}
-              placeholder="Enter declaration code"
-              placeholderTextColor="#8E8E93"
-              value={formData.code_declaration}
-              onChangeText={(value) => updateFormData('code_declaration', value)}
-            />
-            {errors.code_declaration ? <Text style={styles.errorText}>{errors.code_declaration}</Text> : null}
-          </View>
-
-          {/* Title */}
-          <View style={styles.fieldContainer}>
-            <Text style={styles.fieldLabel}>Title *</Text>
-            <TextInput
-              style={[styles.textInput, errors.title && styles.textAreaError]}
-              placeholder="Enter a concise title"
-              placeholderTextColor="#8E8E93"
-              value={formData.title}
-              onChangeText={(value) => updateFormData('title', value)}
-            />
-            {errors.title ? <Text style={styles.errorText}>{errors.title}</Text> : null}
-          </View>
-
-          {/* Project */}
-          <View style={styles.fieldContainer}>
-            <Text style={styles.fieldLabel}>Project *</Text>
-            <TouchableOpacity
-              style={styles.dropdown}
-              onPress={() => setShowProjectDropdown(!showProjectDropdown)}
-            >
-              <Text style={[
-                styles.dropdownText,
-                !formData.id_project && styles.placeholderText
-              ]}>
-                {getProjectTitle(formData.id_project || '')}
-              </Text>
-              <Ionicons
-                name={showProjectDropdown ? 'chevron-up' : 'chevron-down'}
-                size={20}
-                color="#8E8E93"
-              />
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
+        <SafeAreaView style={styles.container}>
+          {/* Header */}
+          <View style={styles.header}>
+            <TouchableOpacity onPress={onClose} style={styles.closeButton}>
+              <Ionicons name="close" size={24} color="#6b7280" />
             </TouchableOpacity>
-            {showProjectDropdown && (
-              <View style={styles.dropdownList}>
-                <ScrollView 
-                  showsVerticalScrollIndicator={false}
-                  nestedScrollEnabled={true}
-                >
-                  <TouchableOpacity
-                    style={styles.dropdownItem}
-                    onPress={() => {
-                      updateFormData('id_project', undefined);
-                      setShowProjectDropdown(false);
-                    }}
-                  >
-                    <Text style={styles.dropdownItemText}>No project</Text>
-                  </TouchableOpacity>
-                  {projects.map((project, index) => (
-                    <TouchableOpacity
-                      key={project.id}
-                      style={[
-                        styles.dropdownItem,
-                        index === projects.length - 1 && styles.dropdownItemLast
-                      ]}
-                      onPress={() => {
-                        updateFormData('id_project', project.id);
-                        setShowProjectDropdown(false);
-                      }}
-                    >
-                      <Text style={styles.dropdownItemText}>{project.title}</Text>
-                    </TouchableOpacity>
-                  ))}
-                </ScrollView>
+            <View style={styles.headerCenter}>
+              <Text style={styles.headerTitle}>Créer une Déclaration</Text>
+              <Text style={styles.headerSubtitle}>Remplissez les détails ci-dessous</Text>
+            </View>
+            <View style={styles.placeholder} />
+          </View>
+
+          {/* Manifolder Information */}
+          {manifolderDetails && (
+            <View style={styles.manifolderInfoContainer}>
+              <Ionicons name="link" size={16} color="#f87b1b" />
+              <Text style={styles.manifolderInfoText} numberOfLines={1}>
+                Lié à: {manifolderDetails.manifolderDetail.questionTitle}
+              </Text>
+            </View>
+          )}
+
+          {/* Form */}
+          <ScrollView style={styles.form} showsVerticalScrollIndicator={false}>
+            {/* Main Info Card */}
+            <View style={styles.card}>
+              <View style={styles.cardHeader}>
+                <View style={styles.cardIconWrap}><Ionicons name="document-text-outline" size={18} color="#11224e" /></View>
+                <View style={styles.cardHeaderText}>
+                  <Text style={styles.cardTitle}>Information Principale</Text>
+                  <Text style={styles.cardHint}>Type, code et titre de la déclaration</Text>
+                </View>
               </View>
-            )}
-          </View>
-
-          {/* Declaration Date */}
-          <View style={styles.fieldContainer}>
-            <Text style={styles.fieldLabel}>Date *</Text>
-            <TouchableOpacity
-              style={[styles.dropdown, errors.date_declaration && styles.dropdownError]}
-              onPress={() => setShowDatePicker(true)}
-            >
-              <Ionicons name="calendar-outline" size={18} color="#8E8E93" />
-              <Text style={[
-                styles.dropdownText,
-                !formData.date_declaration && styles.placeholderText
-              ]}>
-                {formData.date_declaration ? formatDisplayDate(formData.date_declaration) : 'Select declaration date'}
-              </Text>
-            </TouchableOpacity>
-            <DateTimePickerModal
-              isVisible={showDatePicker}
-              mode="date"
-              date={formData.date_declaration ? new Date(formData.date_declaration) : new Date()}
-              maximumDate={new Date()} // Cannot select future dates
-              onConfirm={(selectedDate) => {
-                setShowDatePicker(false);
-                if (selectedDate) updateFormData('date_declaration', toISODate(selectedDate));
-              }}
-              onCancel={() => setShowDatePicker(false)}
-            />
-            {errors.date_declaration ? <Text style={styles.errorText}>{errors.date_declaration}</Text> : null}
-          </View>
-
-          {/* Declarant */}
-          <View style={styles.fieldContainer}>
-            <Text style={styles.fieldLabel}>Declarant *</Text>
-            <TouchableOpacity
-              style={styles.dropdown}
-              onPress={() => setShowDeclarantModal(true)}
-            >
-              <Text style={[
-                styles.dropdownText,
-                !formData.id_declarent && styles.placeholderText
-              ]}>
-                {getDeclarantName(formData.id_declarent || '')}
-              </Text>
-              <Ionicons
-                name="chevron-down"
-                size={20}
-                color="#8E8E93"
-              />
-            </TouchableOpacity>
-          </View>
-
-          {/* Declaration Type */}
-          <View style={styles.fieldContainer}>
-            <Text style={styles.fieldLabel}>Type *</Text>
-            <TouchableOpacity
-              style={[styles.dropdown, errors.id_declaration_type && styles.dropdownError]}
-              onPress={() => setShowTypeDropdown(!showTypeDropdown)}
-            >
-              <Text style={[
-                styles.dropdownText,
-                !formData.id_declaration_type && styles.placeholderText
-              ]}>
-                {getDeclarationTypeTitle(formData.id_declaration_type)}
-              </Text>
-              <Ionicons
-                name={showTypeDropdown ? 'chevron-up' : 'chevron-down'}
-                size={20}
-                color="#8E8E93"
-              />
-            </TouchableOpacity>
-            {showTypeDropdown && (
-              <View style={styles.dropdownList}>
-                <ScrollView 
-                  showsVerticalScrollIndicator={false}
-                  nestedScrollEnabled={true}
-                >
-                  {declarationTypes.map((type, index) => (
-                    <TouchableOpacity
-                      key={type.id}
-                      style={[
-                        styles.dropdownItem,
-                        index === declarationTypes.length - 1 && styles.dropdownItemLast
-                      ]}
-                      onPress={() => {
-                        updateFormData('id_declaration_type', type.id);
-                        setShowTypeDropdown(false);
-                      }}
-                    >
+              {/* Declaration Type */}
+              <TouchableOpacity
+                style={[styles.inputContainer, errors.id_declaration_type && styles.inputError]}
+                onPress={() => setShowTypeDropdown(!showTypeDropdown)}
+              >
+                <Text style={[styles.inputText, !formData.id_declaration_type && styles.placeholderText]}>
+                  {getDeclarationTypeTitle(formData.id_declaration_type)}
+                </Text>
+                <Ionicons name={showTypeDropdown ? 'chevron-up' : 'chevron-down'} size={20} color="#9ca3af" />
+              </TouchableOpacity>
+              {showTypeDropdown && (
+                <View style={styles.dropdownList}>
+                  {declarationTypes.map(type => (
+                    <TouchableOpacity key={type.id} style={styles.dropdownItem} onPress={() => { updateFormData('id_declaration_type', type.id); setShowTypeDropdown(false); }}>
                       <Text style={styles.dropdownItemText}>{type.title}</Text>
                     </TouchableOpacity>
                   ))}
-                </ScrollView>
-              </View>
-            )}
-            {errors.id_declaration_type && (
-              <Text style={styles.errorText}>{errors.id_declaration_type}</Text>
-            )}
-          </View>
-
-          {/* Severity */}
-          <View style={styles.fieldContainer}>
-            <Text style={styles.fieldLabel}>Severity *</Text>
-            <View style={styles.severityContainer}>
-              <View style={styles.severityHeader}>
-                <Text style={[styles.severityValue, { color: getSeverityColor(formData.severite) }]}>
-                  {formData.severite}/10
-                </Text>
-                <View style={[styles.severityBadge, { backgroundColor: getSeverityColor(formData.severite) }]}>
-                  <Text style={styles.severityBadgeText}>{getSeverityText(formData.severite)}</Text>
                 </View>
-              </View>
-              <View style={styles.severitySlider}>
-                {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((value) => (
-                  <TouchableOpacity
-                    key={value}
-                    style={[
-                      styles.severityDot,
-                      formData.severite >= value && [styles.severityDotActive, { backgroundColor: getSeverityColor(formData.severite) }],
-                      formData.severite === value && [styles.severityDotSelected, { borderColor: getSeverityColor(formData.severite) }],
-                    ]}
-                    onPress={() => updateFormData('severite', value)}
-                    activeOpacity={0.7}
-                  />
-                ))}
-              </View>
-            </View>
-            {errors.severite && (
-              <Text style={styles.errorText}>{errors.severite}</Text>
-            )}
-          </View>
-
-          {/* Zone */}
-          <View style={styles.fieldContainer}>
-            <Text style={styles.fieldLabel}>Zone *</Text>
-            <TouchableOpacity
-              style={[styles.dropdown, errors.id_zone && styles.dropdownError]}
-              onPress={() => setShowZoneDropdown(!showZoneDropdown)}
-            >
-              {formData.id_zone ? (
-                <View style={styles.zoneSelectedRow}>
-                  {getZoneLogo(formData.id_zone) && (
-                    <Image
-                      source={{ uri: getZoneLogo(formData.id_zone)! }}
-                      style={styles.zoneLogo}
-                    />
-                  )}
-                  <Text style={styles.dropdownText}>{getZoneTitle(formData.id_zone)}</Text>
-                </View>
-              ) : (
-                <Text style={[styles.dropdownText, styles.placeholderText]}>Select zone</Text>
               )}
-              <Ionicons
-                name={showZoneDropdown ? 'chevron-up' : 'chevron-down'}
-                size={20}
-                color="#8E8E93"
+              {errors.id_declaration_type && <Text style={styles.errorText}>{errors.id_declaration_type}</Text>}
+              
+              {/* Code */}
+              <TextInput
+                style={[styles.inputContainer, styles.textInput, { marginTop: 12 }, errors.code_declaration && styles.inputError]}
+                placeholder="Code de la déclaration *"
+                placeholderTextColor="#9ca3af"
+                value={formData.code_declaration}
+                onChangeText={value => updateFormData('code_declaration', value)}
               />
-            </TouchableOpacity>
-            {showZoneDropdown && (
-              <View style={styles.dropdownList}>
-                <ScrollView 
-                  showsVerticalScrollIndicator={false}
-                  nestedScrollEnabled={true}
-                >
-                  {zones.map((zone, index) => (
-                    <TouchableOpacity
-                      key={zone.id}
-                      style={[
-                        styles.dropdownItem,
-                        index === zones.length - 1 && styles.dropdownItemLast
-                      ]}
-                      onPress={() => {
-                        updateFormData('id_zone', zone.id);
-                        setShowZoneDropdown(false);
-                      }}
-                    >
-                      <View style={styles.zoneItemRow}>
-                        {zone.logo ? (
-                          <Image source={{ uri: `${API_CONFIG.BASE_URL}${zone.logo}` }} style={styles.zoneLogo} />
-                        ) : null}
-                        <Text style={styles.dropdownItemText}>{zone.title}</Text>
-                      </View>
+              {errors.code_declaration && <Text style={styles.errorText}>{errors.code_declaration}</Text>}
+              
+              {/* Title */}
+              <TextInput
+                style={[styles.inputContainer, styles.textInput, { marginTop: 12 }, errors.title && styles.inputError]}
+                placeholder="Titre *"
+                placeholderTextColor="#9ca3af"
+                value={formData.title}
+                onChangeText={value => updateFormData('title', value)}
+              />
+              {errors.title && <Text style={styles.errorText}>{errors.title}</Text>}
+            </View>
+
+            {/* Context Card */}
+            <View style={styles.card}>
+              <View style={styles.cardHeader}>
+                <View style={styles.cardIconWrap}><Ionicons name="briefcase-outline" size={18} color="#11224e" /></View>
+                <View style={styles.cardHeaderText}>
+                  <Text style={styles.cardTitle}>Contexte</Text>
+                  <Text style={styles.cardHint}>Projet, zone, date et déclarant</Text>
+                </View>
+              </View>
+              {/* Project */}
+              <TouchableOpacity style={styles.inputContainer} onPress={() => setShowProjectDropdown(!showProjectDropdown)}>
+                <Text style={[styles.inputText, !formData.id_project && styles.placeholderText]}>
+                  {getProjectTitle(formData.id_project || '')}
+                </Text>
+                <Ionicons name={showProjectDropdown ? 'chevron-up' : 'chevron-down'} size={20} color="#9ca3af" />
+              </TouchableOpacity>
+              {showProjectDropdown && (
+                <View style={styles.dropdownList}>
+                  <TouchableOpacity style={styles.dropdownItem} onPress={() => { updateFormData('id_project', undefined); setShowProjectDropdown(false); }}>
+                    <Text style={styles.dropdownItemText}>Aucun projet</Text>
+                  </TouchableOpacity>
+                  {projects.map(project => (
+                    <TouchableOpacity key={project.id} style={styles.dropdownItem} onPress={() => { updateFormData('id_project', project.id); setShowProjectDropdown(false); }}>
+                      <Text style={styles.dropdownItemText}>{project.title}</Text>
                     </TouchableOpacity>
                   ))}
-                </ScrollView>
-              </View>
-            )}
-            {errors.id_zone && (
-              <Text style={styles.errorText}>{errors.id_zone}</Text>
-            )}
-          </View>
-
-          {/* Location Coordinates */}
-          <View style={styles.fieldContainer}>
-            <Text style={styles.fieldLabel}>Location </Text>
-            <TouchableOpacity
-              style={styles.mapButton}
-              onPress={handleLocationToggle}
-              activeOpacity={0.8}
-            >
-              <View style={styles.miniMapPreview}>
-                <WebView
-                  source={{ html: getMiniMapHtml() }}
-                  style={styles.miniMap}
-                  javaScriptEnabled={true}
-                  domStorageEnabled={true}
-                  scrollEnabled={false}
-                  showsHorizontalScrollIndicator={false}
-                  showsVerticalScrollIndicator={false}
-                  bounces={false}
-                  pointerEvents="none"
-                />
-                <View style={styles.miniMapOverlay}>
-                  <Text style={styles.miniMapCoordinates}>
-                    {getCoordinateDisplay()}
-                  </Text>
                 </View>
-              </View>
-              <Ionicons
-                name={showLocationInput ? 'chevron-up' : 'chevron-down'}
-                size={20}
-                color="#8E8E93"
-              />
-            </TouchableOpacity>
-            
-            {showLocationInput && (
-              <View style={styles.mapContainer}>
-                <WebView
-                  source={{ html: mapHtml }}
-                  style={styles.map}
-                  onMessage={handleMapMessage}
-                  javaScriptEnabled={true}
-                  domStorageEnabled={true}
-                  startInLoadingState={true}
-                  showsHorizontalScrollIndicator={false}
-                  showsVerticalScrollIndicator={false}
-                  scrollEnabled={true}
-                  bounces={false}
-                />
-                <View style={styles.mapInstructions}>
-                  <Text style={styles.mapInstructionsText}>
-                    Tap anywhere on the map to select location, then tap &quot;Select This Location&quot;
-                  </Text>
-                </View>
-              </View>
-            )}
-          </View>
+              )}
 
-          {/* Description */}
-          <View style={styles.fieldContainer}>
-            <Text style={styles.fieldLabel}>Description *</Text>
-            <TextInput
-              style={[
-                styles.textArea,
-                errors.description && styles.textAreaError
-              ]}
-              placeholder="Describe the issue or request..."
-              placeholderTextColor="#8E8E93"
-              value={formData.description}
-              onChangeText={(value) => updateFormData('description', value)}
-              multiline
-              numberOfLines={4}
-              textAlignVertical="top"
-            />
-            {errors.description && (
-              <Text style={styles.errorText}>{errors.description}</Text>
-            )}
-          </View>
-
-          {/* Photo Upload */}
-          <View style={styles.fieldContainer}>
-            <Text style={styles.fieldLabel}>Photos (Optional)</Text>
-            
-            {/* Add Photo Button */}
-            <TouchableOpacity style={styles.photoUpload} onPress={showPhotoOptions}>
-              <Ionicons name="camera-outline" size={24} color="#8E8E93" />
-              <Text style={styles.photoUploadText}>Add photos</Text>
-            </TouchableOpacity>
-            
-            {/* Selected Photos Grid */}
-            {selectedPhotos.length > 0 && (
-              <View style={styles.photoGrid}>
-                {selectedPhotos.map((photo, index) => (
-                  <View key={index} style={styles.photoItem}>
-                    <Image source={{ uri: photo.uri }} style={styles.photoThumbnail} />
-                    <TouchableOpacity
-                      style={styles.removePhotoButton}
-                      onPress={() => removePhoto(index)}
-                    >
-                      <Ionicons name="close-circle" size={20} color="#FF3B30" />
+              {/* Zone */}
+              <TouchableOpacity style={[styles.inputContainer, { marginTop: 12 }, errors.id_zone && styles.inputError]} onPress={() => setShowZoneDropdown(!showZoneDropdown)}>
+                 {formData.id_zone && getZoneLogo(formData.id_zone) && (
+                    <Image source={{ uri: getZoneLogo(formData.id_zone)! }} style={styles.zoneLogo} />
+                  )}
+                <Text style={[styles.inputText, !formData.id_zone && styles.placeholderText]}>
+                  {getZoneTitle(formData.id_zone)}
+                </Text>
+                <Ionicons name={showZoneDropdown ? 'chevron-up' : 'chevron-down'} size={20} color="#9ca3af" />
+              </TouchableOpacity>
+              {showZoneDropdown && (
+                <View style={styles.dropdownList}>
+                  {zones.map(zone => (
+                    <TouchableOpacity key={zone.id} style={styles.dropdownItem} onPress={() => { updateFormData('id_zone', zone.id); setShowZoneDropdown(false); }}>
+                      {zone.logo ? (<Image source={{ uri: `${API_CONFIG.BASE_URL}${zone.logo}` }} style={styles.zoneLogo} />) : <View style={styles.zoneLogoPlaceholder}/>}
+                      <Text style={styles.dropdownItemText}>{zone.title}</Text>
                     </TouchableOpacity>
-                  </View>
-                ))}
+                  ))}
+                </View>
+              )}
+              {errors.id_zone && <Text style={styles.errorText}>{errors.id_zone}</Text>}
+              
+              {/* Date */}
+              <TouchableOpacity style={[styles.inputContainer, { marginTop: 12 }, errors.date_declaration && styles.inputError]} onPress={() => setShowDatePicker(true)}>
+                <Ionicons name="calendar-outline" size={18} color="#6b7280" />
+                <Text style={[styles.inputText, !formData.date_declaration && styles.placeholderText]}>
+                  {formData.date_declaration ? formatDisplayDate(formData.date_declaration) : 'Sélectionner la date'}
+                </Text>
+              </TouchableOpacity>
+              {errors.date_declaration && <Text style={styles.errorText}>{errors.date_declaration}</Text>}
+              
+              {/* Declarant */}
+               <TouchableOpacity style={[styles.inputContainer, { marginTop: 12 }]} onPress={() => setShowDeclarantModal(true)}>
+                <Ionicons name="person-outline" size={18} color="#6b7280" />
+                <Text style={[styles.inputText, !formData.id_declarent && styles.placeholderText]}>
+                  {getDeclarantName(formData.id_declarent || '')}
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Severity and Description Card */}
+            <View style={styles.card}>
+              <View style={styles.cardHeader}>
+                <View style={styles.cardIconWrap}><Ionicons name="information-circle-outline" size={18} color="#11224e" /></View>
+                <View style={styles.cardHeaderText}>
+                  <Text style={styles.cardTitle}>Détails</Text>
+                  <Text style={styles.cardHint}>Niveau de sévérité et description</Text>
+                </View>
               </View>
-            )}
+              {/* Severity */}
+              <View style={styles.severityContainer}>
+                <View style={styles.severityHeader}>
+                  <Text style={[styles.severityValue, { color: getSeverityColor(formData.severite) }]}>
+                    {formData.severite}/10
+                  </Text>
+                  <View style={[styles.severityBadge, { backgroundColor: getSeverityColor(formData.severite) }]}>
+                    <Text style={styles.severityBadgeText}>{getSeverityText(formData.severite)}</Text>
+                  </View>
+                </View>
+                <View style={styles.severitySlider}>
+                  {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(value => (
+                    <TouchableOpacity
+                      key={value}
+                      style={[
+                        styles.severityDot,
+                        formData.severite >= value && [styles.severityDotActive, { backgroundColor: getSeverityColor(formData.severite) }],
+                        formData.severite === value && [styles.severityDotSelected, { borderColor: getSeverityColor(formData.severite) }],
+                      ]}
+                      onPress={() => updateFormData('severite', value)}
+                      activeOpacity={0.7}
+                    />
+                  ))}
+                </View>
+              </View>
+              {errors.severite && <Text style={styles.errorText}>{errors.severite}</Text>}
+              
+              {/* Description */}
+              <TextInput
+                style={[styles.inputContainer, styles.textArea, { marginTop: 16 }, errors.description && styles.inputError]}
+                placeholder="Description *"
+                placeholderTextColor="#9ca3af"
+                value={formData.description}
+                onChangeText={value => updateFormData('description', value)}
+                multiline
+                textAlignVertical="top"
+              />
+              {errors.description && <Text style={styles.errorText}>{errors.description}</Text>}
+            </View>
+
+            {/* Photos Card */}
+            <View style={styles.card}>
+              <View style={styles.cardHeader}>
+                <View style={styles.cardIconWrap}><Ionicons name="images-outline" size={18} color="#11224e" /></View>
+                <View style={styles.cardHeaderText}>
+                  <Text style={styles.cardTitle}>Photos</Text>
+                  <Text style={styles.cardHint}>Ajouter des photos (optionnel)</Text>
+                </View>
+              </View>
+              <TouchableOpacity style={styles.photoPickerButton} onPress={showPhotoOptions}>
+                 <Ionicons name="camera-outline" size={24} color="#475569" />
+                 <Text style={styles.photoPickerText}>Ajouter des Photos</Text>
+               </TouchableOpacity>
+
+              {selectedPhotos.length > 0 && (
+                <View style={styles.photoGrid}>
+                  {selectedPhotos.map((photo, index) => (
+                    <View key={index} style={styles.photoItem}>
+                      <Image source={{ uri: photo.uri }} style={styles.photoThumbnail} />
+                      <TouchableOpacity style={styles.removePhotoButton} onPress={() => removePhoto(index)}>
+                        <Ionicons name="close-circle" size={20} color="#FF3B30" />
+                      </TouchableOpacity>
+                    </View>
+                  ))}
+                </View>
+              )}
+            </View>
             
-            <Text style={styles.photoUploadHint}>
-              {selectedPhotos.length > 0 
-                ? `${selectedPhotos.length} photo(s) selected`
-                : 'Tap to add photos from camera or gallery'
-              }
-            </Text>
+            {/* Location Card */}
+            <View style={styles.card}>
+              <View style={styles.cardHeader}>
+                <View style={styles.cardIconWrap}><Ionicons name="location-outline" size={18} color="#11224e" /></View>
+                <View style={styles.cardHeaderText}>
+                  <Text style={styles.cardTitle}>Localisation</Text>
+                  <Text style={styles.cardHint}>Coordonnées géographiques (optionnel)</Text>
+                </View>
+              </View>
+              <TouchableOpacity style={styles.mapButton} onPress={handleLocationToggle}>
+                <View style={styles.miniMapPreview}>
+                  <WebView
+                    source={{ html: getMiniMapHtml() }}
+                    style={styles.miniMap}
+                    javaScriptEnabled={true}
+                    scrollEnabled={false}
+                    bounces={false}
+                    pointerEvents="none"
+                  />
+                   <View style={styles.miniMapOverlay}>
+                     <Text style={styles.miniMapCoordinates}>{getCoordinateDisplay()}</Text>
+                   </View>
+                </View>
+              </TouchableOpacity>
+               {showLocationInput && (
+                 <View style={styles.mapContainer}>
+                   <WebView
+                     source={{ html: mapHtml }}
+                     style={styles.map}
+                     onMessage={handleMapMessage}
+                     javaScriptEnabled={true}
+                     startInLoadingState={true}
+                   />
+                 </View>
+               )}
+            </View>
+            
+            {/* Spacer */}
+            <View style={{ height: 40 }} />
+          </ScrollView>
+
+          {/* Action Buttons */}
+          <View style={styles.actions}>
+            <TouchableOpacity
+              style={styles.submitButton}
+              onPress={handleSubmit}
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <Text style={styles.submitButtonText}>Création en cours...</Text>
+              ) : (
+                <Text style={styles.submitButtonText}>Créer la Déclaration</Text>
+              )}
+            </TouchableOpacity>
           </View>
-        </ScrollView>
+        </SafeAreaView>
+      </KeyboardAvoidingView>
 
-        {/* Action Buttons */}
-        <View style={styles.actions}>
-          <TouchableOpacity
-            style={styles.cancelButton}
-            onPress={onClose}
-            disabled={isLoading}
-          >
-            <Text style={styles.cancelButtonText}>Cancel</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.submitButton, isLoading && styles.submitButtonDisabled]}
-            onPress={handleSubmit}
-            disabled={isLoading}
-          >
-            {isLoading ? (
-              <Text style={styles.submitButtonText}>Creating...</Text>
-            ) : (
-              <Text style={styles.submitButtonText}>Create Declaration</Text>
-            )}
-          </TouchableOpacity>
-        </View>
-      </SafeAreaView>
-
+      <DateTimePickerModal
+        isVisible={showDatePicker}
+        mode="date"
+        date={formData.date_declaration ? new Date(formData.date_declaration) : new Date()}
+        maximumDate={new Date()}
+        onConfirm={selectedDate => { setShowDatePicker(false); if (selectedDate) updateFormData('date_declaration', toISODate(selectedDate)); }}
+        onCancel={() => setShowDatePicker(false)}
+      />
+      
       {/* Declarant Selection Modal */}
       <Modal
         visible={showDeclarantModal}
@@ -946,7 +787,7 @@ export default function CreateDeclarationModal({
             >
               <Ionicons name="close" size={24} color="#1C1C1E" />
             </TouchableOpacity>
-            <Text style={styles.modalHeaderTitle}>Select Declarant</Text>
+            <Text style={styles.modalHeaderTitle}>Sélectionner le Déclarant</Text>
             <View style={styles.modalPlaceholder} />
           </View>
 
@@ -955,7 +796,7 @@ export default function CreateDeclarationModal({
             <View style={styles.modalSearchBar}>
               <Ionicons name="search" size={18} color="#8E8E93" />
               <TextInput
-                placeholder="Search declarants..."
+                placeholder="Rechercher les déclarantes..."
                 placeholderTextColor="#8E8E93"
                 value={declarantSearchQuery}
                 onChangeText={setDeclarantSearchQuery}
@@ -981,7 +822,7 @@ export default function CreateDeclarationModal({
               }}
             >
               <View style={styles.modalDeclarantInfo}>
-                <Text style={styles.modalDeclarantName}>No declarant</Text>
+                <Text style={styles.modalDeclarantName}>Aucun déclarant</Text>
               </View>
               {!formData.id_declarent && (
                 <Ionicons name="checkmark" size={20} color="#007AFF" />
@@ -999,7 +840,7 @@ export default function CreateDeclarationModal({
             >
               <View style={styles.modalDeclarantInfo}>
                 <Text style={styles.modalDeclarantName}>{`${currentUser.firstname} ${currentUser.lastname}`}</Text>
-                <Text style={styles.modalDeclarantSubtitle}>(You)</Text>
+                <Text style={styles.modalDeclarantSubtitle}>(Vous)</Text>
               </View>
               {formData.id_declarent === currentUser.id && (
                 <Ionicons name="checkmark" size={20} color="#007AFF" />
@@ -1037,94 +878,121 @@ export default function CreateDeclarationModal({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F2F2F7',
+    backgroundColor: '#F8FAFC',
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
     backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
-    borderBottomColor: '#E5E5EA',
+    borderBottomColor: '#e5e7eb'
   },
   closeButton: {
     padding: 8,
   },
+  headerCenter: {
+    alignItems: 'center',
+    flex: 1
+  },
   headerTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#1C1C1E',
+    color: '#11224e'
+  },
+  headerSubtitle: {
+    fontSize: 12,
+    color: '#64748b',
+    marginTop: 2
   },
   placeholder: {
     width: 40,
   },
   manifolderInfoContainer: {
-    backgroundColor: '#FFF7ED',
-    borderLeftWidth: 4,
-    borderLeftColor: '#f87b1b',
-    marginHorizontal: 16,
-    marginVertical: 8,
-    borderRadius: 8,
-    padding: 12,
-  },
-  manifolderInfoHeader: {
+    backgroundColor: '#FFFBEB',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#FDE68A',
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 8,
     gap: 8,
   },
-  manifolderInfoTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#f87b1b',
-  },
-  manifolderInfoContent: {
-    gap: 4,
-  },
   manifolderInfoText: {
-    fontSize: 14,
-    color: '#1C1C1E',
-    lineHeight: 20,
-  },
-  manifolderInfoLabel: {
-    fontWeight: '600',
-    color: '#f87b1b',
+    fontSize: 12,
+    color: '#92400E',
+    flex: 1,
   },
   form: {
     flex: 1,
-    padding: 20,
+    paddingHorizontal: 16,
   },
-  fieldContainer: {
-    marginBottom: 24,
+  card: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 16,
+    marginTop: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 2,
+    borderWidth: 1,
+    borderColor: '#f1f5f9'
   },
-  fieldLabel: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#1C1C1E',
-    marginBottom: 8,
-  },
-  dropdown: {
+  cardHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    marginBottom: 16
+  },
+  cardIconWrap: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: '#eef2ff',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 10
+  },
+  cardHeaderText: {
+    flex: 1
+  },
+  cardTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#11224e'
+  },
+  cardHint: {
+    fontSize: 12,
+    color: '#64748b',
+    marginTop: 2
+  },
+  inputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: '#E5E5EA',
+    borderColor: '#d1d5db',
     borderRadius: 12,
     paddingHorizontal: 16,
-    paddingVertical: 16,
+    paddingVertical: 14,
+    gap: 8,
   },
-  dropdownError: {
+  inputError: {
     borderColor: '#FF3B30',
   },
-  dropdownText: {
+  textInput: {
+    paddingVertical: 14,
+  },
+  inputText: {
     fontSize: 16,
-    color: '#1C1C1E',
+    color: '#11224e',
     flex: 1,
   },
   placeholderText: {
-    color: '#8E8E93',
+    color: '#9ca3af',
   },
   dropdownList: {
     backgroundColor: '#FFFFFF',
@@ -1133,60 +1001,44 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     marginTop: 4,
     maxHeight: 200,
-    overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
   },
   dropdownItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#F2F2F7',
-  },
-  dropdownItemLast: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 0,
+    borderBottomColor: '#f3f4f6',
+    gap: 10,
   },
   dropdownItemText: {
     fontSize: 16,
-    color: '#1C1C1E',
-  },
-  zoneItemRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-  },
-  zoneSelectedRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    flex: 1,
+    color: '#11224e',
   },
   zoneLogo: {
     width: 24,
     height: 24,
     borderRadius: 4,
   },
+  zoneLogoPlaceholder: {
+    width: 24,
+    height: 24,
+    borderRadius: 4,
+    backgroundColor: '#f1f5f9',
+  },
   severityContainer: {
     alignItems: 'center',
+    marginTop: 8,
   },
   severityHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    marginBottom: 12,
+    marginBottom: 16,
   },
   severityValue: {
     fontSize: 18,
     fontWeight: '600',
-    marginBottom: 0,
   },
   severityBadge: {
     paddingHorizontal: 12,
@@ -1197,17 +1049,17 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '600',
     color: '#FFFFFF',
-    textTransform: 'uppercase',
   },
   severitySlider: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    justifyContent: 'space-between',
+    width: '100%',
   },
   severityDot: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
     backgroundColor: '#E5E5EA',
     borderWidth: 2,
     borderColor: '#E5E5EA',
@@ -1220,61 +1072,34 @@ const styles = StyleSheet.create({
     borderWidth: 3,
   },
   textArea: {
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#E5E5EA',
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 16,
-    fontSize: 16,
-    color: '#1C1C1E',
     minHeight: 100,
+    alignItems: 'flex-start',
   },
-  textInput: {
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#E5E5EA',
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    fontSize: 16,
-    color: '#1C1C1E',
-  },
-  textAreaError: {
-    borderColor: '#FF3B30',
-  },
-  photoUpload: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#F2F2F7',
+  photoPickerButton: {
     borderWidth: 2,
-    borderColor: '#E5E5EA',
+    borderColor: '#d1d5db',
     borderStyle: 'dashed',
     borderRadius: 12,
-    paddingVertical: 24,
+    paddingVertical: 32,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#f8fafc',
     gap: 8,
   },
-  photoUploadText: {
-    fontSize: 16,
-    color: '#8E8E93',
-  },
-  photoUploadHint: {
-    fontSize: 12,
-    color: '#8E8E93',
-    textAlign: 'center',
-    marginTop: 8,
+  photoPickerText: {
+    color: '#475569',
+    fontWeight: '600',
   },
   photoGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 8,
-    marginTop: 12,
+    marginTop: 16,
   },
   photoItem: {
     position: 'relative',
-    width: 80,
-    height: 80,
+    width: (width - 32 - 16 * 3) / 4, // 4 items per row
+    aspectRatio: 1,
   },
   photoThumbnail: {
     width: '100%',
@@ -1286,118 +1111,73 @@ const styles = StyleSheet.create({
     top: -8,
     right: -8,
     backgroundColor: '#FFFFFF',
-    borderRadius: 10,
+    borderRadius: 12,
   },
   errorText: {
-    fontSize: 14,
+    fontSize: 12,
     color: '#FF3B30',
-    marginTop: 4,
+    marginTop: 6,
+    marginLeft: 4,
   },
   actions: {
-    flexDirection: 'row',
-    padding: 20,
-    gap: 12,
+    padding: 16,
     backgroundColor: '#FFFFFF',
     borderTopWidth: 1,
-    borderTopColor: '#E5E5EA',
-  },
-  cancelButton: {
-    flex: 1,
-    backgroundColor: '#F2F2F7',
-    borderRadius: 12,
-    paddingVertical: 16,
-    alignItems: 'center',
-  },
-  cancelButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#1C1C1E',
+    borderTopColor: '#e5e7eb',
   },
   submitButton: {
-    flex: 1,
-    backgroundColor: '#007AFF',
+    backgroundColor: '#f87b1b',
     borderRadius: 12,
     paddingVertical: 16,
     alignItems: 'center',
+    justifyContent: 'center',
   },
   submitButtonDisabled: {
-    backgroundColor: '#B0B0B0',
+    backgroundColor: '#d1d5db',
   },
   submitButtonText: {
     fontSize: 16,
     fontWeight: '600',
     color: '#FFFFFF',
   },
-  // Map styles
   mapButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#E5E5EA',
     borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 16,
-  },
-  mapButtonText: {
-    fontSize: 16,
-    color: '#1C1C1E',
-    flex: 1,
-    marginLeft: 8,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
   },
   mapContainer: {
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#E5E5EA',
+    height: 400,
+    marginTop: 12,
     borderRadius: 12,
-    marginTop: 4,
     overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
   },
   map: {
-    height: 400,
-    width: '100%',
-    borderRadius: 8,
-  },
-  mapInstructions: {
-    padding: 12,
-    backgroundColor: '#F2F2F7',
-    borderTopWidth: 1,
-    borderTopColor: '#E5E5EA',
-  },
-  mapInstructionsText: {
-    fontSize: 12,
-    color: '#8E8E93',
-    textAlign: 'center',
-  },
-  // Mini map styles
-  miniMapPreview: {
     flex: 1,
-    height: 60,
-    borderRadius: 8,
-    overflow: 'hidden',
+  },
+  miniMapPreview: {
+    height: 100,
     position: 'relative',
   },
   miniMap: {
-    width: '100%',
-    height: '100%',
+    ...StyleSheet.absoluteFillObject,
   },
   miniMapOverlay: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
-    padding: 4,
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0, 0, 0, 0.4)',
+    justifyContent: 'center',
     alignItems: 'center',
   },
   miniMapCoordinates: {
-    fontSize: 10,
+    fontSize: 12,
     color: '#FFFFFF',
     fontWeight: '600',
     textAlign: 'center',
+    padding: 4,
   },
-  // Modal styles
+  // Modal styles (for declarant selection)
   modalContainer: {
     flex: 1,
     backgroundColor: '#F2F2F7',

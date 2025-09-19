@@ -1,5 +1,6 @@
 import API_CONFIG from '@/app/config/api';
 import AppHeader from '@/components/AppHeader';
+import CreateManifolderModal from '@/components/CreateManifolderModal';
 import ManifoldDetails from '@/components/ManifoldDetails';
 import ManifolderQuestions from '@/components/ManifolderQuestions';
 import { useAuth } from '@/contexts/AuthContext';
@@ -9,9 +10,9 @@ import { ManifolderListItem, ManifolderType } from '@/types/manifolder';
 import Ionicons from '@expo/vector-icons/build/Ionicons';
 import { Image } from 'expo-image';
 import React, { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Alert, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
-import DateTimePickerModal from 'react-native-modal-datetime-picker';
+import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+
 
 function formatDate(d: Date) {
   const y = d.getFullYear();
@@ -39,6 +40,8 @@ export default function ManifolderTab() {
   const [currentView, setCurrentView] = useState<'list' | 'questions' | 'details'>('list');
   const [selectedManifoler, setSelectedManifolder] = useState<string | null>(null);
   const [selectedManifolderData, setSelectedManifolderData] = useState<ManifolderListItem | undefined>(undefined);
+
+  const [isCreateModalVisible, setIsCreateModalVisible] = useState(false);
 
   const [projectId, setProjectId] = useState<string>('');
   const [zoneId, setZoneId] = useState<string>('');
@@ -99,66 +102,42 @@ export default function ManifolderTab() {
     return () => { mounted = false; };
   }, [token]);
 
-  async function handleSubmit() {
-    if (!projectId || !zoneId || !typeId || !title.trim()) {
-      Alert.alert('Validation', 'Please select Project, Zone, Type and enter a Title');
-      return;
-    }
+  const handleCreateSuccess = async (result: { manifolderId: string; code_formatted: string }) => {
+    setIsCreateModalVisible(false);
 
     try {
-      setSubmitting(true);
-      const result = await manifolderService.createManifolder({
-        id_project: projectId,
-        id_zone: zoneId,
-        id_type: typeId,
-        date: formatDate(date),
-        heur_d: heurD ? formatTime(heurD) : undefined,
-        heur_f: heurF ? formatTime(heurF) : undefined,
-        title: title.trim(),
-        description: description.trim() || undefined,
-      }, token!);
+      // Re-fetch the list to get all data for the new item
+      const updatedManifolders = await manifolderService.getManifolders({}, token!);
+      setManifolders(updatedManifolders);
 
-      
-      // Close modal and reset form
-      setIsModalVisible(false);
-      setZoneId('');
-      setTypeId('');
-      setHeurD(null);
-      setHeurF(null);
-      setTitle('');
-      setDescription('');
-      
-      // Reload manifolders list
-      try {
-        const updatedManifolders = await manifolderService.getManifolders({}, token!);
-        setManifolders(updatedManifolders);
-      } catch {
-        console.log('Failed to reload manifolders');
-      }
-      
-      // Automatically navigate to questions view for the newly created manifolder
-      if (result.manifolderId) {
+      // Find the full data object for the newly created manifolder
+      const newManifolderData = updatedManifolders.find(m => m.id === result.manifolderId);
+
+      if (result.manifolderId && newManifolderData) {
+        // Set both the ID and the data object for the new manifolder
         setSelectedManifolder(result.manifolderId);
+        setSelectedManifolderData(newManifolderData);
         setCurrentView('questions');
         
-        // Show success message with option to go back to list
         Alert.alert(
-          'Manifolder Created Successfully!',
-          `Manifolder ${result.code_formatted} has been created. You can now answer the questions and add signatures.`,
+          'Manifolder créé avec succès!',
+          `Le manifolder ${result.code_formatted} a été créé. Vous pouvez maintenant répondre aux questions et ajouter des signatures.`,
           [
-            { text: 'Back to List', onPress: handleBackToList },
-            { text: 'Continue', style: 'default' }
+            { text: 'Retour à la liste', onPress: handleBackToList },
+            { text: 'Continuer', style: 'default' }
           ]
         );
       } else {
-        Alert.alert('Success', 'Manifolder created successfully');
+        // Fallback if the new manifolder isn't found
+        Alert.alert('Succès', 'Manifolder créé avec succès. Rafraîchissement de la liste...');
+        const refreshedManifolders = await manifolderService.getManifolders({}, token!);
+        setManifolders(refreshedManifolders);
       }
-    } catch (e: any) {
-      Alert.alert('Error', e.message || 'Failed to create manifolder');
-    } finally {
-      setSubmitting(false);
+    } catch (e){
+      console.log('Failed to reload manifolders', e);
+      Alert.alert('Erreur', 'Impossible de rafraîchir la liste des manifolders.');
     }
-  }
+  };
 
   const handleManifolderSelect = (manifolderId: string, manifolderData?: ManifolderListItem) => {
     setSelectedManifolder(manifolderId);
@@ -186,9 +165,8 @@ export default function ManifolderTab() {
 
   const renderManifolderList = () => (
     <View style={styles.body}>
-      {manifolders.length > 0 && (
-        <View style={styles.manifoldersSection}>
-          <View style={styles.sectionHeader}>
+      <View style={styles.manifoldersSection}>
+      <View style={styles.sectionHeader}>
           <View style={styles.logoContainer}>
             <Image
               source={require('../../assets/icons/manifolder.png')}
@@ -196,64 +174,55 @@ export default function ManifolderTab() {
               resizeMode="contain"
             />
           </View>
-          <Pressable onPress={() => setIsModalVisible(true)} style={styles.createButton}>
+          <Pressable onPress={() => setIsCreateModalVisible(true)} style={styles.createButton}>
           <Ionicons name="add-circle" size={20} color="#f87b1b" />
               <Text style={styles.createButtonText}>Ajouter</Text>
             </Pressable>
           </View>
+        {manifolders.length > 0 ? (
           <ScrollView style={styles.manifoldersList} showsVerticalScrollIndicator={false}>
-            {manifolders.slice(0, 10).map((manifolder) => (
-              <Pressable
+            {manifolders.map((manifolder) => (
+              <TouchableOpacity
                 key={manifolder.id}
                 style={styles.manifolderCard}
                 onPress={() => handleManifolderSelect(manifolder.id, manifolder)}
               >
-                <View style={styles.manifolderCardContent}>
-                  {/* Card Header */}
-                  <View style={styles.cardHeader}>
-                    <Text style={styles.manifolderTitle}>{manifolder.title}</Text>
-                    <View style={styles.statusTag}>
-                      <Text style={styles.statusTagText}>{manifolder.code_formatted}</Text>
-                    </View>
+                <View style={styles.cardTopRow}>
+                  <View style={styles.cardType}>
+                    <Ionicons name="document-text-outline" size={14} color="#11224e" />
+                    <Text style={styles.cardTypeText}>{manifolder.type_title}</Text>
                   </View>
-                  
-                  {/* Card Body */}
-                  <View style={styles.cardBody}>
-                    <View style={styles.manifolderDetails}>
-                      <View style={styles.detailItem}>
-                        <Text style={styles.detailIcon}>🏢</Text>
-                        <Text style={styles.detailText} numberOfLines={1}>{manifolder.project_title}</Text>
-                      </View>
-                      <View style={styles.detailSeparator} />
-                      <View style={styles.detailItem}>
-                        <Text style={styles.detailIcon}>📍</Text>
-                        <Text style={styles.detailText} numberOfLines={1}>{manifolder.zone_title}</Text>
-                      </View>
-                      <View style={styles.detailSeparator} />
-                      <View style={styles.detailItem}>
-                        <Text style={styles.detailIcon}>📋</Text>
-                        <Text style={styles.detailText} numberOfLines={1}>{manifolder.type_title}</Text>
-                      </View>
-                    </View>
-                  </View>
-                  
-                  {/* Card Footer */}
-                  <View style={styles.cardFooter}>
-                    <View style={styles.dateContainer}>
-                      <Text style={styles.dateIcon}>📅</Text>
-                      <Text style={styles.manifolderDate}>{manifolder.date}</Text>
-                    </View>
-                    <View style={styles.actionIndicator}>
-                      <Text style={styles.actionText}>View Details</Text>
-                      <Text style={styles.chevron}>▶</Text>
-                    </View>
+                  <View style={styles.statusTag}>
+                    <Text style={styles.statusTagText}>{manifolder.code_formatted}</Text>
                   </View>
                 </View>
-              </Pressable>
+                <Text style={styles.manifolderTitle}>{manifolder.title}</Text>
+                <View style={styles.cardSeparator} />
+                <View style={styles.cardDetailsRow}>
+                  <View style={styles.detailItem}>
+                    <Ionicons name="briefcase-outline" size={14} color="#6B7280" />
+                    <Text style={styles.detailText} numberOfLines={1}>{manifolder.project_title}</Text>
+                  </View>
+                  <View style={styles.detailItem}>
+                    <Ionicons name="location-outline" size={14} color="#6B7280" />
+                    <Text style={styles.detailText} numberOfLines={1}>{manifolder.zone_title}</Text>
+                  </View>
+                  <View style={styles.detailItem}>
+                    <Ionicons name="calendar-outline" size={14} color="#f87b1b" />
+                    <Text style={styles.detailDate}>{manifolder.date}</Text>
+                  </View>
+                </View>
+              </TouchableOpacity>
             ))}
           </ScrollView>
-        </View>
-      )}
+        ) : (
+          <View style={styles.emptyStateContainer}>
+            <Ionicons name="file-tray-outline" size={64} color="#cbd5e1" />
+            <Text style={styles.emptyStateTitle}>Aucun Manifolder</Text>
+            <Text style={styles.emptyStateSubtitle}>Appuyez sur &apos;Ajouter&apos; pour en créer un nouveau.</Text>
+          </View>
+        )}
+      </View>
     </View>
   );
 
@@ -317,225 +286,14 @@ export default function ManifolderTab() {
         )
       )}
 
-      <Modal
-        visible={isModalVisible}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setIsModalVisible(false)}
-      >
-        <Pressable style={styles.backdrop} onPress={() => setIsModalVisible(false)}>
-          <View />
-        </Pressable>
-        <View style={styles.modalCenter} pointerEvents="box-none">
-          <View style={styles.modalCard}>
-            <Text style={styles.modalTitle}>Create Manifolder</Text>
-            <ScrollView contentContainerStyle={styles.modalContent} showsVerticalScrollIndicator={false}>
-              {/* Photo Upload Section */}
-              <View style={styles.photoUploadSection}>
-                <Text style={styles.label}>Photos (Coming Soon)</Text>
-                <View style={styles.photoGrid}>
-                  <Pressable style={styles.photoPlaceholder} onPress={() => Alert.alert('Coming Soon', 'Photo upload feature will be available soon!')}>
-                    <Text style={styles.photoIcon}>📷</Text>
-                    <Text style={styles.photoLabel}>Photo 1</Text>
-                  </Pressable>
-                  <Pressable style={styles.photoPlaceholder} onPress={() => Alert.alert('Coming Soon', 'Photo upload feature will be available soon!')}>
-                    <Text style={styles.photoIcon}>📷</Text>
-                    <Text style={styles.photoLabel}>Photo 2</Text>
-                  </Pressable>
-                  <Pressable style={styles.photoPlaceholder} onPress={() => Alert.alert('Coming Soon', 'Photo upload feature will be available soon!')}>
-                    <Text style={styles.photoIcon}>📷</Text>
-                    <Text style={styles.photoLabel}>Photo 3</Text>
-                  </Pressable>
-                  <Pressable style={styles.photoPlaceholder} onPress={() => Alert.alert('Coming Soon', 'Photo upload feature will be available soon!')}>
-                    <Text style={styles.photoIcon}>📷</Text>
-                    <Text style={styles.photoLabel}>Photo 4</Text>
-                  </Pressable>
-                </View>
-              </View>
-
-              <Text style={styles.label}>Title *</Text>
-              <TextInput
-                style={styles.textInput}
-                value={title}
-                onChangeText={setTitle}
-                placeholder="Enter manifolder title..."
-                maxLength={100}
-              />
-              <Text style={styles.label}>Project</Text>
-              <View style={styles.dropdownContainer}>
-                <Pressable style={styles.selectHeader} onPress={() => setShowProjectDropdown((s) => !s)}>
-                  <Text style={styles.inputText}>
-                    {projectId ? (projects.find(p => p.id === projectId)?.title || projectId) : 'Select project'}
-                  </Text>
-                </Pressable>
-                {showProjectDropdown ? (
-                  <View style={styles.selectBox}>
-                    <ScrollView style={{ maxHeight: 220 }}>
-                      {projects.map((p) => (
-                        <Pressable
-                          key={p.id}
-                          style={styles.selectItem}
-                          onPress={() => {
-                            setProjectId(p.id);
-                            setZoneId('');
-                            setShowProjectDropdown(false);
-                          }}
-                        >
-                          <View style={styles.selectItemInner}>
-                            <Text style={styles.optionText}>{p.title}</Text>
-                            {projectId === p.id ? <Text style={styles.checkMark}>✓</Text> : null}
-                          </View>
-                        </Pressable>
-                      ))}
-                    </ScrollView>
-                  </View>
-                ) : null}
-              </View>
-
-              <Text style={styles.label}>Zone</Text>
-              <View style={styles.dropdownContainer}>
-                <Pressable style={styles.selectHeader} onPress={() => setShowZoneDropdown((s) => !s)}>
-                  {zoneId ? (
-                    <View style={styles.zoneSelectedRow}>
-                      {getZoneLogo(zoneId) && <Image source={{ uri: getZoneLogo(zoneId)! }} style={styles.zoneLogo} />}
-                      <Text style={styles.inputText}>
-                        {zones.find(z => z.id === zoneId)?.title || zoneId}
-                      </Text>
-                    </View>
-                  ) : (
-                    <Text style={styles.inputText}>Select zone</Text>
-                  )}
-                </Pressable>
-                {showZoneDropdown ? (
-                  <View style={styles.selectBox}>
-                    <ScrollView style={{ maxHeight: 220 }}>
-                      {filteredZones.map((z) => (
-                        <Pressable
-                          key={z.id}
-                          style={styles.selectItem}
-                          onPress={() => {
-                            setZoneId(z.id);
-                            setShowZoneDropdown(false);
-                          }}
-                        >
-                          <View style={styles.selectItemInner}>
-                            <View style={styles.zoneItemRow}>
-                              {z.logo && <Image source={{ uri: `${API_CONFIG.BASE_URL}${z.logo}` }} style={styles.zoneLogo} />}
-                              <Text style={styles.optionText}>{z.title}</Text>
-                            </View>
-                            {zoneId === z.id ? <Text style={styles.checkMark}>✓</Text> : null}
-                          </View>
-                        </Pressable>
-                      ))}
-                    </ScrollView>
-                  </View>
-                ) : null}
-              </View>
-
-              <Text style={styles.label}>Type</Text>
-              <View style={styles.dropdownContainer}>
-                <Pressable style={styles.selectHeader} onPress={() => setShowTypeDropdown((s) => !s)}>
-                  <Text style={styles.inputText}>
-                    {typeId ? (types.find(t => t.id === typeId)?.title || typeId) : 'Select type'}
-                  </Text>
-                </Pressable>
-                {showTypeDropdown ? (
-                  <View style={styles.selectBox}>
-                    <ScrollView style={{ maxHeight: 220 }}>
-                      {types.map((t) => (
-                        <Pressable
-                          key={t.id}
-                          style={styles.selectItem}
-                          onPress={() => {
-                            setTypeId(t.id);
-                            setShowTypeDropdown(false);
-                          }}
-                        >
-                          <View style={styles.selectItemInner}>
-                            <Text style={styles.optionText}>{t.title}</Text>
-                            {typeId === t.id ? <Text style={styles.checkMark}>✓</Text> : null}
-                          </View>
-                        </Pressable>
-                      ))}
-                    </ScrollView>
-                  </View>
-                ) : null}
-              </View>
-
-              
-
-              
-
-              <Text style={styles.label}>Date</Text>
-              <Pressable onPress={() => setShowDatePicker(true)} style={styles.inputBox}>
-                <Text style={styles.inputText}>{formatDate(date)}</Text>
-              </Pressable>
-              <DateTimePickerModal
-                  isVisible={showDatePicker}
-                  mode="date"
-                  date={date}
-                  onConfirm={(selectedDate) => {
-                    setShowDatePicker(false);
-                    if (selectedDate) setDate(selectedDate);
-                  }}
-                  onCancel={() => setShowDatePicker(false)}
-                />
-
-              <Text style={styles.label}>Heure Début</Text>
-              <Pressable onPress={() => setShowTimeD(true)} style={styles.inputBox}>
-                <Text style={styles.inputText}>{heurD ? formatTime(heurD) : 'Select time'}</Text>
-              </Pressable>
-              <DateTimePickerModal
-                  isVisible={showTimeD}
-                  mode="time"
-                  date={heurD || new Date()}
-                  is24Hour
-                  onConfirm={(selected) => {
-                    setShowTimeD(false);
-                    if (selected) setHeurD(selected);
-                  }}
-                  onCancel={() => setShowTimeD(false)}
-                />
-
-              <Text style={styles.label}>Heure Fin</Text>
-              <Pressable onPress={() => setShowTimeF(true)} style={styles.inputBox}>
-                <Text style={styles.inputText}>{heurF ? formatTime(heurF) : 'Select time'}</Text>
-              </Pressable>
-              <DateTimePickerModal
-                  isVisible={showTimeF}
-                  mode="time"
-                  date={heurF || new Date()}
-                  is24Hour
-                  onConfirm={(selected) => {
-                    setShowTimeF(false);
-                    if (selected) setHeurF(selected);
-                  }}
-                  onCancel={() => setShowTimeF(false)}
-                />
-                <Text style={styles.label}>Description</Text>
-              <TextInput
-                style={styles.textInput}
-                value={description}
-                onChangeText={setDescription}
-                placeholder="Enter description (optional)..."
-                maxLength={255}
-                multiline
-                numberOfLines={3}
-              />
-
-
-              <View style={styles.modalActions}>
-                <Pressable style={styles.secondaryBtn} onPress={() => setIsModalVisible(false)}>
-                  <Text style={styles.secondaryText}>Cancel</Text>
-                </Pressable>
-                <Pressable disabled={submitting} onPress={handleSubmit} style={[styles.submitBtn, submitting && { opacity: 0.6 }]}>
-                  <Text style={styles.submitText}>{submitting ? 'Submitting...' : 'Create'}</Text>
-                </Pressable>
-              </View>
-            </ScrollView>
-          </View>
-        </View>
-      </Modal>
+      <CreateManifolderModal
+        visible={isCreateModalVisible}
+        onClose={() => setIsCreateModalVisible(false)}
+        onSuccess={handleCreateSuccess}
+        projects={projects}
+        zones={zones}
+        types={types}
+      />
     </SafeAreaView>
   );
 }
@@ -635,18 +393,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: '#f87b1b',
+    borderColor: '#e2e8f0',
     borderRadius: 20,
     paddingHorizontal: 16,
     paddingVertical: 8,
-    marginLeft: 12,
-    shadowColor: '#f87b1b',
+    shadowColor: '#000',
     shadowOffset: {
       width: 0,
       height: 1,
     },
-    shadowOpacity: 0.15,
-    shadowRadius: 3,
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
     elevation: 2,
   },
   createButtonText: {
@@ -658,9 +415,8 @@ const styles = StyleSheet.create({
   body: {
     flex: 1,
     backgroundColor: '#F8FAFC',
-    paddingHorizontal: 20,
-    paddingTop: 24,
-    paddingBottom: 20,
+    paddingHorizontal: 16,
+    paddingTop: 16,
   },
   logoContainer: {
     alignItems: 'center',
@@ -843,15 +599,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: 16,
     paddingBottom: 12,
     borderBottomWidth: 2,
     borderBottomColor: '#f87b1b',
   },
   sectionTitle: {
-    fontSize: 24,
-    fontWeight: '800',
-    color: '#1C1C1E',
+    fontSize: 22,
+    fontWeight: '700',
+    color: '#11224e',
   },
   manifoldersList: {
     flex: 1,
@@ -861,154 +617,100 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: '#f87b1b',
+    borderColor: '#e2e8f0',
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
-      height: 4,
+      height: 2,
     },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
+    elevation: 3,
+    padding: 16,
   },
-  manifolderCardContent: {
-    padding: 20,
-  },
-  // Card Header Styles
-  cardHeader: {
+  cardTopRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 16,
+    alignItems: 'center',
+    marginBottom: 12,
   },
-  manifolderTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#1C1C1E',
-    flex: 1,
-    marginRight: 12,
-  },
-  statusTag: {
-    backgroundColor: '#11224e',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
-    shadowColor: '#11224e',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  statusTagText: {
-    color: '#FFFFFF',
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  
-  // Card Body Styles
-  cardBody: {
-    marginBottom: 16,
-  },
-  manifolderDetails: {
+  cardType: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: '#F8FAFC',
+    gap: 6,
+    backgroundColor: '#eef2ff',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
     borderRadius: 12,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
+  },
+  cardTypeText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#11224e',
+  },
+  statusTag: {
+    backgroundColor: '#f1f5f9',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  statusTagText: {
+    color: '#f87b1b',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  manifolderTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#11224e',
+    marginBottom: 12,
+  },
+  cardSeparator: {
+    height: 1,
+    backgroundColor: '#f1f5f9',
+    marginBottom: 12,
+  },
+  cardDetailsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: 12,
   },
   detailItem: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
     flex: 1,
-    justifyContent: 'center',
-  },
-  detailIcon: {
-    fontSize: 14,
   },
   detailText: {
-    fontSize: 13,
-    color: '#6B7280',
+    fontSize: 12,
+    color: '#475569',
     fontWeight: '500',
-    flex: 1,
+    flexShrink: 1,
   },
-  detailSeparator: {
-    width: 1,
-    height: 20,
-    backgroundColor: '#E5E7EB',
-    marginHorizontal: 8,
-  },
-  
-  // Card Footer Styles
-  cardFooter: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingTop: 16,
-    borderTopWidth: 1,
-    borderTopColor: '#F3F4F6',
-  },
-  dateContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  dateIcon: {
-    fontSize: 14,
+  detailDate: {
+    fontSize: 12,
     color: '#f87b1b',
-  },
-  manifolderDate: {
-    fontSize: 14,
-    color: '#6B7280',
     fontWeight: '500',
+    flexShrink: 1,
   },
-  actionIndicator: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  actionText: {
-    fontSize: 14,
-    color: '#f87b1b',
-    fontWeight: '600',
-  },
-  chevron: {
-    fontSize: 16,
-    color: '#f87b1b',
-    fontWeight: '700',
-  },
-  // Photo upload styles
-  photoUploadSection: {
-    marginBottom: 16,
-  },
-  photoGrid: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 8,
-    gap: 8,
-  },
-  photoPlaceholder: {
+  emptyStateContainer: {
     flex: 1,
-    aspectRatio: 1,
-    backgroundColor: '#F8F9FA',
-    borderRadius: 12,
-    borderWidth: 2,
-    borderColor: '#E5E5EA',
-    borderStyle: 'dashed',
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 8,
+    padding: 20,
+    marginTop: -50,
   },
-  photoIcon: {
-    fontSize: 24,
-    marginBottom: 4,
+  emptyStateTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#475569',
+    marginTop: 16,
   },
-  photoLabel: {
-    fontSize: 10,
-    color: '#8E8E93',
-    fontWeight: '500',
+  emptyStateSubtitle: {
+    fontSize: 14,
+    color: '#94a3b8',
+    marginTop: 4,
     textAlign: 'center',
   },
 });
