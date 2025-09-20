@@ -73,7 +73,7 @@ class ManifolderService {
   async submitSingleAnswer(payload: { 
     manifolderId: string; 
     questionId: string; 
-    value?: any; 
+    answer_text?: any; 
     latitude?: number; 
     longitude?: number; 
     quantity?: number; 
@@ -84,54 +84,47 @@ class ManifolderService {
   }, token: string): Promise<{ message: string; manifolderId: string; questionId: string; answerId: string; }> {
     if (!token) throw new Error('Authentication token required');
 
-    if (payload.imageFile || payload.vocalFile) {
-      const formData = new FormData();
-      formData.append('id_manifolder', payload.manifolderId);
-      formData.append('id_task_element', payload.questionId);
-      formData.append('id_zone', payload.zoneId);
+    const formData = new FormData();
+    formData.append('id_manifolder', payload.manifolderId);
+    formData.append('id_task_element', payload.questionId);
+    formData.append('id_zone', payload.zoneId);
 
-      if (payload.value !== undefined) formData.append('answer_text', payload.value);
-      if (payload.latitude !== undefined) formData.append('latitude', payload.latitude.toString());
-      if (payload.longitude !== undefined) formData.append('longitude', payload.longitude.toString());
-      if (payload.quantity !== undefined) formData.append('quantity', payload.quantity.toString());
-      if (payload.status !== undefined) formData.append('status', payload.status.toString());
+    if (payload.answer_text !== undefined) formData.append('answer_text', payload.answer_text);
+    if (payload.latitude !== undefined) formData.append('latitude', payload.latitude.toString());
+    if (payload.longitude !== undefined) formData.append('longitude', payload.longitude.toString());
+    if (payload.quantity !== undefined) formData.append('quantity', payload.quantity.toString());
+    if (payload.status !== undefined) formData.append('status', payload.status.toString());
 
-      if (payload.imageFile) {
-        formData.append('answer_file', {
-          uri: payload.imageFile.uri,
-          name: payload.imageFile.name,
-          type: payload.imageFile.type,
-        } as any);
-      }
-
-      if (payload.vocalFile) {
-        formData.append('answer_vocal', {
-          uri: payload.vocalFile.uri,
-          name: payload.vocalFile.name,
-          type: payload.vocalFile.type,
-        } as any);
-      }
-
-      const response = await fetch(`${this.baseUrl}/manifolder-details/answer`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-        body: formData,
-      });
-
-      if (!response.ok) {
-        let msg = 'Request failed';
-        try { const j = await response.json(); msg = j.error || msg; } catch {}
-        throw new Error(msg);
-      }
-      return response.json();
-    } else {
-      return this.request('/manifolder-details/answer', token, {
-        method: 'POST',
-        body: JSON.stringify(payload),
-      });
+    if (payload.imageFile) {
+      formData.append('answer_file', {
+        uri: payload.imageFile.uri,
+        name: payload.imageFile.name,
+        type: payload.imageFile.type,
+      } as any);
     }
+
+    if (payload.vocalFile) {
+      formData.append('answer_vocal', {
+        uri: payload.vocalFile.uri,
+        name: payload.vocalFile.name,
+        type: payload.vocalFile.type,
+      } as any);
+    }
+
+    const response = await fetch(`${this.baseUrl}/manifolder-details/answer`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+      body: formData,
+    });
+
+    if (!response.ok) {
+      let msg = 'Request failed';
+      try { const j = await response.json(); msg = j.error || msg; } catch {}
+      throw new Error(msg);
+    }
+    return response.json();
   }
 
   getManifolderAnswers(manifolderId: string, token: string): Promise<{ manifolderId: string; answers: ManifolderAnswerWithDetails[]; }> {
@@ -226,7 +219,7 @@ class ManifolderService {
       control?: { id: string; email: string; date: string; createdAt: string; updatedAt: string; };
       admin?: { id: string; email: string; date: string; createdAt: string; updatedAt: string; };
     };
-    signatureList: Array<{ id: string; role: string; email: string; date: string; createdAt: string; updatedAt: string; }>;
+    signatureList: { id: string; role: string; email: string; date: string; createdAt: string; updatedAt: string; }[];
     totalSignatures: number;
     isComplete: boolean;
   }> {

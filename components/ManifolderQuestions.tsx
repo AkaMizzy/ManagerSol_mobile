@@ -486,7 +486,7 @@ export default function ManifolderQuestions({
         submitData.latitude = answer.latitude;
         submitData.longitude = answer.longitude;
       } else if (answer) {
-        submitData.value = answer;
+        submitData.answer_text = answer;
       }
 
       // Check for vocal file to upload
