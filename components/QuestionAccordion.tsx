@@ -1,19 +1,19 @@
-import API_CONFIG from '@/app/config/api';
 import { ManifolderQuestion, QuestionType, Zone } from '@/types/manifolder';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import React, { useState } from 'react';
 import {
-    Alert,
-    Animated,
-    FlatList,
-    Modal,
-    Pressable,
-    StyleSheet,
-    Switch,
-    Text,
-    TextInput,
-    View,
+  Alert,
+  Animated,
+  FlatList,
+  Image,
+  Modal,
+  Pressable,
+  StyleSheet,
+  Switch,
+  Text,
+  TextInput,
+  View
 } from 'react-native';
 import DateTimePickerModal from 'react-native-modal-datetime-picker';
 import FileUploader from './FileUploader';
@@ -41,6 +41,12 @@ interface QuestionAccordionProps {
   isSubmitted?: boolean;
   hasBeenSubmitted?: boolean; // Track if this question was ever submitted before
   isLocked?: boolean; // Track if questions are locked due to signature completion
+  vocalAnswer?: any;
+  onVocalFileSelect?: (file: { uri: string; name: string; type: string }) => void;
+  onVocalFileRemove?: () => void;
+  imageAnswer?: any;
+  onImageFileSelect?: (file: { uri: string; name: string; type: string }) => void;
+  onImageFileRemove?: () => void;
 }
 
 export default function QuestionAccordion({
@@ -63,6 +69,12 @@ export default function QuestionAccordion({
   isSubmitted = false,
   hasBeenSubmitted = false,
   isLocked = false,
+  vocalAnswer,
+  onVocalFileSelect,
+  onVocalFileRemove,
+  imageAnswer,
+  onImageFileSelect,
+  onImageFileRemove,
 }: QuestionAccordionProps) {
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [animatedHeight] = useState(new Animated.Value(0));
@@ -74,7 +86,6 @@ export default function QuestionAccordion({
   const [showCameraModal, setShowCameraModal] = useState(false);
   const [showVoiceModal, setShowVoiceModal] = useState(false);
   const [showListModal, setShowListModal] = useState(false);
-  const [vocalAnswer, setVocalAnswer] = useState<any>(null);
 
   React.useEffect(() => {
     Animated.timing(animatedHeight, {
@@ -83,21 +94,6 @@ export default function QuestionAccordion({
       useNativeDriver: false,
     }).start();
   }, [isExpanded, animatedHeight]);
-
-  // Initialize vocal answer from value prop
-  React.useEffect(() => {
-    if (value && typeof value === 'object' && value.path && (
-      value.type?.startsWith('audio/') || 
-      value.path.includes('.m4a') || 
-      value.path.includes('.mp3') || 
-      value.path.includes('.wav') ||
-      value.path.includes('.aac')
-    )) {
-      setVocalAnswer(value);
-    } else {
-      setVocalAnswer(null);
-    }
-  }, [value]);
 
   const handleValueChange = (newValue: any, newQuantity?: number, zoneId?: string, status?: number) => {
     onValueChange(question.id, newValue, newQuantity, zoneId || questionZoneId, status || questionStatus);
@@ -131,78 +127,10 @@ export default function QuestionAccordion({
     return statusLabels[status as keyof typeof statusLabels] || 'Not Started';
   };
 
-  // Check if question has media that can be previewed
-  const hasPreviewableMedia = () => {
-    if (!value) return false;
-    
-    // For file uploads, check if it's an image, video, document, or voice
-    if (typeof value === 'object' && value.path) {
-      const path = value.path.toLowerCase();
-      return path.includes('.jpg') || path.includes('.jpeg') || path.includes('.png') || 
-             path.includes('.gif') || path.includes('.webp') || path.includes('.mp4') || 
-             path.includes('.mov') || path.includes('.avi') || path.includes('.mkv') ||
-             path.includes('.pdf') || path.includes('.doc') || path.includes('.docx') ||
-             path.includes('.txt') || path.includes('.xls') || path.includes('.xlsx') ||
-             path.includes('.mp3') || path.includes('.wav') || path.includes('.m4a') ||
-             path.includes('.aac') || path.includes('.ogg');
-    }
-    
-    return false;
-  };
-
-  // Get media type and URL for preview
-  const getPreviewMedia = () => {
-    if (!value || typeof value !== 'object' || !value.path) return null;
-    
-    const path = value.path.toLowerCase();
-    const isImage = path.includes('.jpg') || path.includes('.jpeg') || path.includes('.png') || 
-                   path.includes('.gif') || path.includes('.webp');
-    const isVideo = path.includes('.mp4') || path.includes('.mov') || path.includes('.avi') || 
-                   path.includes('.mkv');
-    const isFile = path.includes('.pdf') || path.includes('.doc') || path.includes('.docx') ||
-                   path.includes('.txt') || path.includes('.xls') || path.includes('.xlsx');
-    const isVoice = path.includes('.mp3') || path.includes('.wav') || path.includes('.m4a') ||
-                   path.includes('.aac') || path.includes('.ogg');
-    
-    // Construct full URL for backend files
-    const baseUrl = API_CONFIG.BASE_URL;
-    const fullUrl = `${baseUrl}${value.path}`;
-    
-    if (isImage) {
-      return { type: 'image' as const, url: fullUrl };
-    }
-    
-    if (isVideo) {
-      return { type: 'video' as const, url: fullUrl };
-    }
-    
-    if (isFile) {
-      return { type: 'file' as const, url: fullUrl };
-    }
-    
-    if (isVoice) {
-      return { type: 'voice' as const, url: fullUrl };
-    }
-    
-    return null;
-  };
-
-  const handlePreviewPress = () => {
-    if (hasPreviewableMedia()) {
-      setShowPreview(true);
-    }
-  };
-
   const handleCameraCapture = async () => {
     try {
-      const { status } = await ImagePicker.requestCameraPermissionsAsync();
-      if (status !== 'granted') {
-        Alert.alert('Permission needed', 'Camera permission is required to take photos');
-        setShowCameraModal(false);
-        return;
-      }
-
       const result = await ImagePicker.launchCameraAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
         allowsEditing: true,
         aspect: [4, 3],
         quality: 0.8,
@@ -212,11 +140,13 @@ export default function QuestionAccordion({
         const asset = result.assets[0];
         const fileName = `camera_${Date.now()}.jpg`;
         
-        handleValueChange({
-          uri: asset.uri,
-          name: fileName,
-          type: 'image/jpeg',
-        });
+        if (onImageFileSelect) {
+            onImageFileSelect({
+                uri: asset.uri,
+                name: fileName,
+                type: 'image/jpeg',
+            });
+        }
       }
     } catch (error: any) {
       Alert.alert('Error', error.message || 'Failed to capture photo');
@@ -238,11 +168,13 @@ export default function QuestionAccordion({
         const fileName = asset.fileName || `image_${Date.now()}.jpg`;
         const fileType = asset.type || 'image/jpeg';
         
-        handleValueChange({
-          uri: asset.uri,
-          name: fileName,
-          type: fileType,
-        });
+        if (onImageFileSelect) {
+            onImageFileSelect({
+                uri: asset.uri,
+                name: fileName,
+                type: fileType,
+            });
+        }
       }
     } catch (error: any) {
       Alert.alert('Error', error.message || 'Failed to pick image');
@@ -250,15 +182,10 @@ export default function QuestionAccordion({
     setShowCameraModal(false);
   };
 
-  const handleVocalFileSelect = (file: { uri: string; name: string; type: string }) => {
-    setVocalAnswer(file);
-    handleValueChange(file);
-    setShowVoiceModal(false);
-  };
-
-  const handleVocalFileRemove = () => {
-    setVocalAnswer(null);
-    handleValueChange(null);
+  const handleImagePreview = () => {
+    if (imageAnswer && (imageAnswer.path || imageAnswer.uri)) {
+      setShowPreview(true);
+    }
   };
 
   // Get hardcoded options for list questions based on question title and context
@@ -469,47 +396,44 @@ export default function QuestionAccordion({
         );
 
       case 'photo':
+      case 'video':
         return (
           <View style={styles.inputContainer}>
             {question.description && (
               <Text style={styles.inputLabel}>{question.description}</Text>
             )}
             <FileUploader
-              value={value}
-              onFileSelect={(file) => handleValueChange(file)}
-              onFileRemove={() => handleValueChange(null)}
+              value={imageAnswer}
+              onFileSelect={(file) => {
+                  if (onImageFileSelect) onImageFileSelect(file);
+              }}
+              onFileRemove={() => {
+                  if (onImageFileRemove) onImageFileRemove();
+              }}
               placeholder={question.placeholder || 'Select an image...'}
-              acceptedTypes={['image']}
+              acceptedTypes={question.type === 'photo' ? ['image'] : question.type === 'video' ? ['video'] : ['document']}
             />
           </View>
         );
 
-             case 'video':
-         return (
-           <View style={styles.inputContainer}>
-             {question.description && (
-               <Text style={styles.inputLabel}>{question.description}</Text>
-             )}
-             <FileUploader
-               value={value}
-               onFileSelect={(file) => handleValueChange(file)}
-               onFileRemove={() => handleValueChange(null)}
-               placeholder={question.placeholder || 'Select a video...'}
-               acceptedTypes={['video']}
-             />
-           </View>
-         );
-
-       case 'voice':
-         return (
-           <View style={styles.inputContainer}>
-             {question.description && (
-               <Text style={styles.inputLabel}>{question.description}</Text>
-             )}
-             <VoiceRecorder
-               value={value}
-               onFileSelect={(file) => handleValueChange(file)}
-               onFileRemove={() => handleValueChange(null)}
+      case 'voice':
+        return (
+          <View style={styles.inputContainer}>
+            {question.description && (
+              <Text style={styles.inputLabel}>{question.description}</Text>
+            )}
+            <VoiceRecorder
+              value={vocalAnswer}
+              onFileSelect={(file) => {
+                 if (onVocalFileSelect) {
+                   onVocalFileSelect(file);
+                 }
+               }}
+               onFileRemove={() => {
+                 if (onVocalFileRemove) {
+                   onVocalFileRemove();
+                 }
+               }}
                placeholder={question.placeholder || 'Record voice message...'}
                maxDuration={300} // 5 minutes
              />
@@ -555,12 +479,13 @@ export default function QuestionAccordion({
     return null; // Hide unsupported question types for now
   }
 
-  // Get preview media info
-  const previewMedia = getPreviewMedia();
-
   // Check if question is answered
   const isAnswered = () => {
-    if (value === undefined || value === null || value === '') return false;
+    if (value === undefined || value === null || value === '') {
+        if (vocalAnswer === undefined || vocalAnswer === null || vocalAnswer === '') {
+            return false;
+        }
+    }
     
     // For GPS answers, check if both latitude and longitude exist
     if (typeof value === 'object' && value.latitude !== undefined && value.longitude !== undefined) {
@@ -570,6 +495,10 @@ export default function QuestionAccordion({
     // For file answers, check if file object exists with path
     if (typeof value === 'object' && value.path !== undefined) {
       return value.path !== null && value.path !== '';
+    }
+
+    if (typeof vocalAnswer === 'object' && vocalAnswer.path !== undefined) {
+        return vocalAnswer.path !== null && vocalAnswer.path !== '';
     }
     
     return true;
@@ -748,14 +677,13 @@ export default function QuestionAccordion({
                   color="#FFFFFF" 
                 />
               </Pressable>
-              
-              {/* Preview Button */}
-              {hasPreviewableMedia() && (
+
+              {imageAnswer && isSubmitted && (
                 <Pressable
                   style={styles.actionButton}
-                  onPress={handlePreviewPress}
+                  onPress={handleImagePreview}
                   accessibilityRole="button"
-                  accessibilityLabel="Preview media"
+                  accessibilityLabel="Preview image"
                 >
                   <Ionicons 
                     name="eye-outline" 
@@ -765,6 +693,31 @@ export default function QuestionAccordion({
                 </Pressable>
               )}
             </View>
+
+            {imageAnswer && !isSubmitted && (
+                <View style={styles.imagePreviewContainer}>
+                    <Text style={styles.imagePreviewLabel}>Image Attachment:</Text>
+                    <Image source={{ uri: imageAnswer.uri || imageAnswer.path }} style={styles.imagePreview} />
+                    <Pressable onPress={onImageFileRemove} style={styles.removeImageButton}>
+                        <Ionicons name="close-circle" size={24} color="#FF3B30" />
+                    </Pressable>
+                </View>
+            )}
+
+            {vocalAnswer && (
+                <View style={styles.voiceNoteContainer}>
+                    <Text style={styles.voiceNoteLabel}>Voice Note:</Text>
+                    <VoiceRecorder
+                        value={vocalAnswer}
+                        onFileSelect={() => {}} 
+                        onFileRemove={() => {
+                            if (onVocalFileRemove) {
+                                onVocalFileRemove();
+                            }
+                        }}
+                    />
+                </View>
+            )}
 
             {/* Submit Button - Only show if answer exists and not already submitted */}
             {isAnswered() && !isSubmitted && onSubmitAnswer && (
@@ -798,19 +751,7 @@ export default function QuestionAccordion({
               </View>
             )}
 
-            {/* Submitted Indicator */}
-            {isSubmitted && (
-              <View style={styles.submittedContainer}>
-                <Ionicons 
-                  name="checkmark-circle" 
-                  size={20} 
-                  color="#34C759" 
-                />
-                <Text style={styles.submittedText}>
-                  {hasBeenSubmitted ? 'Answer Updated Successfully' : 'Answer Submitted'}
-                </Text>
-              </View>
-            )}
+           
 
             {/* Declaration Creation Button - Only show if answer is submitted and onCreateDeclaration is provided */}
             {isSubmitted && onCreateDeclaration && (
@@ -842,8 +783,8 @@ export default function QuestionAccordion({
       <PreviewModal
         visible={showPreview}
         onClose={() => setShowPreview(false)}
-        mediaUrl={previewMedia?.url}
-        mediaType={previewMedia?.type}
+        mediaUrl={imageAnswer?.path || imageAnswer?.uri}
+        mediaType={'image'}
         title={question.title}
       />
 
@@ -993,8 +934,17 @@ export default function QuestionAccordion({
             <View style={styles.voiceOptionsContainer}>
               <VoiceRecorder
                 value={vocalAnswer}
-                onFileSelect={handleVocalFileSelect}
-                onFileRemove={handleVocalFileRemove}
+                onFileSelect={(file) => {
+                  if (onVocalFileSelect) {
+                    onVocalFileSelect(file);
+                  }
+                  setShowVoiceModal(false);
+                }}
+                onFileRemove={() => {
+                  if (onVocalFileRemove) {
+                    onVocalFileRemove();
+                  }
+                }}
                 placeholder="Record voice note for this question"
                 maxDuration={300} // 5 minutes
               />
@@ -1403,6 +1353,45 @@ const styles = StyleSheet.create({
     color: '#8E8E93',
     fontStyle: 'italic',
   },
+  imagePreviewContainer: {
+    marginTop: 16,
+    padding: 8,
+    backgroundColor: '#F2F2F7',
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#E5E5EA',
+    alignItems: 'center',
+  },
+  imagePreviewLabel: {
+    fontSize: 16,
+    color: '#1C1C1E',
+    fontWeight: '600',
+    marginBottom: 8,
+    alignSelf: 'flex-start',
+  },
+  imagePreview: {
+    width: '100%',
+    height: 200,
+    borderRadius: 8,
+    marginBottom: 8,
+  },
+  removeImageButton: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+  },
+  voiceNoteContainer: {
+    marginTop: 16,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#F2F2F7',
+},
+voiceNoteLabel: {
+    fontSize: 16,
+    color: '#1C1C1E',
+    fontWeight: '600',
+    marginBottom: 8,
+},
   listOption: {
     flexDirection: 'row',
     alignItems: 'center',

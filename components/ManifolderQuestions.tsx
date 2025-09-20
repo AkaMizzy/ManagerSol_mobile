@@ -44,6 +44,8 @@ export default function ManifolderQuestions({
   const [defaultZoneId, setDefaultZoneId] = useState<string>('');
   const [availableZones, setAvailableZones] = useState<Zone[]>([]);
   const [answers, setAnswers] = useState<Record<string, any>>({});
+  const [vocalAnswers, setVocalAnswers] = useState<Record<string, any>>({});
+  const [imageAnswers, setImageAnswers] = useState<Record<string, any>>({});
   const [quantities, setQuantities] = useState<Record<string, number>>({});
   const [questionZones, setQuestionZones] = useState<Record<string, string>>({});
   const [questionStatuses, setQuestionStatuses] = useState<Record<string, number>>({});
@@ -110,6 +112,8 @@ export default function ManifolderQuestions({
        try {
          const answersResponse = await manifolderService.getManifolderAnswers(manifolderId, token);
          const existingAnswers: Record<string, any> = {};
+         const existingVocalAnswers: Record<string, any> = {};
+         const existingImageAnswers: Record<string, any> = {};
          const existingQuantities: Record<string, number> = {};
          const existingQuestionZones: Record<string, string> = {};
          const existingQuestionStatuses: Record<string, number> = {};
@@ -117,32 +121,37 @@ export default function ManifolderQuestions({
          const existingSubmittedQuestions: Set<string> = new Set();
          const existingHasBeenSubmittedQuestions: Set<string> = new Set();
          answersResponse.answers.forEach(answer => {
-           // Handle GPS answers - they come with latitude/longitude from backend
-           if (answer.questionType === 'GPS' && typeof answer.value === 'object' && answer.value.latitude && answer.value.longitude) {
-             existingAnswers[answer.questionId] = {
-               latitude: parseFloat(answer.value.latitude),
-               longitude: parseFloat(answer.value.longitude)
+           // Handle text, file, and GPS answers from `value`
+           if (answer.value) {
+             if (answer.questionType === 'GPS' && typeof answer.value === 'object' && answer.value.latitude && answer.value.longitude) {
+               existingAnswers[answer.questionId] = {
+                 latitude: parseFloat(answer.value.latitude),
+                 longitude: parseFloat(answer.value.longitude)
+               };
+             } else {
+               existingAnswers[answer.questionId] = answer.value;
+             }
+           }
+           
+           if (answer.imageAnswer) {
+             existingImageAnswers[answer.questionId] = {
+               filename: answer.imageAnswer.split('/').pop() || '',
+               originalName: answer.imageAnswer.split('/').pop() || '',
+               path: `${API_CONFIG.BASE_URL}${answer.imageAnswer}`,
+               size: 0,
+               mimetype: 'application/octet-stream'
              };
-           } else if (['file', 'photo', 'video', 'voice'].includes(answer.questionType) && answer.value) {
-             // Handle file answers - they come as file paths from backend
-             existingAnswers[answer.questionId] = {
-               filename: answer.value.split('/').pop() || '',
-               originalName: answer.value.split('/').pop() || '',
-               path: answer.value,
-               size: 0, // Backend doesn't provide size, so we'll set to 0
-               mimetype: 'application/octet-stream' // Default mimetype
-             };
-           } else if (answer.vocalAnswer) {
-             // Handle vocal answers - they come as file paths from backend
-             existingAnswers[answer.questionId] = {
+           }
+           
+           // Handle vocal answers from `vocalAnswer`
+           if (answer.vocalAnswer) {
+             existingVocalAnswers[answer.questionId] = {
                filename: answer.vocalAnswer.split('/').pop() || '',
                originalName: answer.vocalAnswer.split('/').pop() || '',
-               path: answer.vocalAnswer,
-               size: 0, // Backend doesn't provide size, so we'll set to 0
-               mimetype: 'audio/mp4' // Audio mimetype
+               path: `${API_CONFIG.BASE_URL}${answer.vocalAnswer}`,
+               size: 0,
+               mimetype: 'audio/mp4'
              };
-           } else {
-             existingAnswers[answer.questionId] = answer.value;
            }
            
            // Store quantity if available
@@ -169,6 +178,8 @@ export default function ManifolderQuestions({
            existingHasBeenSubmittedQuestions.add(answer.questionId);
          });
          setAnswers(existingAnswers);
+         setVocalAnswers(existingVocalAnswers);
+         setImageAnswers(existingImageAnswers);
          setQuantities(existingQuantities);
          setQuestionZones(prev => ({ ...prev, ...existingQuestionZones }));
          setQuestionStatuses(prev => ({ ...prev, ...existingQuestionStatuses }));
@@ -306,6 +317,30 @@ export default function ManifolderQuestions({
     }
   };
 
+  const handleVocalFileUpload = async (questionId: string, file: { uri: string; name: string; type: string }) => {
+    if (!token || !manifolderId) return;
+    const zoneId = questionZones[questionId] || defaultZoneId;
+    if (!zoneId) return;
+
+    try {
+        const response = await manifolderService.uploadManifolderFile(manifolderId, questionId, file, token, zoneId);
+        setVocalAnswers(prev => ({
+            ...prev,
+            [questionId]: response.file,
+        }));
+    } catch (error: any) {
+        Alert.alert('Upload Error', error.message || 'Failed to upload vocal file');
+    }
+  };
+
+  const handleVocalFileRemove = (questionId: string) => {
+    setVocalAnswers(prev => {
+        const newVocalAnswers = { ...prev };
+        delete newVocalAnswers[questionId];
+        return newVocalAnswers;
+    });
+  };
+
   const handleResetQuestion = async (questionId: string) => {
     if (!token) return;
 
@@ -407,25 +442,6 @@ export default function ManifolderQuestions({
     }
   };
 
-  const handleFileUpload = async (questionId: string, file: { uri: string; name: string; type: string }) => {
-    if (!token || !manifolderId) return;
-
-    const zoneId = questionZones[questionId] || defaultZoneId;
-    if (!zoneId) return;
-
-    try {
-      const response = await manifolderService.uploadManifolderFile(manifolderId, questionId, file, token, zoneId);
-      
-      // Update the answer with the uploaded file info
-      setAnswers(prev => ({
-        ...prev,
-        [questionId]: response.file,
-      }));
-    } catch (error: any) {
-      Alert.alert('Upload Error', error.message || 'Failed to upload file');
-    }
-  };
-
   const handleSubmitSingleAnswer = async (questionId: string) => {
     if (!token || !manifolderId) return;
 
@@ -440,11 +456,13 @@ export default function ManifolderQuestions({
     }
 
     const answer = answers[questionId];
+    const vocalAnswer = vocalAnswers[questionId];
+    const imageAnswer = imageAnswers[questionId];
     const quantity = quantities[questionId];
     const zoneId = questionZones[questionId] || defaultZoneId;
     const status = questionStatuses[questionId];
 
-    if (!answer) {
+    if (!answer && !vocalAnswer && !imageAnswer) {
       Alert.alert('No Answer', 'Please provide an answer before submitting.');
       return;
     }
@@ -452,31 +470,28 @@ export default function ManifolderQuestions({
     try {
       setSubmittingQuestions(prev => new Set(prev).add(questionId));
 
-      // Prepare the answer data based on question type
       let submitData: any = {
         manifolderId,
         questionId,
         zoneId,
         status,
+        quantity,
       };
 
-      // Handle GPS answers
-      if (typeof answer === 'object' && answer.latitude !== undefined && answer.longitude !== undefined) {
+      if (imageAnswer && typeof imageAnswer === 'object' && imageAnswer.uri) {
+        submitData.imageFile = imageAnswer;
+      }
+
+      if (answer && typeof answer === 'object' && answer.latitude !== undefined && answer.longitude !== undefined) {
         submitData.latitude = answer.latitude;
         submitData.longitude = answer.longitude;
-      }
-      // Handle file answers - they're already uploaded, so we don't need to include them in submission
-      else if (typeof answer === 'object' && answer.path !== undefined) {
-        submitData.value = answer.path; // Just send the file path
-      }
-      // Handle regular answers
-      else {
+      } else if (answer) {
         submitData.value = answer;
       }
 
-      // Add quantity if available
-      if (quantity !== undefined) {
-        submitData.quantity = quantity;
+      // Check for vocal file to upload
+      if (vocalAnswer && typeof vocalAnswer === 'object' && vocalAnswer.uri) {
+        submitData.vocalFile = vocalAnswer;
       }
 
       await manifolderService.submitSingleAnswer(submitData, token);
@@ -494,15 +509,8 @@ export default function ManifolderQuestions({
         return newSet;
       });
       
-      // Store the answer ID for future reference
-      const response = await manifolderService.getManifolderAnswers(manifolderId, token);
-      const submittedAnswer = response.answers.find(a => a.questionId === questionId);
-      if (submittedAnswer) {
-        setAnswerIds(prev => ({
-          ...prev,
-          [questionId]: submittedAnswer.id,
-        }));
-      }
+      // Store the answer ID for future reference and refresh local state
+      await loadQuestions();
 
       Alert.alert('Success', 'Answer submitted successfully!');
     } catch (error: any) {
@@ -811,12 +819,7 @@ export default function ManifolderQuestions({
               availableZones={availableZones}
               defaultZoneId={defaultZoneId}
               onValueChange={(questionId, value, quantity, zoneId, status) => {
-                // Check if this is a file upload (has uri, name, type properties)
-                if (value && typeof value === 'object' && value.uri && value.name && value.type) {
-                  handleFileUpload(questionId, value);
-                } else {
-                  handleAnswerChange(questionId, value, quantity, zoneId, status);
-                }
+                handleAnswerChange(questionId, value, quantity, zoneId, status);
               }}
               isExpanded={expandedQuestions.has(question.id)}
               onToggleExpand={handleQuestionToggle}
@@ -828,6 +831,16 @@ export default function ManifolderQuestions({
               isSubmitted={submittedQuestions.has(question.id)}
               hasBeenSubmitted={hasBeenSubmittedQuestions.has(question.id)}
               isLocked={signatureStatus?.isComplete || false}
+              vocalAnswer={vocalAnswers[question.id]}
+              imageAnswer={imageAnswers[question.id]}
+              onVocalFileSelect={(file) => setVocalAnswers(prev => ({ ...prev, [question.id]: file }))}
+              onVocalFileRemove={() => handleVocalFileRemove(question.id)}
+              onImageFileSelect={(file) => setImageAnswers(prev => ({ ...prev, [question.id]: file }))}
+              onImageFileRemove={() => {
+                const newImageAnswers = { ...imageAnswers };
+                delete newImageAnswers[question.id];
+                setImageAnswers(newImageAnswers);
+              }}
             />
           ))}
         </View>

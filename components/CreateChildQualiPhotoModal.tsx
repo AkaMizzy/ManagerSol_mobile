@@ -342,7 +342,7 @@ const styles = StyleSheet.create({
   },
   contextImage: {
     width: '100%',
-    aspectRatio: 16/9,
+    aspectRatio: 2.2,
     backgroundColor: '#f3f4f6'
   },
   contextTextWrap: {

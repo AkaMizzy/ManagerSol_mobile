@@ -77,6 +77,7 @@ export interface ManifolderAnswerWithDetails {
   quantity?: number;
   zoneId?: string;
   status?: number; // Add status field (0-4)
+  imageAnswer?: string | null;
   vocalAnswer?: string | null; // Add vocal answer field
   createdAt: string;
   updatedAt: string;

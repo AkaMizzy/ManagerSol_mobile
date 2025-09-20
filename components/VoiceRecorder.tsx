@@ -3,11 +3,11 @@ import { Ionicons } from '@expo/vector-icons';
 import { Audio } from 'expo-av';
 import React, { useEffect, useState } from 'react';
 import {
-    Alert,
-    Pressable,
-    StyleSheet,
-    Text,
-    View,
+  Alert,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
 } from 'react-native';
 
 interface VoiceRecorderProps {
@@ -32,15 +32,12 @@ export default function VoiceRecorder({
   const [sound, setSound] = useState<Audio.Sound | null>(null);
 
   useEffect(() => {
-    return () => {
-      if (sound) {
-        sound.unloadAsync();
-      }
-      if (recording) {
-        recording.stopAndUnloadAsync();
-      }
-    };
-  }, [sound, recording]);
+    return sound
+      ? () => {
+          sound.unloadAsync();
+        }
+      : undefined;
+  }, [sound]);
 
   useEffect(() => {
     let interval: NodeJS.Timeout;
@@ -111,7 +108,8 @@ export default function VoiceRecorder({
   };
 
   const playRecording = async () => {
-    if (!value?.path) return;
+    const uri = value?.uri || value?.path;
+    if (!uri) return;
 
     try {
       if (sound) {
@@ -119,7 +117,7 @@ export default function VoiceRecorder({
       }
 
       const { sound: newSound } = await Audio.Sound.createAsync(
-        { uri: value.path },
+        { uri },
         { shouldPlay: true }
       );
 
@@ -149,7 +147,8 @@ export default function VoiceRecorder({
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const getFileSize = (bytes: number) => {
+  const getFileSize = (bytes?: number) => {
+    if (bytes === undefined || bytes === null || isNaN(bytes)) return '';
     if (bytes < 1024) return `${bytes} B`;
     if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
     return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
@@ -164,7 +163,7 @@ export default function VoiceRecorder({
             <Ionicons name="musical-notes" size={24} color="#007AFF" />
             <View style={styles.audioDetails}>
               <Text style={styles.audioName} numberOfLines={1}>
-                {value.originalName}
+                {value.originalName || value.name}
               </Text>
               <Text style={styles.audioSize}>
                 {getFileSize(value.size)}
