@@ -1,6 +1,7 @@
 import AppHeader from '@/components/AppHeader';
 import CreateQualiPhotoModal from '@/components/CreateQualiPhotoModal';
 import QualiPhotoDetail from '@/components/QualiPhotoDetail';
+import QualiPhotoFilterModal from '@/components/QualiPhotoFilterModal';
 import { useAuth } from '@/contexts/AuthContext';
 import qualiphotoService, { QualiPhotoItem, QualiProject, QualiZone } from '@/services/qualiphotoService';
 import { Ionicons } from '@expo/vector-icons';
@@ -44,6 +45,7 @@ export default function QualiPhotoGalleryScreen() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [photoExists, setPhotoExists] = useState(false);
   const [checkingIfPhotoExists, setCheckingIfPhotoExists] = useState(false);
+  const [isFilterModalVisible, setFilterModalVisible] = useState(false);
 
   // Guards to prevent re-entrant and out-of-order updates
   const fetchingRef = useRef(false);
@@ -237,15 +239,25 @@ export default function QualiPhotoGalleryScreen() {
                 </View>
               )}
             </View>
-            <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Ajouter une QualiPhoto"
-                onPress={() => setModalVisible(true)}
-                disabled={isCreateDisabled}
-                style={[styles.addIconButton, isCreateDisabled && styles.addIconButtonDisabled]}
-              >
-              <Ionicons name="camera-outline" size={32} color="#f87b1b" />
-            </Pressable>
+            <View style={styles.actionsWrapper}>
+              <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Filter QualiPhotos"
+                  onPress={() => setFilterModalVisible(true)}
+                  style={styles.addIconButton}
+                >
+                <Ionicons name="options-outline" size={32} color="#f87b1b" />
+              </Pressable>
+              <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Ajouter une QualiPhoto"
+                  onPress={() => setModalVisible(true)}
+                  disabled={isCreateDisabled}
+                  style={[styles.addIconButton, isCreateDisabled && styles.addIconButtonDisabled]}
+                >
+                <Ionicons name="camera-outline" size={32} color="#f87b1b" />
+              </Pressable>
+            </View>
           </View>
           {checkingIfPhotoExists ? (
             <Text style={styles.filterHint}>Vérification en cours...</Text>
@@ -305,6 +317,11 @@ export default function QualiPhotoGalleryScreen() {
         }}
       />
 
+      <QualiPhotoFilterModal
+        visible={isFilterModalVisible}
+        onClose={() => setFilterModalVisible(false)}
+      />
+
       <QualiPhotoDetail
         visible={detailVisible}
         item={selectedItem}
@@ -360,17 +377,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
-    flexWrap: 'wrap',
   },
   content: {
     flex: 1,
   },
   dropdownWrap: {
-    minWidth: 160,
     position: 'relative',
-    flexGrow: 0,
-    flexShrink: 1,
-    flexBasis: 0,
+    flex: 1,
   },
   dropdownDisabled: {
     opacity: 0.6,
@@ -390,6 +403,11 @@ const styles = StyleSheet.create({
   },
   selectBtnDisabled: {
     backgroundColor: '#f9fafb',
+  },
+  actionsWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
   selectText: {
     color: '#0f172a',
