@@ -253,8 +253,8 @@ export default function ManifolderQuestions({
     // Prevent answer changes if all signatures are completed
     if (signatureStatus?.isComplete) {
       Alert.alert(
-        'Questions Locked',
-        'All signatures have been completed. Questions can no longer be modified.',
+        'Questions verrouillées',
+        'Toutes les signatures ont été complétées. Les questions ne peuvent plus être modifiées.',
         [{ text: 'OK' }]
       );
       return;
@@ -796,10 +796,10 @@ export default function ManifolderQuestions({
               />
               <View style={styles.signatureStatusText}>
                 <Text style={styles.signatureStatusTitle}>
-                  {'Questions Locked'}
+                  {'Questions verrouillées'}
                 </Text>
                 <Text style={styles.signatureStatusDescription}>
-                  {'All signatures completed. Questions cannot be modified.'}
+                  {'Toutes les signatures ont été complétées. Les questions ne peuvent plus être modifiées.'}
                 </Text>
               </View>
             </View>
@@ -856,7 +856,7 @@ export default function ManifolderQuestions({
             disabled={isSubmitting}
           >
             <Text style={styles.submitButtonText}>
-              {isSubmitting ? 'Submitting...' : 'Submit Answers'}
+              {isSubmitting ? 'Enregistrer...' : 'Enregistrer les réponses'}
             </Text>
           </Pressable>
         </View>

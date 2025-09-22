@@ -518,7 +518,7 @@ export default function ManifoldDetails({
             {onGoToQuestions && (
               <Pressable style={styles.primaryActionButton} onPress={() => onGoToQuestions(manifolderId)}>
                 <Ionicons name="list-outline" size={20} color="#FFFFFF" />
-                <Text style={styles.primaryActionButtonText}>Go to Questions</Text>
+                <Text style={styles.primaryActionButtonText}>Passer aux questions</Text>
               </Pressable>
             )}
             
@@ -533,7 +533,7 @@ export default function ManifoldDetails({
                 color="#FFFFFF" 
               />
               <Text style={styles.primaryActionButtonText}>
-                {isCheckingPdf ? 'Checking...' : pdfExists ? 'View PDF' : 'Generate PDF'}
+                {isCheckingPdf ? 'Vérification...' : pdfExists ? 'Voir le PDF' : 'Générer le PDF'}
               </Text>
               {pdfExists && (
                 <Ionicons name="checkmark-circle" size={16} color="#34C759" style={{ marginLeft: 6 }} />
@@ -546,11 +546,11 @@ export default function ManifoldDetails({
         <View style={styles.card}>
           <View style={styles.cardHeader}>
             <Ionicons name="document-text-outline" size={24} color="#11224e" />
-            <Text style={styles.cardTitle}>Basic Information</Text>
+            <Text style={styles.cardTitle}>Informations de base</Text>
           </View>
           
           <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Title</Text>
+            <Text style={styles.infoLabel}>Titre</Text>
             <Text style={styles.infoValue}>{manifolder.title}</Text>
           </View>
           
@@ -567,12 +567,12 @@ export default function ManifoldDetails({
           </View>
           
           <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Start Time</Text>
+            <Text style={styles.infoLabel}>Heure de début</Text>
             <Text style={styles.infoValue}>{formatTime(manifolder.heur_d || null)}</Text>
           </View>
           
           <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>End Time</Text>
+            <Text style={styles.infoLabel}>Heure de fin</Text>
             <Text style={styles.infoValue}>{formatTime(manifolder.heur_f || null)}</Text>
           </View>
         </View>
@@ -618,7 +618,7 @@ export default function ManifoldDetails({
           
           {manifolder.type_description && (
             <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>Type Description</Text>
+              <Text style={styles.infoLabel}>Description de type</Text>
               <Text style={styles.infoValue}>{manifolder.type_description}</Text>
             </View>
           )}
@@ -628,7 +628,7 @@ export default function ManifoldDetails({
         <View style={styles.card}>
           <View style={styles.cardHeader}>
             <Ionicons name="document-outline" size={24} color="#11224e" />
-            <Text style={styles.cardTitle}>Upload Document</Text>
+            <Text style={styles.cardTitle}>Uploader un document</Text>
           </View>
           
           {manifolder.upload_doc ? (
@@ -636,7 +636,7 @@ export default function ManifoldDetails({
               <View style={styles.documentInfo}>
                 <Ionicons name="document-text-outline" size={32} color="#007AFF" />
                 <View style={styles.documentDetails}>
-                  <Text style={styles.documentName}>Attached Document</Text>
+                  <Text style={styles.documentName}>Document attaché</Text>
                   <Text style={styles.documentPath}>{manifolder.upload_doc.split('/').pop()}</Text>
                 </View>
               </View>
@@ -644,7 +644,7 @@ export default function ManifoldDetails({
               <View style={styles.documentActions}>
                 <Pressable style={styles.documentActionButton} onPress={viewDocument}>
                   <Ionicons name="eye-outline" size={20} color="#007AFF" />
-                  <Text style={styles.documentActionText}>View</Text>
+                  <Text style={styles.documentActionText}>Voir</Text>
                 </Pressable>
                 
                 <Pressable 
@@ -654,7 +654,7 @@ export default function ManifoldDetails({
                 >
                   <Ionicons name="trash-outline" size={20} color="#FF3B30" />
                   <Text style={[styles.documentActionText, styles.dangerText]}>
-                    {isUploadingDocument ? 'Removing...' : 'Remove'}
+                    {isUploadingDocument ? 'Suppression...' : 'Supprimer'}
                   </Text>
                 </Pressable>
               </View>
@@ -704,8 +704,8 @@ export default function ManifoldDetails({
                 <View style={styles.signatureStatusContainer}>
                   <Text style={styles.signatureStatusLabel}>
                     {signatureStatus.isComplete 
-                      ? '✅ All signatures completed' 
-                      : `📝 ${signatureStatus.remainingSignatures} signature(s) remaining`
+                      ? '✅ Toutes les signatures sont complétées' 
+                      : `📝 ${signatureStatus.remainingSignatures} signature(s) restantes`
                     }
                   </Text>
                 </View>
@@ -740,7 +740,7 @@ export default function ManifoldDetails({
               
               {signatures.technicien || signatures.control || signatures.admin ? (
                 <View style={styles.signatureInfoContainer}>
-                  <Text style={styles.signatureInfoTitle}>Signed by:</Text>
+                  <Text style={styles.signatureInfoTitle}>Signé par:</Text>
                   {signatures.technicien && (
                     <Text style={styles.signatureInfoText}>
                       • Technicien: {signatures.technicien.email}
@@ -766,23 +766,23 @@ export default function ManifoldDetails({
         <View style={styles.card}>
           <View style={styles.cardHeader}>
             <Ionicons name="settings-outline" size={24} color="#11224e" />
-            <Text style={styles.cardTitle}>More Actions</Text>
+            <Text style={styles.cardTitle}>Plus d&apos;actions</Text>
           </View>
           
           <View style={styles.actionsContainer}>
             <Pressable style={styles.actionButton}>
               <Ionicons name="create-outline" size={20} color="#007AFF" />
-              <Text style={styles.actionButtonText}>Edit Manifolder</Text>
+              <Text style={styles.actionButtonText}>Modifier le manifolder</Text>
             </Pressable>
             
             <Pressable style={styles.actionButton}>
               <Ionicons name="share-outline" size={20} color="#007AFF" />
-              <Text style={styles.actionButtonText}>Share</Text>
+              <Text style={styles.actionButtonText}>Partager</Text>
             </Pressable>
             
             <Pressable style={[styles.actionButton, styles.dangerButton]}>
               <Ionicons name="trash-outline" size={20} color="#FF3B30" />
-              <Text style={[styles.actionButtonText, styles.dangerText]}>Delete</Text>
+              <Text style={[styles.actionButtonText, styles.dangerText]}>Supprimer</Text>
             </Pressable>
           </View>
         </View>
