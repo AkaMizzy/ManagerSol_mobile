@@ -148,7 +148,7 @@ export function CreateChildQualiPhotoForm({ onClose, onSuccess, parentItem }: Fo
         <View style={styles.header}>
           <View style={{ width: 44 }} />
           <View style={styles.headerCenter}>
-            <Text style={styles.headerTitle}>Ajouter une photo &apos;Après&apos;</Text>
+            <Text style={styles.headerTitle}>Ajouter une photo Suivi</Text>
           </View>
           <TouchableOpacity onPress={onClose} style={styles.closeButton}>
             <Ionicons name="close-circle" size={28} color="#d1d5db" />
@@ -162,19 +162,20 @@ export function CreateChildQualiPhotoForm({ onClose, onSuccess, parentItem }: Fo
 
           {/* Context Section */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Photo originale</Text>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.metaText} numberOfLines={1}>
+                {parentItem.project_title} • {parentItem.zone_title}
+                {parentItem.date_taken ? ` • ${formatDate(parentItem.date_taken)}` : ''}
+              </Text>
+            </View>
             <View style={styles.contextCard}>
               <Image source={{ uri: parentItem.photo }} style={styles.contextImage} />
-              <View style={styles.contextTextWrap}>
-                <Text style={styles.contextProject} numberOfLines={1}>{parentItem.project_title}</Text>
-                <Text style={styles.contextZone} numberOfLines={1}>{parentItem.zone_title}</Text>
-              </View>
             </View>
           </View>
 
           {/* Photo Section */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Nouvelle photo &apos;Après&apos;</Text>
+            <Text style={styles.sectionTitle}>Nouvelle photo Suivi</Text>
             {photo ? (
               <View style={styles.photoPreviewContainer}>
                 <Image source={{ uri: photo.uri }} style={styles.photoPreview} />
@@ -249,7 +250,7 @@ export function CreateChildQualiPhotoForm({ onClose, onSuccess, parentItem }: Fo
             ) : (
               <>
                 <Ionicons name="checkmark-circle-outline" size={22} color="#FFFFFF" />
-                <Text style={styles.submitButtonText}>Enregistrer la photo &apos;Après&apos;</Text>
+                <Text style={styles.submitButtonText}>Enregistrer la photo Suivi</Text>
               </>
             )}
           </TouchableOpacity>
@@ -257,6 +258,17 @@ export function CreateChildQualiPhotoForm({ onClose, onSuccess, parentItem }: Fo
       </View>
     </KeyboardAvoidingView>
   );
+}
+
+function formatDate(dateStr: string) {
+  const replaced = dateStr.replace(' ', 'T');
+  const date = new Date(replaced);
+  if (isNaN(date.getTime())) return dateStr;
+  return new Intl.DateTimeFormat('fr-FR', {
+    year: 'numeric',
+    month: 'short',
+    day: '2-digit',
+  }).format(date);
 }
 
 
@@ -345,29 +357,17 @@ const styles = StyleSheet.create({
     aspectRatio: 2.2,
     backgroundColor: '#f3f4f6'
   },
-  contextTextWrap: {
-    padding: 12,
-  },
-  contextProject: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#1f2937'
-  },
-  contextZone: {
-    fontSize: 13,
-    color: '#6b7280',
-    marginTop: 2,
-  },
   photoPreviewContainer: {
-    borderRadius: 12,
     backgroundColor: '#ffffff',
-    overflow: 'hidden',
+    borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#e5e7eb'
+    borderColor: '#e5e7eb',
+    overflow: 'hidden',
   },
   photoPreview: { 
-    width: '100%', 
-    aspectRatio: 4/3, 
+    width: '100%',
+    aspectRatio: 2.2,
+    backgroundColor: '#f3f4f6'
   },
   photoActions: {
     flexDirection: 'row',
@@ -509,5 +509,14 @@ const styles = StyleSheet.create({
     fontSize: 16, 
     fontWeight: '700', 
     color: '#FFFFFF' 
+  },
+  sectionHeader: {
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  metaText: {
+    fontSize: 13,
+    color: '#6b7280',
+    fontWeight: '500',
   },
 });

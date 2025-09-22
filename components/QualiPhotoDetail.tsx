@@ -25,6 +25,7 @@ type Props = {
   const [children, setChildren] = useState<QualiPhotoItem[]>([]);
   const [isLoadingChildren, setIsLoadingChildren] = useState(false);
   const [item, setItem] = useState<QualiPhotoItem | null>(initialItem || null);
+  const [isImagePreviewVisible, setImagePreviewVisible] = useState(false);
 
   useEffect(() => {
     setItem(initialItem || null);
@@ -93,6 +94,7 @@ type Props = {
       sound?.unloadAsync();
       setSound(null);
       setIsPlaying(false);
+      setImagePreviewVisible(false);
     }
   }, [visible, sound]);
 
@@ -137,14 +139,20 @@ type Props = {
     <>
         <View style={{ height: insets.top }} />
         <View style={styles.header}>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Fermer les détails"
-            onPress={onClose}
-            style={styles.closeBtn}
-          >
-            <Ionicons name="close" size={24} color="#11224e" />
-          </Pressable>
+          {item?.id_qualiphoto_parent ? (
+            <Pressable onPress={() => setItem(initialItem || null)} style={styles.closeBtn}>
+              <Ionicons name="arrow-back" size={24} color="#11224e" />
+            </Pressable>
+          ) : (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Fermer les détails"
+              onPress={onClose}
+              style={styles.closeBtn}
+            >
+              <Ionicons name="close" size={24} color="#11224e" />
+            </Pressable>
+          )}
           <View style={styles.headerTitles}>
             <Text style={styles.title}>Détails de la Photo</Text>
             {!!item && <Text numberOfLines={1} style={styles.subtitle}>{subtitle}</Text>}
@@ -155,31 +163,75 @@ type Props = {
          <ScrollView contentContainerStyle={styles.scrollContent} bounces>
           {!!item && (
             <View style={styles.content}>
-              <View style={styles.imageWrap}>
-                <Image source={{ uri: item.photo }} resizeMode="contain" style={styles.image} />
-              </View>
+              <TouchableOpacity onPress={() => setImagePreviewVisible(true)} activeOpacity={0.9}>
+                <View style={styles.imageWrap}>
+                  <Image source={{ uri: item.photo }} resizeMode="contain" style={styles.image} />
+                </View>
+              </TouchableOpacity>
 
-              {item.voice_note ? (
-                <View style={styles.playerCard}>
-                  <Pressable style={styles.playButton} onPress={playSound}>
-                    <Ionicons name={isPlaying ? 'pause-circle' : 'play-circle'} size={48} color="#11224e" />
-                  </Pressable>
-                  <View style={styles.playerMeta}>
-                    <Text style={styles.playerTitle}>Note Vocale</Text>
-                    <Text style={styles.playerSubtitle}>{isPlaying ? 'Lecture...' : 'Prêt à jouer'}</Text>
+              {(item.voice_note || item.before === 1) && (
+                <View style={styles.actionsContainer}>
+                  <View style={styles.actionItem}>
+                    {item.voice_note ? (
+                      <View style={styles.playerCard}>
+                        <Pressable style={styles.playButton} onPress={playSound}>
+                          <Ionicons name={isPlaying ? 'pause-circle' : 'play-circle'} size={48} color="#11224e" />
+                        </Pressable>
+                        <View style={styles.playerMeta}>
+                          <Text style={styles.playerTitle}>Note Vocale</Text>
+                          <Text style={styles.playerSubtitle}>{isPlaying ? 'Lecture...' : 'Prêt à jouer'}</Text>
+                        </View>
+                      </View>
+                    ) : null}
+                  </View>
+                  <View style={styles.actionItem}>
+                    {item.before === 1 ? (
+                      <TouchableOpacity style={styles.addChildButton} onPress={() => setChildModalVisible(true)}>
+                        <Ionicons name="add-circle-outline" size={20} color="#FFFFFF" />
+                        <View style={styles.addChildButtonTextView}>
+                          <Text style={styles.addChildButtonText}>Photo Suivi</Text>
+                        </View>
+                      </TouchableOpacity>
+                    ) : null}
                   </View>
                 </View>
-              ) : null}
+              )}
 
               <View style={styles.metaCard}>
-                <MetaRow label="Projet" value={item.project_title || '—'} />
-                <MetaRow label="Zone" value={item.zone_title || '—'} />
-                {item.user_name && <MetaRow label="Prise par" value={`${item.user_name} ${item.user_lastname || ''}`.trim()} />}
+                <View style={styles.inlineMetaRow}>
+                  <View style={styles.inlineMetaItem}>
+                    <Text style={styles.metaLabel}>Projet</Text>
+                    <Text style={styles.metaValue} numberOfLines={1}>{item.project_title || '—'}</Text>
+                  </View>
+                  <View style={styles.inlineMetaItem}>
+                    <Text style={styles.metaLabel}>Zone</Text>
+                    <Text style={styles.metaValue} numberOfLines={1}>{item.zone_title || '—'}</Text>
+                  </View>
+                </View>
+
+                {(item.user_name || item.date_taken) && (
+                  <View style={[styles.inlineMetaRow, styles.borderedMetaRow]}>
+                    <View style={styles.inlineMetaItem}>
+                      {item.user_name && (
+                        <>
+                          <Text style={styles.metaLabel}>Prise par</Text>
+                          <Text style={styles.metaValue} numberOfLines={1}>{`${item.user_name} ${item.user_lastname || ''}`.trim()}</Text>
+                        </>
+                      )}
+                    </View>
+                    <View style={styles.inlineMetaItem}>
+                      {item.date_taken && (
+                        <>
+                          <Text style={styles.metaLabel}>Date de prise</Text>
+                          <Text style={styles.metaValue} numberOfLines={1}>{formatDate(item.date_taken)}</Text>
+                        </>
+                      )}
+                    </View>
+                  </View>
+                )}
+
                 {typeof item.commentaire === 'string' && item.commentaire.trim().length > 0 ? (
                   <MetaRow label="Commentaire" value={item.commentaire} multiline />
-                ) : null}
-                {item.date_taken ? (
-                  <MetaRow label="Date de prise" value={formatDate(item.date_taken)} />
                 ) : null}
               </View>
 
@@ -210,10 +262,6 @@ type Props = {
               
               {item.before === 1 && (
                 <View style={styles.metaCard}>
-                  <TouchableOpacity style={styles.addChildButton} onPress={() => setChildModalVisible(true)}>
-                    <Ionicons name="add-circle-outline" size={20} color="#FFFFFF" />
-                    <Text style={styles.addChildButtonText}>Ajouter une photo &apos;Après&apos;</Text>
-                  </TouchableOpacity>
                   {children.length > 0 && <Text style={styles.childListTitle}>Photos &apos;Après&apos;</Text>}
                   {isLoadingChildren && <Text>Chargement...</Text>}
                   {!isLoadingChildren && children.length === 0 && item.before === 1 && (
@@ -246,10 +294,24 @@ type Props = {
     </>
    );
 
+   const renderImagePreview = () => (
+    <View style={styles.previewContainer}>
+      <Image source={{ uri: item!.photo }} style={styles.previewImage} resizeMode="contain" />
+      <TouchableOpacity
+        style={[styles.previewCloseButton, { top: insets.top + 10 }]}
+        onPress={() => setImagePreviewVisible(false)}
+      >
+        <Ionicons name="close" size={32} color="#fff" />
+      </TouchableOpacity>
+    </View>
+  );
+
    return (
      <Modal visible={visible} onRequestClose={onClose} animationType="slide" presentationStyle="fullScreen">
       <SafeAreaView edges={['bottom']} style={styles.container}>
-        {item && isChildModalVisible ? (
+        {isImagePreviewVisible ? (
+          renderImagePreview()
+        ) : item && isChildModalVisible ? (
           <CreateChildQualiPhotoForm
             parentItem={item}
             onSuccess={handleChildSuccess}
@@ -275,7 +337,6 @@ function MetaRow({ label, value, multiline }: { label: string; value: string; mu
 }
 
 function formatDate(dateStr: string) {
-  // dateStr expected format: YYYY-MM-DD HH:mm:SS (server normalized)
   const replaced = dateStr.replace(' ', 'T');
   const date = new Date(replaced);
   if (isNaN(date.getTime())) return dateStr;
@@ -335,15 +396,16 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   imageWrap: {
-    width: '100%',
-    aspectRatio: 1,
-    backgroundColor: '#000000',
+    backgroundColor: '#ffffff',
     borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
     overflow: 'hidden',
   },
   image: {
     width: '100%',
-    height: '100%',
+    aspectRatio: 2.2,
+    backgroundColor: '#f3f4f6'
   },
   metaCard: {
     backgroundColor: '#FFFFFF',
@@ -359,6 +421,9 @@ const styles = StyleSheet.create({
   },
   metaRow: {
     marginBottom: 10,
+    borderTopWidth: 1,
+    borderColor: '#e5e7eb',
+    paddingTop: 10,
   },
   metaLabel: {
     color: '#94a3b8',
@@ -417,12 +482,16 @@ const styles = StyleSheet.create({
     gap: 8,
     backgroundColor: '#11224e',
     paddingVertical: 12,
+    paddingHorizontal: 16,
     borderRadius: 10,
-    marginBottom: 16,
+  },
+  addChildButtonTextView: {
+    flex: 1,
   },
   addChildButtonText: {
     color: '#FFFFFF',
     fontWeight: 'bold',
+    textAlign: 'center',
   },
   childListTitle: {
     fontSize: 14,
@@ -468,6 +537,14 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     fontSize: 13,
   },
+  actionsContainer: {
+    flexDirection: 'row',
+    gap: 12,
+    alignItems: 'center',
+  },
+  actionItem: {
+    flex: 1,
+  },
   backToParentButton: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -479,7 +556,36 @@ const styles = StyleSheet.create({
   backToParentButtonText: {
       color: '#11224e',
       fontWeight: '600',
-  }
+  },
+  inlineMetaRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 12,
+    marginBottom: 10,
+  },
+  inlineMetaItem: {
+    flex: 1,
+  },
+  borderedMetaRow: {
+    borderTopWidth: 1,
+    borderColor: '#e5e7eb',
+    paddingTop: 10,
+  },
+  previewContainer: {
+    flex: 1,
+    backgroundColor: 'black',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  previewImage: {
+    width: '100%',
+    height: '100%',
+  },
+  previewCloseButton: {
+    position: 'absolute',
+    right: 20,
+    zIndex: 1,
+  },
 });
 
 
