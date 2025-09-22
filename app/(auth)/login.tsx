@@ -111,14 +111,20 @@ export default function LoginScreen() {
           {/* Header */}
           <View style={styles.header}>
             <View style={styles.logoContainer}>
-              <Image
-                source={require('../../assets/images/icon.png')}
-                style={styles.logoImage}
-                contentFit="contain"
-              />
+              <View style={styles.logoGradient}>
+                <View style={styles.logo}> 
+                  <Image
+                    source={require('../../assets/images/icon.png')}
+                    style={styles.logoImage}
+                    contentFit="contain"
+                  />
+                </View>
+              </View>
             </View>
             <Text style={styles.title}>Qualisol</Text>
-           
+            <Text style={styles.subtitle}>
+              {/* Professional construction management for your teams */}
+            </Text>
           </View>
 
           {/* Form */}
@@ -133,7 +139,7 @@ export default function LoginScreen() {
                 <Ionicons
                   name="person-outline"
                   size={20}
-                  color={focusedField === 'email' ? '#f87b1b' : '#9CA3AF'}
+                  color={focusedField === 'email' ? '#FF6B35' : '#6B7280'}
                   style={styles.inputIcon}
                 />
                 <TextInput
@@ -161,7 +167,7 @@ export default function LoginScreen() {
                 <Ionicons
                   name="lock-closed-outline"
                   size={20}
-                  color={focusedField === 'password' ? '#f87b1b' : '#9CA3AF'}
+                  color={focusedField === 'password' ? '#FF6B35' : '#6B7280'}
                   style={styles.inputIcon}
                 />
                 <TextInput
@@ -183,16 +189,11 @@ export default function LoginScreen() {
                   <Ionicons
                     name={showPassword ? 'eye-off-outline' : 'eye-outline'}
                     size={20}
-                    color={focusedField === 'password' ? '#f87b1b' : '#9CA3AF'}
+                    color={focusedField === 'password' ? '#FF6B35' : '#6B7280'}
                   />
                 </TouchableOpacity>
               </View>
             </View>
-
-            {/* Forgot Password */}
-            <TouchableOpacity style={styles.forgotPassword}>
-              <Text style={styles.forgotPasswordText}>Mot de passe oublié?</Text>
-            </TouchableOpacity>
 
             {/* Login Button */}
             <TouchableOpacity
@@ -206,24 +207,24 @@ export default function LoginScreen() {
                 <Text style={styles.loginButtonText}>Se connecter</Text>
               )}
             </TouchableOpacity>
+
+            {/* Forgot Password */}
+            <TouchableOpacity style={styles.forgotPassword}>
+              <Text style={styles.forgotPasswordText}>Mot de passe oublié?</Text>
+            </TouchableOpacity>
           </View>
 
           {/* Footer */}
           <View style={styles.footer}>
             <Text style={styles.footerText}>
               Vous n&apos;avez pas de compte?{' '}
-              <Text style={styles.footerLink}>
-                Contactez votre administrateur
               </Text>
+              <Text style={styles.footerLink}>Contactez votre administrateur</Text>
+            
+            <Text style={[styles.footerText, { marginTop: 70, fontSize: 12, }]}>
+            <Text style={{color: '#FF6B35',fontSize: 15 }}> QualiSol </Text> ©{new Date().getFullYear()}-{new Date().getFullYear() + 1}. Tous droits réservés.
             </Text>
-            <View style={styles.copyrightContainer}>
-              <Text style={styles.copyrightText}>
-                <Text style={styles.copyrightBrand}>QualiSol</Text> ©
-                {new Date().getFullYear()}-{new Date().getFullYear() + 1}. Tous
-                droits réservés.
-              </Text>
-              <Text style={styles.copyrightLink}>www.muntadaacom.com</Text>
-            </View>
+            <Text style={{color: '#FF6B35'}}>www.muntadaacom.com</Text>
           </View>
         </View>
       </KeyboardAvoidingView>
@@ -244,17 +245,16 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#F8FAFC',
   },
   keyboardView: {
     flex: 1,
   },
   content: {
     flex: 1,
-    paddingHorizontal: 24,
-    justifyContent: 'center',
-    paddingTop: 40,
-    paddingBottom: 20,
+    paddingHorizontal: 32,
+    justifyContent: 'space-between',
+    minHeight: height * 0.9,
   },
   backgroundGradient: {
     position: 'absolute',
@@ -267,72 +267,95 @@ const styles = StyleSheet.create({
   },
   header: {
     alignItems: 'center',
-    marginBottom: 32,
+    paddingTop: height * 0.03,
+    paddingBottom: 10,
   },
   logoContainer: {
+    marginBottom: 15,
+  },
+  logoGradient: {
     width: 100,
     height: 100,
-    borderRadius: 24,
-    backgroundColor: '#F1F5F9',
+    borderRadius: 22,
+    backgroundColor: '#FF6B35',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 24,
-    shadowColor: '#11224e',
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
+    shadowColor: '#FF6B35',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.3,
+    shadowRadius: 16,
+    elevation: 8,
+  },
+  logo: {
+    width: 90,
+    height: 90,
+    borderRadius: 18,
+    backgroundColor: '#FFFFFF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#1F2937',
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 5,
+    shadowRadius: 4,
+    elevation: 2,
   },
   logoImage: {
-    width: '70%',
-    height: '70%',
+    width: '85%',
+    height: '85%',
   },
   title: {
     fontSize: 32,
-    fontWeight: '700',
-    color: '#11224e',
+    fontWeight: '800',
+    color: '#FF6B35',
+    marginBottom: 8,
+    letterSpacing: -0.5,
   },
   subtitle: {
     fontSize: 16,
-    color: '#64748B',
-    marginTop: 8,
+    color: '#6B7280',
     textAlign: 'center',
+    lineHeight: 24,
     paddingHorizontal: 20,
   },
   form: {
-    width: '100%',
+    flex: 1,
+    justifyContent: 'center',
+    paddingTop: 10,
+    paddingBottom: 20,
   },
   inputContainer: {
-    marginBottom: 20,
+    marginBottom: 24,
   },
   inputLabel: {
+    
     fontSize: 14,
     fontWeight: '600',
-    color: '#11224e',
+    color: '#FF6B35',
     marginBottom: 8,
     marginLeft: 4,
   },
   inputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F8FAFC',
-    borderRadius: 12,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
     paddingHorizontal: 16,
-    borderWidth: 1.5,
-    borderColor: '#E2E8F0',
-    height: 56,
+    paddingVertical: 16,
+    borderWidth: 2,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+    borderColor: '#FF6B35',
+    shadowColor: '#FF6B35'
   },
   inputWrapperFocused: {
-    borderColor: '#f87b1b',
-    backgroundColor: '#FFFFFF',
-    shadowColor: '#f87b1b',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.2,
-    shadowRadius: 5,
-    elevation: 2,
+    borderColor: '#FF6B35',
+    shadowColor: '#FF6B35',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 4,
   },
   inputIcon: {
     marginRight: 12,
@@ -340,75 +363,59 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     fontSize: 16,
-    color: '#1E293B',
+    fontWeight: '500',
+    color: '#1F2937',
+    paddingVertical: 0,
   },
   eyeIcon: {
     padding: 4,
   },
   loginButton: {
-    backgroundColor: '#f87b1b',
-    borderRadius: 12,
+    backgroundColor: '#FF6B35',
+    borderRadius: 16,
     paddingVertical: 18,
     alignItems: 'center',
-    justifyContent: 'center',
     marginTop: 16,
-    shadowColor: '#f87b1b',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 5,
-    height: 56,
+    shadowColor: '#FF6B35',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.25,
+    shadowRadius: 12,
+    elevation: 8,
   },
   loginButtonDisabled: {
-    backgroundColor: '#CBD5E1',
+    backgroundColor: '#9CA3AF',
     shadowOpacity: 0,
     elevation: 0,
   },
   loginButtonText: {
     color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: 'bold',
+    fontSize: 18,
+    fontWeight: '700',
+    letterSpacing: 0.5,
   },
   forgotPassword: {
-    alignSelf: 'flex-end',
-    marginTop: 12,
-    marginBottom: 8,
-    paddingVertical: 4,
+    alignItems: 'center',
+    marginTop:20,
+    marginLeft: 170,
   },
   forgotPasswordText: {
-    color: '#11224e',
+    color: '#FF6B35',
     fontSize: 14,
     fontWeight: '600',
   },
   footer: {
     alignItems: 'center',
-    marginTop: 'auto',
-    paddingTop: 32,
+    paddingBottom: 100,
+    paddingTop: 20,
+    marginBottom:-80,
   },
   footerText: {
     fontSize: 14,
-    color: '#64748B',
+    color: '#6B7280',
     textAlign: 'center',
+    lineHeight: 20,
   },
   footerLink: {
-    color: '#f87b1b',
     fontWeight: '600',
-  },
-  copyrightContainer: {
-    marginTop: 24,
-    alignItems: 'center',
-  },
-  copyrightText: {
-    fontSize: 12,
-    color: '#94A3B8',
-  },
-  copyrightBrand: {
-    color: '#f87b1b',
-    fontWeight: '600',
-  },
-  copyrightLink: {
-    fontSize: 12,
-    color: '#f87b1b',
-    marginTop: 4,
   },
 });

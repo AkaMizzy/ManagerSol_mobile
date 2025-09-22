@@ -152,18 +152,13 @@ export default function QualiPhotoGalleryScreen() {
 
   const keyExtractor = useCallback((item: QualiPhotoItem) => item.id, []);
 
-  const subtitleText = `${total} photos`;
+  
 
   return (
     <SafeAreaView style={styles.container}>
       <AppHeader user={user || undefined} />
       <View style={styles.header}>
-        <View style={styles.headerTop}>
-          <View style={styles.headerLeft}>
-            <Ionicons name="images-outline" size={24} color="#11224e" />
-            <Text style={styles.subtitle}>{subtitleText}</Text>
-          </View>
-        </View>
+        
 
         <View style={styles.filterContainer}>
           <View style={styles.filtersRow}>
