@@ -7,6 +7,7 @@ import {
   Dimensions,
   KeyboardAvoidingView,
   Platform,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -83,16 +84,11 @@ export default function LoginScreen() {
       return;
     }
 
-    console.log('Starting login process...');
     const result = await login(form.email, form.password);
-    console.log('Login result:', result);
     
     if (result.success) {
-      console.log('Login successful, post-login loading will begin...');
       showAlert('success', 'Login Successful!', 'Welcome to QualiSol. Redirecting to your workspace...');
-      // Navigation will be handled by AuthWrapper after loading screen
     } else {
-      console.log('Login failed:', result.error);
       showAlert('error', 'Login Failed', result.error || 'Invalid credentials. Please check your email and password.');
     }
   };
@@ -104,129 +100,122 @@ export default function LoginScreen() {
         style={styles.keyboardView}
         keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
       >
-        <View style={styles.content}>
-          {/* Background Gradient Effect */}
-          <View style={styles.backgroundGradient} />
-          
-          {/* Header */}
-          <View style={styles.header}>
-            <View style={styles.logoContainer}>
-              <View style={styles.logoGradient}>
-                <View style={styles.logo}> 
+        <ScrollView contentContainerStyle={styles.scrollViewContent} showsVerticalScrollIndicator={false}>
+          <View style={styles.content}>
+            <View style={styles.mainContent}>
+              {/* Header */}
+              <View style={styles.header}>
+                <View style={styles.logoContainer}>
                   <Image
                     source={require('../../assets/images/icon.png')}
                     style={styles.logoImage}
                     contentFit="contain"
                   />
                 </View>
+                <Text style={styles.title}>Welcome to Qualisol</Text>
+                <Text style={styles.subtitle}>Sign in to continue</Text>
               </View>
-            </View>
-            <Text style={styles.title}>Qualisol</Text>
-            <Text style={styles.subtitle}>
-              {/* Professional construction management for your teams */}
-            </Text>
-          </View>
 
-          {/* Form */}
-          <View style={styles.form}>
-            {/* Email Input */}
-            <View style={styles.inputContainer}>
-              <Text style={styles.inputLabel}>Identifiant</Text>
-              <View style={[
-                styles.inputWrapper,
-                focusedField === 'email' && styles.inputWrapperFocused
-              ]}>
-                <Ionicons
-                  name="person-outline"
-                  size={20}
-                  color={focusedField === 'email' ? '#FF6B35' : '#6B7280'}
-                  style={styles.inputIcon}
-                />
-                <TextInput
-                  style={styles.input}
-                  placeholder="Enter l'identifiant"
-                  placeholderTextColor="#9CA3AF"
-                  value={form.email}
-                  onChangeText={(value) => handleInputChange('email', value)}
-                  onFocus={() => handleInputFocus('email')}
-                  onBlur={handleInputBlur}
-                  keyboardType="email-address"
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                />
-              </View>
-            </View>
+              {/* Form */}
+              <View style={styles.form}>
+                {/* Email Input */}
+                <View style={styles.inputContainer}>
+                  <Text style={styles.inputLabel}>Identifiant</Text>
+                  <View style={[
+                    styles.inputWrapper,
+                    focusedField === 'email' && styles.inputWrapperFocused
+                  ]}>
+                    <Ionicons
+                      name="person-outline"
+                      size={22}
+                      color={focusedField === 'email' ? '#f87b1b' : '#6B7280'}
+                      style={styles.inputIcon}
+                    />
+                    <TextInput
+                      style={styles.input}
+                      placeholder="Enter l'identifiant"
+                      placeholderTextColor="#9CA3AF"
+                      value={form.email}
+                      onChangeText={(value) => handleInputChange('email', value)}
+                      onFocus={() => handleInputFocus('email')}
+                      onBlur={handleInputBlur}
+                      keyboardType="email-address"
+                      autoCapitalize="none"
+                      autoCorrect={false}
+                    />
+                  </View>
+                </View>
 
-            {/* Password Input */}
-            <View style={styles.inputContainer}>
-              <Text style={styles.inputLabel}>Password</Text>
-              <View style={[
-                styles.inputWrapper,
-                focusedField === 'password' && styles.inputWrapperFocused
-              ]}>
-                <Ionicons
-                  name="lock-closed-outline"
-                  size={20}
-                  color={focusedField === 'password' ? '#FF6B35' : '#6B7280'}
-                  style={styles.inputIcon}
-                />
-                <TextInput
-                  style={styles.input}
-                  placeholder="Enter le mot de passe"
-                  placeholderTextColor="#9CA3AF"
-                  value={form.password}
-                  onChangeText={(value) => handleInputChange('password', value)}
-                  onFocus={() => handleInputFocus('password')}
-                  onBlur={handleInputBlur}
-                  secureTextEntry={!showPassword}
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                />
+                {/* Password Input */}
+                <View style={styles.inputContainer}>
+                  <Text style={styles.inputLabel}>Password</Text>
+                  <View style={[
+                    styles.inputWrapper,
+                    focusedField === 'password' && styles.inputWrapperFocused
+                  ]}>
+                    <Ionicons
+                      name="lock-closed-outline"
+                      size={22}
+                      color={focusedField === 'password' ? '#f87b1b' : '#6B7280'}
+                      style={styles.inputIcon}
+                    />
+                    <TextInput
+                      style={styles.input}
+                      placeholder="Enter le mot de passe"
+                      placeholderTextColor="#9CA3AF"
+                      value={form.password}
+                      onChangeText={(value) => handleInputChange('password', value)}
+                      onFocus={() => handleInputFocus('password')}
+                      onBlur={handleInputBlur}
+                      secureTextEntry={!showPassword}
+                      autoCapitalize="none"
+                      autoCorrect={false}
+                    />
+                    <TouchableOpacity
+                      onPress={() => setShowPassword(!showPassword)}
+                      style={styles.eyeIcon}
+                    >
+                      <Ionicons
+                        name={showPassword ? 'eye-off-outline' : 'eye-outline'}
+                        size={22}
+                        color={focusedField === 'password' ? '#f87b1b' : '#6B7280'}
+                      />
+                    </TouchableOpacity>
+                  </View>
+                </View>
+
+                <TouchableOpacity style={styles.forgotPassword}>
+                  <Text style={styles.forgotPasswordText}>Mot de passe oublié?</Text>
+                </TouchableOpacity>
+
+                {/* Login Button */}
                 <TouchableOpacity
-                  onPress={() => setShowPassword(!showPassword)}
-                  style={styles.eyeIcon}
+                  style={[styles.loginButton, isLoading && styles.loginButtonDisabled]}
+                  onPress={handleLogin}
+                  disabled={isLoading}
                 >
-                  <Ionicons
-                    name={showPassword ? 'eye-off-outline' : 'eye-outline'}
-                    size={20}
-                    color={focusedField === 'password' ? '#FF6B35' : '#6B7280'}
-                  />
+                  {isLoading ? (
+                    <ActivityIndicator color="#FFFFFF" size="small" />
+                  ) : (
+                    <Text style={styles.loginButtonText}>Se connecter</Text>
+                  )}
                 </TouchableOpacity>
               </View>
             </View>
 
-            {/* Login Button */}
-            <TouchableOpacity
-              style={[styles.loginButton, isLoading && styles.loginButtonDisabled]}
-              onPress={handleLogin}
-              disabled={isLoading}
-            >
-              {isLoading ? (
-                <ActivityIndicator color="#FFFFFF" size="small" />
-              ) : (
-                <Text style={styles.loginButtonText}>Se connecter</Text>
-              )}
-            </TouchableOpacity>
-
-            {/* Forgot Password */}
-            <TouchableOpacity style={styles.forgotPassword}>
-              <Text style={styles.forgotPasswordText}>Mot de passe oublié?</Text>
-            </TouchableOpacity>
-          </View>
-
-          {/* Footer */}
-          <View style={styles.footer}>
-            <Text style={styles.footerText}>
-              Vous n&apos;avez pas de compte?{' '}
+            {/* Footer */}
+            <View style={styles.footer}>
+              <Text style={styles.footerText}>
+                Vous n&apos;avez pas de compte?{' '}
+                <Text style={styles.footerLink}>Contactez votre administrateur</Text>
               </Text>
-              <Text style={styles.footerLink}>Contactez votre administrateur</Text>
-            
-            <Text style={[styles.footerText, { marginTop: 70, fontSize: 12, }]}>
-            <Text style={{color: '#FF6B35',fontSize: 15 }}> QualiSol </Text> ©{new Date().getFullYear()}-{new Date().getFullYear() + 1}. Tous droits réservés.
-            </Text>
-            <Text style={{color: '#FF6B35'}}>www.muntadaacom.com</Text>
+              <Text style={styles.copyrightText}>
+                <Text style={styles.copyrightBrand}>QualiSol</Text> ©{new Date().getFullYear()}. Tous droits réservés.
+              </Text>
+              <Text style={styles.websiteText}>www.muntadaacom.com</Text>
+            </View>
           </View>
-        </View>
+        </ScrollView>
       </KeyboardAvoidingView>
       
       {/* Custom Alert */}
@@ -245,142 +234,107 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: '#FFFFFF',
   },
   keyboardView: {
     flex: 1,
+  },
+  scrollViewContent: {
+    flexGrow: 1,
+    justifyContent: 'center',
+    paddingVertical: 20,
   },
   content: {
     flex: 1,
     paddingHorizontal: 32,
     justifyContent: 'space-between',
-    minHeight: height * 0.9,
   },
-  backgroundGradient: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: '#F8FAFC',
-    opacity: 0.8,
+  mainContent: {
+    flex: 1,
+    justifyContent: 'center',
   },
   header: {
     alignItems: 'center',
-    paddingTop: height * 0.03,
-    paddingBottom: 10,
+    marginBottom: 32,
   },
   logoContainer: {
-    marginBottom: 15,
-  },
-  logoGradient: {
     width: 100,
     height: 100,
-    borderRadius: 22,
-    backgroundColor: '#FF6B35',
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#FF6B35',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.3,
-    shadowRadius: 16,
-    elevation: 8,
-  },
-  logo: {
-    width: 90,
-    height: 90,
-    borderRadius: 18,
+    borderRadius: 20,
     backgroundColor: '#FFFFFF',
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#1F2937',
-    shadowOffset: { width: 0, height: 2 },
+    shadowColor: '#11224e',
+    shadowOffset: { width: 0, height: 5 },
     shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
+    shadowRadius: 15,
+    elevation: 10,
+    marginBottom: 24,
   },
   logoImage: {
-    width: '85%',
-    height: '85%',
+    width: '75%',
+    height: '75%',
   },
   title: {
-    fontSize: 32,
-    fontWeight: '800',
-    color: '#FF6B35',
-    marginBottom: 8,
-    letterSpacing: -0.5,
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: '#11224e',
+    textAlign: 'center',
   },
   subtitle: {
     fontSize: 16,
     color: '#6B7280',
     textAlign: 'center',
-    lineHeight: 24,
-    paddingHorizontal: 20,
+    marginTop: 8,
   },
   form: {
-    flex: 1,
-    justifyContent: 'center',
-    paddingTop: 10,
-    paddingBottom: 20,
+    width: '100%',
   },
   inputContainer: {
-    marginBottom: 24,
+    marginBottom: 20,
   },
   inputLabel: {
-    
     fontSize: 14,
     fontWeight: '600',
-    color: '#FF6B35',
+    color: '#11224e',
     marginBottom: 8,
-    marginLeft: 4,
   },
   inputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    paddingHorizontal: 16,
-    paddingVertical: 16,
-    borderWidth: 2,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
-    borderColor: '#FF6B35',
-    shadowColor: '#FF6B35'
+    backgroundColor: '#F3F4F6',
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    borderWidth: 1,
+    borderColor: '#F3F4F6',
+    height: 56,
   },
   inputWrapperFocused: {
-    borderColor: '#FF6B35',
-    shadowColor: '#FF6B35',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 12,
-    elevation: 4,
+    borderColor: '#f87b1b',
+    backgroundColor: '#FFFFFF',
   },
   inputIcon: {
-    marginRight: 12,
+    marginRight: 10,
   },
   input: {
     flex: 1,
     fontSize: 16,
-    fontWeight: '500',
-    color: '#1F2937',
-    paddingVertical: 0,
+    color: '#11224e',
   },
   eyeIcon: {
-    padding: 4,
+    padding: 8,
   },
   loginButton: {
-    backgroundColor: '#FF6B35',
-    borderRadius: 16,
-    paddingVertical: 18,
+    backgroundColor: '#f87b1b',
+    borderRadius: 12,
+    paddingVertical: 16,
     alignItems: 'center',
-    marginTop: 16,
-    shadowColor: '#FF6B35',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.25,
-    shadowRadius: 12,
-    elevation: 8,
+    marginTop: 12,
+    shadowColor: '#f87b1b',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 6,
   },
   loginButtonDisabled: {
     backgroundColor: '#9CA3AF',
@@ -389,33 +343,45 @@ const styles = StyleSheet.create({
   },
   loginButtonText: {
     color: '#FFFFFF',
-    fontSize: 18,
-    fontWeight: '700',
-    letterSpacing: 0.5,
+    fontSize: 16,
+    fontWeight: 'bold',
   },
   forgotPassword: {
-    alignItems: 'center',
-    marginTop:20,
-    marginLeft: 170,
+    alignSelf: 'flex-end',
+    marginBottom: 24,
   },
   forgotPasswordText: {
-    color: '#FF6B35',
+    color: '#11224e',
     fontSize: 14,
     fontWeight: '600',
   },
   footer: {
     alignItems: 'center',
-    paddingBottom: 100,
-    paddingTop: 20,
-    marginBottom:-80,
+    paddingBottom: 20,
   },
   footerText: {
     fontSize: 14,
     color: '#6B7280',
     textAlign: 'center',
-    lineHeight: 20,
   },
   footerLink: {
+    color: '#f87b1b',
     fontWeight: '600',
   },
+  copyrightText: {
+    fontSize: 12,
+    color: '#6B7280',
+    textAlign: 'center',
+    marginTop: 24,
+  },
+  copyrightBrand: {
+    fontWeight: 'bold',
+    color: '#11224e',
+  },
+  websiteText: {
+    fontSize: 12,
+    color: '#f87b1b',
+    fontWeight: '600',
+    marginTop: 4,
+  }
 });
