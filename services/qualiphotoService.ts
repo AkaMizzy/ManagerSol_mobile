@@ -95,6 +95,19 @@ class QualiPhotoService {
     return this.makeRequest<QualiZone[]>(`/projects/${projectId}/zones`, token, { method: 'GET' });
   }
 
+  async checkIfExists(projectId: string, zoneId: string, token: string): Promise<{ exists: boolean }> {
+    const endpoint = `/qualiphoto/exists?id_project=${encodeURIComponent(projectId)}&id_zone=${encodeURIComponent(zoneId)}`;
+    return this.makeRequest<{ exists: boolean }>(endpoint, token, { method: 'GET' });
+  }
+
+  async updateCommentaire2(id: string, commentaire2: string, token: string): Promise<{ success: boolean }> {
+    return this.makeRequest<{ success: boolean }>(`/qualiphoto/${id}`, token, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ commentaire2 }),
+    });
+  }
+
   async create(payload: CreateQualiPhotoPayload, token: string): Promise<Partial<QualiPhotoItem>> {
     const formData = new FormData();
     if (payload.id_project) formData.append('id_project', payload.id_project);

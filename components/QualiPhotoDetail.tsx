@@ -2,7 +2,7 @@ import qualiphotoService, { QualiPhotoItem } from '@/services/qualiphotoService'
 import { Ionicons } from '@expo/vector-icons';
 import { Audio } from 'expo-av';
 import React, { useEffect, useMemo, useState } from 'react';
-import { Image, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, Image, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CreateChildQualiPhotoForm } from './CreateChildQualiPhotoModal';
@@ -18,6 +18,10 @@ type Props = {
   item?: QualiPhotoItem | null;
 };
 
+type QualiPhotoItemWithComment2 = QualiPhotoItem & {
+  commentaire2?: string | null;
+};
+
  export default function QualiPhotoDetail({ visible, onClose, item: initialItem }: Props) {
   const { token } = useAuth();
   const insets = useSafeAreaInsets();
@@ -27,9 +31,12 @@ type Props = {
   const [isChildModalVisible, setChildModalVisible] = useState(false);
   const [children, setChildren] = useState<QualiPhotoItem[]>([]);
   const [isLoadingChildren, setIsLoadingChildren] = useState(false);
-  const [item, setItem] = useState<QualiPhotoItem | null>(initialItem || null);
+  const [item, setItem] = useState<QualiPhotoItemWithComment2 | null>(initialItem || null);
   const [isImagePreviewVisible, setImagePreviewVisible] = useState(false);
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+  const [isCommentModalVisible, setCommentModalVisible] = useState(false);
+  const [newComment, setNewComment] = useState('');
+  const [isSubmittingComment, setIsSubmittingComment] = useState(false);
 
   useEffect(() => {
     setItem(initialItem || null);
@@ -163,7 +170,7 @@ type Props = {
               onPress={onClose}
               style={styles.closeBtn}
             >
-              <Ionicons name="close" size={24} color="#11224e" />
+              <Ionicons name="arrow-back" size={24} color="#11224e" />
             </Pressable>
           )}
           <View style={styles.headerTitles}>
@@ -202,10 +209,11 @@ type Props = {
                 {typeof item.commentaire === 'string' && item.commentaire.trim().length > 0 ? (
                   <MetaRow label="Commentaire" value={item.commentaire} multiline />
                 ) : null}
+                {item.commentaire2 && <MetaRow label="Commentaire 2" value={item.commentaire2} multiline />}
               </View>
               <TouchableOpacity onPress={() => setImagePreviewVisible(true)} activeOpacity={0.9}>
                 <View style={styles.imageWrap}>
-                  <Image source={{ uri: item.photo }} resizeMode="contain" style={styles.image} />
+                  <Image source={{ uri: item.photo }} style={styles.image} />
                 </View>
               </TouchableOpacity>
 
@@ -235,6 +243,11 @@ type Props = {
                       <Ionicons name={sortOrder === 'desc' ? 'arrow-down' : 'arrow-up'} size={32} color="#11224e" />
                     </TouchableOpacity>
                   )}
+                  {item.after === 1 && !item.commentaire2 && (
+                    <TouchableOpacity style={styles.actionButton} onPress={() => setCommentModalVisible(true)}>
+                      <Ionicons name="pencil" size={32} color="#11224e" />
+                    </TouchableOpacity>
+                  )}
                 </View>
               )}
 
@@ -243,7 +256,7 @@ type Props = {
                 <View style={styles.metaCard}>
                   {isLoadingChildren && <Text>Chargement...</Text>}
                   {!isLoadingChildren && children.length === 0 && item.before === 1 && (
-                      <Text style={styles.noChildrenText}>Aucune photo &apos;après&apos; n&apos;a encore été ajoutée.</Text>
+                      <Text style={styles.noChildrenText}>Aucune photo suivie n&apos;a encore été ajoutée.</Text>
                   )}
                   <View style={styles.childListContainer}>
                     {children.map((child) => (
@@ -271,6 +284,69 @@ type Props = {
         </ScrollView>
     </>
    );
+
+   const handleAddComment = async () => {
+    if (!item || !token || !newComment.trim()) {
+      Alert.alert('Erreur', 'Le commentaire ne peut pas être vide.');
+      return;
+    }
+
+    setIsSubmittingComment(true);
+    try {
+      await qualiphotoService.updateCommentaire2(item.id, newComment, token);
+      // Optimistically update the item
+      setItem(prev => prev ? { ...prev, commentaire2: newComment } : null);
+      setCommentModalVisible(false);
+      setNewComment('');
+      Alert.alert('Succès', 'Commentaire ajouté avec succès.');
+    } catch (error) {
+      console.error('Failed to add comment:', error);
+      Alert.alert('Erreur', 'Échec de l\'ajout du commentaire.');
+    } finally {
+      setIsSubmittingComment(false);
+    }
+   };
+
+   const renderCommentModal = () => (
+    <Modal
+      visible={isCommentModalVisible}
+      transparent
+      animationType="fade"
+      onRequestClose={() => setCommentModalVisible(false)}
+    >
+      <View style={styles.commentModalContainer}>
+        <View style={styles.commentModalContent}>
+          <Text style={styles.commentModalTitle}>Ajouter un Commentaire</Text>
+          <TextInput
+            style={styles.commentInput}
+            placeholder="Saisissez votre commentaire..."
+            value={newComment}
+            onChangeText={setNewComment}
+            multiline
+          />
+          <View style={styles.commentModalActions}>
+            <TouchableOpacity
+              style={styles.commentModalButton}
+              onPress={() => setCommentModalVisible(false)}
+            >
+              <Text style={styles.commentModalButtonText}>Annuler</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.commentModalButton, styles.commentModalSaveButton]}
+              onPress={handleAddComment}
+              disabled={isSubmittingComment}
+            >
+              {isSubmittingComment ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <Text style={[styles.commentModalButtonText, { color: '#fff' }]}>Enregistrer</Text>
+              )}
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    </Modal>
+  );
 
    const renderImagePreview = () => (
     <View style={styles.previewContainer}>
@@ -300,6 +376,7 @@ type Props = {
         ) : (
           renderDetailView()
         )}
+        {renderCommentModal()}
       </SafeAreaView>
     </Modal>
   );
@@ -382,7 +459,7 @@ const styles = StyleSheet.create({
   },
   image: {
     width: '100%',
-    aspectRatio: 2.2,
+    aspectRatio: 16/9,
     backgroundColor: '#f3f4f6'
   },
   metaCard: {
@@ -576,6 +653,52 @@ const styles = StyleSheet.create({
     position: 'absolute',
     right: 20,
     zIndex: 1,
+  },
+  commentModalContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  commentModalContent: {
+    width: '80%',
+    backgroundColor: 'white',
+    borderRadius: 10,
+    padding: 20,
+    alignItems: 'center',
+  },
+  commentModalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 15,
+  },
+  commentInput: {
+    width: '100%',
+    height: 100,
+    borderColor: '#ccc',
+    borderWidth: 1,
+    borderRadius: 5,
+    padding: 10,
+    textAlignVertical: 'top',
+  },
+  commentModalActions: {
+    flexDirection: 'row',
+    marginTop: 20,
+    justifyContent: 'space-between',
+    width: '100%',
+  },
+  commentModalButton: {
+    padding: 10,
+    borderRadius: 5,
+    flex: 1,
+    alignItems: 'center',
+    marginHorizontal: 5,
+  },
+  commentModalSaveButton: {
+    backgroundColor: '#11224e',
+  },
+  commentModalButtonText: {
+    fontSize: 16,
   },
 });
 

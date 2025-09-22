@@ -42,12 +42,14 @@ export default function QualiPhotoGalleryScreen() {
   const [detailVisible, setDetailVisible] = useState(false);
   const [selectedItem, setSelectedItem] = useState<QualiPhotoItem | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [photoExists, setPhotoExists] = useState(false);
+  const [checkingIfPhotoExists, setCheckingIfPhotoExists] = useState(false);
 
   // Guards to prevent re-entrant and out-of-order updates
   const fetchingRef = useRef(false);
   const requestIdRef = useRef(0);
 
-  const isCreateDisabled = !selectedProject || !selectedZone;
+  const isCreateDisabled = !selectedProject || !selectedZone || photoExists || checkingIfPhotoExists;
 
   const canLoadMore = useMemo(() => photos.length < total, [photos.length, total]);
 
@@ -81,6 +83,30 @@ export default function QualiPhotoGalleryScreen() {
       }
     }
   }, [token, selectedProject, selectedZone, page, limit]);
+
+  // Check if a photo already exists for the selected project/zone
+  useEffect(() => {
+    if (!token || !selectedProject || !selectedZone) {
+      setPhotoExists(false); // Reset when filters are cleared
+      return;
+    }
+
+    const check = async () => {
+      setCheckingIfPhotoExists(true);
+      try {
+        const result = await qualiphotoService.checkIfExists(selectedProject, selectedZone, token);
+        setPhotoExists(result.exists);
+      } catch (error) {
+        console.error('Failed to check if photo exists:', error);
+        // Fail safe: allow creation if check fails
+        setPhotoExists(false);
+      } finally {
+        setCheckingIfPhotoExists(false);
+      }
+    };
+
+    check();
+  }, [token, selectedProject, selectedZone]);
 
   const refresh = useCallback(async () => {
     if (!token) return;
@@ -221,11 +247,17 @@ export default function QualiPhotoGalleryScreen() {
               <Ionicons name="camera-outline" size={32} color="#f87b1b" />
             </Pressable>
           </View>
-          {isCreateDisabled && (
+          {checkingIfPhotoExists ? (
+            <Text style={styles.filterHint}>Vérification en cours...</Text>
+          ) : photoExists ? (
+            <Text style={styles.filterHint}>
+              Une photo existe déjà pour cette zone. La création est désactivée.
+            </Text>
+          ) : isCreateDisabled ? (
             <Text style={styles.filterHint}>
               Veuillez sélectionner un projet et une zone pour créer une photo.
             </Text>
-          )}
+          ) : null}
         </View>
       </View>
 
