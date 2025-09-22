@@ -4,10 +4,11 @@ import { Audio } from 'expo-av';
 import React, { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Alert, Image, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CreateChildQualiPhotoForm } from './CreateChildQualiPhotoModal';
 
 import { useAuth } from '@/contexts/AuthContext';
+import AppHeader from './AppHeader';
 
 const cameraIcon = require('@/assets/icons/camera.png');
 const mapIcon = require('@/assets/icons/map.png');
@@ -23,7 +24,7 @@ type QualiPhotoItemWithComment2 = QualiPhotoItem & {
 };
 
  export default function QualiPhotoDetail({ visible, onClose, item: initialItem }: Props) {
-  const { token } = useAuth();
+  const { token, user } = useAuth();
   const insets = useSafeAreaInsets();
   const [sound, setSound] = useState<Audio.Sound | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -157,7 +158,6 @@ type QualiPhotoItemWithComment2 = QualiPhotoItem & {
 
    const renderDetailView = () => (
     <>
-        <View style={{ height: insets.top }} />
         <View style={styles.header}>
           {item?.id_qualiphoto_parent ? (
             <Pressable onPress={() => setItem(initialItem || null)} style={styles.closeBtn}>
@@ -362,7 +362,8 @@ type QualiPhotoItemWithComment2 = QualiPhotoItem & {
 
    return (
      <Modal visible={visible} onRequestClose={onClose} animationType="slide" presentationStyle="fullScreen">
-      <SafeAreaView edges={['bottom']} style={styles.container}>
+      <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
+        <AppHeader user={user || undefined} onNavigate={onClose} />
         {isImagePreviewVisible ? (
           renderImagePreview()
         ) : item && isChildModalVisible ? (
@@ -377,7 +378,7 @@ type QualiPhotoItemWithComment2 = QualiPhotoItem & {
           renderDetailView()
         )}
         {renderCommentModal()}
-      </SafeAreaView>
+      </View>
     </Modal>
   );
 }

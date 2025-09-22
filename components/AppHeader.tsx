@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { Link, useRouter } from 'expo-router';
 import React from 'react';
 import {
   Image,
@@ -14,6 +14,7 @@ interface AppHeaderProps {
   showProfile?: boolean;
   onNotificationPress?: () => void;
   onProfilePress?: () => void;
+  onNavigate?: () => void;
   user?: {
     firstname?: string;
     lastname?: string;
@@ -25,9 +26,17 @@ export default function AppHeader({
   showProfile = true,
   onNotificationPress,
   onProfilePress,
+  onNavigate,
   user
 }: AppHeaderProps) {
   const router = useRouter();
+
+  const handleNavigate = (path: React.ComponentProps<typeof Link>['href']) => {
+    if (onNavigate) {
+      onNavigate();
+    }
+    router.push(path);
+  };
 
   const handleNotificationPress = () => {
     if (onNotificationPress) {
@@ -39,7 +48,7 @@ export default function AppHeader({
     if (onProfilePress) {
       onProfilePress();
     } else {
-      router.push('/(tabs)/profile');
+      handleNavigate('/(tabs)/profile');
     }
   };
 
@@ -49,7 +58,7 @@ export default function AppHeader({
         {/* Left side - App Icon */}
         <TouchableOpacity 
           style={styles.headerLeft}
-          onPress={() => router.push('/(tabs)')}
+          onPress={() => handleNavigate('/(tabs)')}
           accessibilityRole="button"
           accessibilityLabel="Navigate to home"
         >
