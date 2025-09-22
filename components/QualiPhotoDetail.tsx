@@ -9,6 +9,9 @@ import { CreateChildQualiPhotoForm } from './CreateChildQualiPhotoModal';
 
 import { useAuth } from '@/contexts/AuthContext';
 
+const cameraIcon = require('@/assets/icons/camera.png');
+const mapIcon = require('@/assets/icons/map.png');
+
 type Props = {
   visible: boolean;
   onClose: () => void;
@@ -26,22 +29,24 @@ type Props = {
   const [isLoadingChildren, setIsLoadingChildren] = useState(false);
   const [item, setItem] = useState<QualiPhotoItem | null>(initialItem || null);
   const [isImagePreviewVisible, setImagePreviewVisible] = useState(false);
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
 
   useEffect(() => {
     setItem(initialItem || null);
+    setSortOrder('desc'); // Reset sort order when item changes
   }, [initialItem]);
 
   useEffect(() => {
     if (item && item.before === 1 && token) {
       setIsLoadingChildren(true);
-      qualiphotoService.getChildren(item.id, token)
+      qualiphotoService.getChildren(item.id, token, sortOrder)
         .then(setChildren)
         .catch(() => setChildren([]))
         .finally(() => setIsLoadingChildren(false));
     } else {
       setChildren([]);
     }
-  }, [item, token]);
+  }, [item, token, sortOrder]);
 
   const subtitle = useMemo(() => {
     if (!item) return '';
@@ -98,12 +103,20 @@ type Props = {
     }
   }, [visible, sound]);
 
-  const handleChildSuccess = () => {
+  const handleChildSuccess = (createdItem: Partial<QualiPhotoItem>) => {
     setChildModalVisible(false);
     if (item && token) {
         setIsLoadingChildren(true);
         qualiphotoService.getChildren(item.id, token)
-            .then(setChildren)
+            .then((newChildren) => {
+                setChildren(newChildren);
+                if (createdItem.id) {
+                  const newChildInList = newChildren.find((c) => c.id === createdItem.id);
+                  if (newChildInList) {
+                      setItem(newChildInList);
+                  }
+                }
+            })
             .catch(() => setChildren([]))
             .finally(() => setIsLoadingChildren(false));
     }
@@ -154,7 +167,7 @@ type Props = {
             </Pressable>
           )}
           <View style={styles.headerTitles}>
-            <Text style={styles.title}>Détails de la Photo</Text>
+           
             {!!item && <Text numberOfLines={1} style={styles.subtitle}>{subtitle}</Text>}
           </View>
           <View style={{ width: 40 }} />
@@ -163,54 +176,10 @@ type Props = {
          <ScrollView contentContainerStyle={styles.scrollContent} bounces>
           {!!item && (
             <View style={styles.content}>
-              <TouchableOpacity onPress={() => setImagePreviewVisible(true)} activeOpacity={0.9}>
-                <View style={styles.imageWrap}>
-                  <Image source={{ uri: item.photo }} resizeMode="contain" style={styles.image} />
-                </View>
-              </TouchableOpacity>
-
-              {(item.voice_note || item.before === 1) && (
-                <View style={styles.actionsContainer}>
-                  <View style={styles.actionItem}>
-                    {item.voice_note ? (
-                      <View style={styles.playerCard}>
-                        <Pressable style={styles.playButton} onPress={playSound}>
-                          <Ionicons name={isPlaying ? 'pause-circle' : 'play-circle'} size={48} color="#11224e" />
-                        </Pressable>
-                        <View style={styles.playerMeta}>
-                          <Text style={styles.playerTitle}>Note Vocale</Text>
-                          <Text style={styles.playerSubtitle}>{isPlaying ? 'Lecture...' : 'Prêt à jouer'}</Text>
-                        </View>
-                      </View>
-                    ) : null}
-                  </View>
-                  <View style={styles.actionItem}>
-                    {item.before === 1 ? (
-                      <TouchableOpacity style={styles.addChildButton} onPress={() => setChildModalVisible(true)}>
-                        <Ionicons name="add-circle-outline" size={20} color="#FFFFFF" />
-                        <View style={styles.addChildButtonTextView}>
-                          <Text style={styles.addChildButtonText}>Photo Suivi</Text>
-                        </View>
-                      </TouchableOpacity>
-                    ) : null}
-                  </View>
-                </View>
-              )}
-
               <View style={styles.metaCard}>
-                <View style={styles.inlineMetaRow}>
-                  <View style={styles.inlineMetaItem}>
-                    <Text style={styles.metaLabel}>Projet</Text>
-                    <Text style={styles.metaValue} numberOfLines={1}>{item.project_title || '—'}</Text>
-                  </View>
-                  <View style={styles.inlineMetaItem}>
-                    <Text style={styles.metaLabel}>Zone</Text>
-                    <Text style={styles.metaValue} numberOfLines={1}>{item.zone_title || '—'}</Text>
-                  </View>
-                </View>
-
+                
                 {(item.user_name || item.date_taken) && (
-                  <View style={[styles.inlineMetaRow, styles.borderedMetaRow]}>
+                  <View style={styles.inlineMetaRow}>
                     <View style={styles.inlineMetaItem}>
                       {item.user_name && (
                         <>
@@ -234,35 +203,44 @@ type Props = {
                   <MetaRow label="Commentaire" value={item.commentaire} multiline />
                 ) : null}
               </View>
+              <TouchableOpacity onPress={() => setImagePreviewVisible(true)} activeOpacity={0.9}>
+                <View style={styles.imageWrap}>
+                  <Image source={{ uri: item.photo }} resizeMode="contain" style={styles.image} />
+                </View>
+              </TouchableOpacity>
 
-              {item?.latitude && item?.longitude && (
-                <View style={styles.metaCard}>
-                  <Text style={styles.mapTitle}>Localisation</Text>
-                  <TouchableOpacity activeOpacity={0.7} onPress={() => setMapDetailVisible(true)}>
-                    <View pointerEvents="none">
-                      <MapView
-                        style={styles.mapPreview}
-                        scrollEnabled={false}
-                        zoomEnabled={false}
-                        pitchEnabled={false}
-                        rotateEnabled={false}
-                        initialRegion={{
-                          latitude: item.latitude,
-                          longitude: item.longitude,
-                          latitudeDelta: 0.005,
-                          longitudeDelta: 0.005,
-                        }}
-                      >
-                        <Marker coordinate={{ latitude: item.latitude, longitude: item.longitude }} />
-                      </MapView>
-                    </View>
-                  </TouchableOpacity>
+              {(item.voice_note || item.before === 1 || (item.latitude && item.longitude)) && (
+                <View style={styles.actionsContainer}>
+                  {item.voice_note && (
+                    <TouchableOpacity style={styles.actionButton} onPress={playSound}>
+                      <Ionicons name={isPlaying ? 'pause-circle' : 'play-circle'} size={32} color="#11224e" />
+                    </TouchableOpacity>
+                  )}
+                  {item.before === 1 && (
+                    <TouchableOpacity style={styles.actionButton} onPress={() => setChildModalVisible(true)}>
+                      <Image source={cameraIcon} style={styles.actionIcon} />
+                    </TouchableOpacity>
+                  )}
+                  {item.latitude && item.longitude && (
+                    <TouchableOpacity style={styles.actionButton} onPress={() => setMapDetailVisible(true)}>
+                      <Image source={mapIcon} style={styles.actionIcon} />
+                    </TouchableOpacity>
+                  )}
+                  {item.before === 1 && children.length > 0 && (
+                    <TouchableOpacity 
+                      style={styles.actionButton} 
+                      onPress={() => setSortOrder(current => current === 'asc' ? 'desc' : 'asc')}
+                      accessibilityLabel={sortOrder === 'desc' ? 'Trier par ordre croissant' : 'Trier par ordre décroissant'}
+                    >
+                      <Ionicons name={sortOrder === 'desc' ? 'arrow-down' : 'arrow-up'} size={32} color="#11224e" />
+                    </TouchableOpacity>
+                  )}
                 </View>
               )}
+
               
               {item.before === 1 && (
                 <View style={styles.metaCard}>
-                  {children.length > 0 && <Text style={styles.childListTitle}>Photos &apos;Après&apos;</Text>}
                   {isLoadingChildren && <Text>Chargement...</Text>}
                   {!isLoadingChildren && children.length === 0 && item.before === 1 && (
                       <Text style={styles.noChildrenText}>Aucune photo &apos;après&apos; n&apos;a encore été ajoutée.</Text>
@@ -270,13 +248,13 @@ type Props = {
                   <View style={styles.childListContainer}>
                     {children.map((child) => (
                       <TouchableOpacity key={child.id} style={styles.childItem} onPress={() => setItem(child)}>
-                        <Image source={{ uri: child.photo }} style={styles.childThumbnail} />
                         <View style={styles.childItemContent}>
-                          <Text style={styles.childComment} numberOfLines={3}>{child.commentaire || 'Aucun commentaire'}</Text>
                           {child.date_taken && (
                             <Text style={styles.childDate}>{formatDate(child.date_taken)}</Text>
                           )}
+                          <Text style={styles.childComment} numberOfLines={1}>{child.commentaire || 'Aucun commentaire'}</Text>
                         </View>
+                        <Image source={{ uri: child.photo }} style={styles.childThumbnail} />
                       </TouchableOpacity>
                     ))}
                   </View>
@@ -509,8 +487,6 @@ const styles = StyleSheet.create({
   childItem: {
     backgroundColor: '#FFFFFF',
     borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
     overflow: 'hidden',
   },
   childThumbnail: {
@@ -519,17 +495,25 @@ const styles = StyleSheet.create({
     backgroundColor: '#f3f4f6',
   },
   childItemContent: {
-    padding: 12,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e5e7eb',
   },
   childComment: {
+    flex: 1,
     fontSize: 13,
     color: '#374151',
     fontWeight: '500',
-    marginBottom: 4,
+    textAlign: 'right',
   },
   childDate: {
     fontSize: 11,
     color: '#6b7280',
+    marginRight: 8,
   },
   noChildrenText: {
     textAlign: 'center',
@@ -539,11 +523,18 @@ const styles = StyleSheet.create({
   },
   actionsContainer: {
     flexDirection: 'row',
-    gap: 12,
+    justifyContent: 'space-around',
     alignItems: 'center',
+    paddingVertical: 8,
+    backgroundColor: '#f1f5f9',
+    borderRadius: 12,
   },
-  actionItem: {
-    flex: 1,
+  actionButton: {
+    padding: 8,
+  },
+  actionIcon: {
+    width: 32,
+    height: 32,
   },
   backToParentButton: {
       flexDirection: 'row',

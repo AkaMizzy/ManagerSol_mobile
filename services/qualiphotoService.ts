@@ -77,9 +77,10 @@ class QualiPhotoService {
     return this.makeRequest<QualiPhotoListResponse>(url.toString().replace(this.baseUrl, ''), token);
   }
 
-  async getChildren(parentId: string, token: string): Promise<QualiPhotoItem[]> {
+  async getChildren(parentId: string, token: string, sort: 'asc' | 'desc' = 'desc'): Promise<QualiPhotoItem[]> {
     const url = new URL(`${this.baseUrl}/qualiphoto`);
     url.searchParams.set('id_qualiphoto_parent', parentId);
+    url.searchParams.set('sort', sort);
     url.searchParams.set('limit', '100'); // Get all children for now
     const response = await this.makeRequest<QualiPhotoListResponse>(url.toString().replace(this.baseUrl, ''), token);
     return response.items;

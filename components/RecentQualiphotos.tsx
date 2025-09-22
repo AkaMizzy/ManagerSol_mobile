@@ -1,6 +1,5 @@
 import { useAuth } from '@/contexts/AuthContext';
 import qualiphotoService, { QualiPhotoItem } from '@/services/qualiphotoService';
-import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Image, Pressable, StyleSheet, Text, View } from 'react-native';
@@ -59,6 +58,9 @@ export default function RecentQualiphotos() {
     return null; // Don't render anything if there are no photos
   }
 
+  // Create a placeholder array to ensure a 3-slot grid
+  const displayItems = Array.from({ length: 3 }, (_, i) => photos[i] || null);
+
   return (
     <View style={styles.section}>
       <View style={styles.sectionHeader}>
@@ -68,16 +70,24 @@ export default function RecentQualiphotos() {
         </Pressable>
       </View>
       <View style={styles.grid}>
-        {photos.map((item) => (
-          <Pressable key={item.id} style={styles.card} onPress={navigateToQualiphoto}>
-            <Image source={{ uri: item.photo }} style={styles.image} />
-            <View style={styles.overlay} />
-            <View style={styles.meta}>
-              <Text style={styles.metaText} numberOfLines={1}>{item.project_title}</Text>
-              <Text style={styles.metaSubText} numberOfLines={1}>{item.zone_title}</Text>
-            </View>
-          </Pressable>
-        ))}
+        {displayItems.map((item, index) =>
+          item ? (
+            <Pressable key={item.id} style={styles.card} onPress={navigateToQualiphoto}>
+              <Image source={{ uri: item.photo }} style={styles.image} />
+              <View style={styles.overlay} />
+              <View style={styles.meta}>
+                <Text style={styles.metaText} numberOfLines={1}>
+                  {item.project_title}
+                </Text>
+                <Text style={styles.metaSubText} numberOfLines={1}>
+                  {item.zone_title}
+                </Text>
+              </View>
+            </Pressable>
+          ) : (
+            <View key={`placeholder-${index}`} style={[styles.card, { backgroundColor: 'transparent' }]} />
+          ),
+        )}
       </View>
     </View>
   );
