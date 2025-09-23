@@ -619,10 +619,11 @@ export default function QuestionAccordion({
               {/* Copy Button */}
               {onCopyQuestion && (
                 <Pressable
-                  style={styles.copyButton}
+                  style={[styles.copyButton, (isLocked || isSubmitting) && styles.actionButtonDisabled]}
                   onPress={() => onCopyQuestion(question.id, manifolderId)}
                   accessibilityRole="button"
                   accessibilityLabel="Copy question"
+                  disabled={isLocked || isSubmitting}
                 >
                   <Ionicons 
                     name="copy-outline" 
@@ -634,7 +635,7 @@ export default function QuestionAccordion({
               
               {/* Refresh Button */}
               <Pressable
-                style={styles.actionButton}
+                style={[styles.actionButton, (isLocked || isSubmitting) && styles.actionButtonDisabled]}
                 onPress={() => {
                   if (onResetQuestion) {
                     onResetQuestion(question.id);
@@ -642,6 +643,7 @@ export default function QuestionAccordion({
                 }}
                 accessibilityRole="button"
                 accessibilityLabel="Reset question"
+                disabled={isLocked || isSubmitting}
               >
                 <Ionicons 
                   name="refresh-circle-outline" 
@@ -652,10 +654,11 @@ export default function QuestionAccordion({
               
               {/* Camera Button */}
               <Pressable
-                style={styles.actionButton}
+                style={[styles.actionButton, (isLocked || isSubmitting) && styles.actionButtonDisabled]}
                 onPress={() => setShowCameraModal(true)}
                 accessibilityRole="button"
                 accessibilityLabel="Take photo"
+                disabled={isLocked || isSubmitting}
               >
                 <Ionicons 
                   name="camera-outline" 
@@ -666,10 +669,11 @@ export default function QuestionAccordion({
 
               {/* Vocal Button */}
               <Pressable
-                style={styles.actionButton}
+                style={[styles.actionButton, (isLocked || isSubmitting) && styles.actionButtonDisabled]}
                 onPress={() => setShowVoiceModal(true)}
                 accessibilityRole="button"
                 accessibilityLabel="record voice"
+                disabled={isLocked || isSubmitting}
               >
                 <Ionicons 
                   name="mic-outline" 
@@ -1033,7 +1037,7 @@ const styles = StyleSheet.create({
   questionTitleContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
+    justifyContent: 'flex-start',
     flex: 1,
     marginRight: 12,
   },
@@ -1042,7 +1046,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#1C1C1E',
     lineHeight: 24,
-    textAlign: 'center',
+    textAlign: 'left',
   },
   headerActions: {
     flexDirection: 'row',
@@ -1072,6 +1076,10 @@ const styles = StyleSheet.create({
     backgroundColor: '#f87b1b',
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  actionButtonDisabled: {
+    backgroundColor: '#94A3B8',
+    opacity: 0.7,
   },
   requiredIndicator: {
     color: '#FF3B30',
