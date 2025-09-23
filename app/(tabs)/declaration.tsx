@@ -1,16 +1,16 @@
 import { Ionicons } from '@expo/vector-icons';
+import { Image } from 'expo-image';
 import React, { useCallback, useEffect, useState } from 'react';
 import {
-    Alert,
-    RefreshControl,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View
+  Alert,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View
 } from 'react-native';
-import { Image } from 'expo-image';
 
 import DateTimePickerModal from 'react-native-modal-datetime-picker';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -255,13 +255,6 @@ export default function DeclarationScreen() {
     }
   }, [token, selectedDeclaration]);
 
-  // Calculate statistics
-  const getStatistics = () => {
-    const totalDeclarations = declarations.length;
-    const highPriorityCount = declarations.filter(d => d.severite >= 7).length;
-    return { totalDeclarations, highPriorityCount };
-  };
-
   // Filter by title, severity, and date
   const getSortedDeclarations = () => {
     let filtered = [...declarations];
@@ -298,7 +291,6 @@ export default function DeclarationScreen() {
     return <LoadingScreen message="Loading declarations..." />;
   }
 
-  const stats = getStatistics();
   const sortedDeclarations = getSortedDeclarations();
 
   // Severity helper functions
@@ -341,9 +333,6 @@ export default function DeclarationScreen() {
               style={styles.declarationLogo}
               resizeMode="contain"
             />
-            <Text style={styles.subtitle}>
-              {stats.totalDeclarations} declarations • {stats.highPriorityCount} high priority
-            </Text>
           </View>
           <TouchableOpacity style={styles.addButton} onPress={handleCreateDeclaration}>
             <Ionicons name="add-circle" size={20} color="#f87b1b" />

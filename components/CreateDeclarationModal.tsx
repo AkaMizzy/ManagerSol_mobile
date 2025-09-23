@@ -30,7 +30,6 @@ interface CreateDeclarationModalProps {
   projects: Project[];
   companyUsers: CompanyUser[];
   currentUser: CompanyUser;
-  token: string; // Add token for authenticated API calls
   isLoading?: boolean;
   manifolderDetails?: ManifolderDetailsForDeclaration;
 }
@@ -46,7 +45,6 @@ export default function CreateDeclarationModal({
   projects,
   companyUsers,
   currentUser,
-  token,
   isLoading = false,
   manifolderDetails,
 }: CreateDeclarationModalProps) {
@@ -61,7 +59,6 @@ export default function CreateDeclarationModal({
     latitude: undefined,
     longitude: undefined,
   });
-  const [peekedCode, setPeekedCode] = useState('Génération...');
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [showTypeDropdown, setShowTypeDropdown] = useState(false);
   const [showZoneDropdown, setShowZoneDropdown] = useState(false);
@@ -110,31 +107,8 @@ export default function CreateDeclarationModal({
       setErrors({});
       setSelectedPhotos([]);
       setShowLocationInput(false);
-
-      const fetchNextCode = async () => {
-        setPeekedCode('Génération...');
-        try {
-          const response = await fetch(`${API_CONFIG.BASE_URL}/codes/declaration/peek`, {
-            headers: {
-              'Authorization': `Bearer ${token}`
-            }
-          });
-          if (response.ok) {
-            const data = await response.json();
-            setPeekedCode(data.code);
-          } else {
-            console.error('Failed to fetch next code, status:', response.status);
-            setPeekedCode('Erreur de génération');
-          }
-        } catch (error) {
-          console.error('Error fetching next code:', error);
-          setPeekedCode('Erreur de connexion');
-        }
-      };
-      
-      fetchNextCode();
     }
-  }, [visible, currentUser?.id, manifolderDetails, token]);
+  }, [visible, currentUser?.id, manifolderDetails]);
 
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
@@ -614,12 +588,6 @@ export default function CreateDeclarationModal({
                 </View>
               )}
               {errors.id_declaration_type && <Text style={styles.errorText}>{errors.id_declaration_type}</Text>}
-              
-              {/* Code */}
-              <View style={[styles.inputContainer, { marginTop: 12, backgroundColor: '#f3f4f6' }]}>
-                <Text style={styles.inputLabel}>Code:</Text>
-                <Text style={styles.inputText}>{peekedCode}</Text>
-              </View>
               
               {/* Title */}
               <TextInput
