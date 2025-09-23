@@ -127,25 +127,25 @@ export default function DeclarationDetailsModal({ visible, onClose, declaration 
   }
 
   function validate(): string | null {
-    if (!form.date_declaration) return 'Date is required';
+    if (!form.date_declaration) return 'La date est requise';
     const date = new Date(form.date_declaration);
-    if (isNaN(date.getTime())) return 'Invalid date format (use YYYY-MM-DD)';
+    if (isNaN(date.getTime())) return 'Format de date invalide (utiliser AAAA-MM-JJ)';
     const endOfToday = new Date();
     endOfToday.setHours(23, 59, 59, 999);
-    if (date > endOfToday) return 'Date cannot be in the future';
-    if (form.severite < 0 || form.severite > 10) return 'Severity must be between 0 and 10';
+    if (date > endOfToday) return 'La date ne peut pas être dans le futur';
+    if (form.severite < 0 || form.severite > 10) return 'La sévérité doit être entre 0 et 10';
     if (form.latitude !== undefined && form.latitude !== '') {
       const lat = Number(form.latitude);
-      if (Number.isNaN(lat) || lat < -90 || lat > 90) return 'Latitude must be between -90 and 90';
+      if (Number.isNaN(lat) || lat < -90 || lat > 90) return 'La latitude doit être entre -90 et 90';
     }
     if (form.longitude !== undefined && form.longitude !== '') {
       const lng = Number(form.longitude);
-      if (Number.isNaN(lng) || lng < -180 || lng > 180) return 'Longitude must be between -180 and 180';
+      if (Number.isNaN(lng) || lng < -180 || lng > 180) return 'La longitude doit être entre -180 et 180';
     }
-    if (!form.id_declaration_type) return 'Declaration type is required';
-    if (!form.id_zone) return 'Zone is required';
-    if (!form.description) return 'Description is required';
-    if (!form.code_declaration) return 'Code is required';
+    if (!form.id_declaration_type) return 'Le type de déclaration est requis';
+    if (!form.id_zone) return 'La zone est requise';
+    if (!form.description) return 'La description est requise';
+    if (!form.code_declaration) return 'Le code est requis';
     return null;
   }
 
@@ -172,11 +172,11 @@ export default function DeclarationDetailsModal({ visible, onClose, declaration 
       if (form.longitude !== undefined && form.longitude !== '') payload.longitude = Number(form.longitude);
 
       await declarationService.updateDeclaration(declaration.id, payload, token);
-      Alert.alert('Success', 'Declaration updated successfully');
+      Alert.alert('Succès', 'Déclaration mise à jour avec succès');
       closeUpdateModal();
       onClose();
     } catch (e: any) {
-      Alert.alert('Update failed', e?.message || 'Please try again');
+      Alert.alert('Échec de la mise à jour', e?.message || 'Veuillez réessayer');
     } finally {
       setIsSubmitting(false);
     }
@@ -185,12 +185,12 @@ export default function DeclarationDetailsModal({ visible, onClose, declaration 
   // Helpers similar to CreateDeclarationModal for consistent UI
   function getDeclarationTypeTitle(id: string) {
     const type = types.find(t => t.id === id);
-    return type ? type.title : 'Select declaration type';
+    return type ? type.title : 'Sélectionner le type de déclaration';
   }
 
   function getZoneTitle(id: string) {
     const zone = zones.find(z => z.id === id);
-    return zone ? zone.title : 'Select zone';
+    return zone ? zone.title : 'Sélectionner la zone';
   }
 
   function getZoneLogo(id: string) {
@@ -200,15 +200,15 @@ export default function DeclarationDetailsModal({ visible, onClose, declaration 
   }
 
   function getProjectTitle(id?: string) {
-    if (!id) return 'Select project';
+    if (!id) return 'Sélectionner le projet';
     const project = projects.find(p => p.id === id);
-    return project ? project.title : 'Select project';
+    return project ? project.title : 'Sélectionner le projet';
   }
 
   function getDeclarantName(id?: string) {
-    if (!id) return 'Select declarant';
+    if (!id) return 'Sélectionner le déclarant';
     const user = users.find(u => u.id === id);
-    return user ? `${user.firstname} ${user.lastname}` : 'Select declarant';
+    return user ? `${user.firstname} ${user.lastname}` : 'Sélectionner le déclarant';
   }
 
   function getSeverityColor(severity: number) {
@@ -218,9 +218,9 @@ export default function DeclarationDetailsModal({ visible, onClose, declaration 
   }
 
   function getSeverityText(severity: number) {
-    if (severity >= 7) return 'High';
-    if (severity >= 5) return 'Medium';
-    return 'Low';
+    if (severity >= 7) return 'Élevée';
+    if (severity >= 5) return 'Moyenne';
+    return 'Faible';
   }
 
   // Date helpers (same behavior as create modal)
@@ -333,7 +333,7 @@ export default function DeclarationDetailsModal({ visible, onClose, declaration 
         return `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
       }
     }
-    return 'Tap map to select location';
+    return 'Appuyer pour sélectionner la localisation';
   }
   
   function getFullViewMapHtml() {
@@ -432,10 +432,10 @@ export default function DeclarationDetailsModal({ visible, onClose, declaration 
               </View>
               <View style={styles.detailRow}>
                 <DetailItem label="Zone" value={declaration.zone_title} icon="map-outline" />
-                <DetailItem label="Project" value={declaration.project_title || '—'} icon="briefcase-outline" />
+                <DetailItem label="Projet" value={declaration.project_title || '—'} icon="briefcase-outline" />
               </View>
               <View style={styles.detailRow}>
-                <DetailItem label="Company" value={declaration.company_title || '—'} icon="business-outline" />
+                <DetailItem label="Entreprise" value={declaration.company_title || '—'} icon="business-outline" />
               </View>
             </View>
           </View>
@@ -469,7 +469,7 @@ export default function DeclarationDetailsModal({ visible, onClose, declaration 
           <View style={styles.actionsContainer}>
             <TouchableOpacity onPress={openUpdateModal} style={styles.primaryButton}>
               <Ionicons name="create-outline" size={20} color="#FFFFFF" />
-              <Text style={styles.primaryButtonText}>Update Declaration</Text>
+              <Text style={styles.primaryButtonText}>Modifier la Déclaration</Text>
             </TouchableOpacity>
           </View>
 
@@ -481,12 +481,12 @@ export default function DeclarationDetailsModal({ visible, onClose, declaration 
                 <TouchableOpacity onPress={closeUpdateModal} style={styles.closeButton}>
                   <Ionicons name="close" size={24} color="#1C1C1E" />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>Update Declaration</Text>
+                <Text style={styles.headerTitle}>Modifier la Déclaration</Text>
                 <View style={{ width: 24 }} />
               </View>
               <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
                 <View style={styles.section}>
-                  <Text style={styles.label}>Title (read-only)</Text>
+                  <Text style={styles.label}>Titre (lecture seule)</Text>
                   <TextInput value={declaration.title} editable={false} style={[styles.input, { backgroundColor: '#F2F2F7' }]} />
 
                   <Text style={styles.label}>Type</Text>
@@ -512,7 +512,7 @@ export default function DeclarationDetailsModal({ visible, onClose, declaration 
                     </View>
                   )}
 
-                  <Text style={styles.label}>Severity *</Text>
+                  <Text style={styles.label}>Sévérité *</Text>
                   <View style={styles.severityContainer}>
                     <View style={styles.severityHeader}>
                       <Text style={[styles.severityValue, { color: getSeverityColor(form.severite) }]}>
@@ -548,7 +548,7 @@ export default function DeclarationDetailsModal({ visible, onClose, declaration 
                         <Text style={styles.dropdownText}>{getZoneTitle(form.id_zone)}</Text>
                       </View>
                     ) : (
-                      <Text style={[styles.dropdownText, styles.placeholderText]}>Select zone</Text>
+                      <Text style={[styles.dropdownText, styles.placeholderText]}>Sélectionner la zone</Text>
                     )}
                     <Ionicons name={showZoneDropdown ? 'chevron-up' : 'chevron-down'} size={20} color="#8E8E93" />
                   </TouchableOpacity>
@@ -581,11 +581,11 @@ export default function DeclarationDetailsModal({ visible, onClose, declaration 
                     multiline
                   />
 
-                  <Text style={styles.label}>Declaration Date *</Text>
+                  <Text style={styles.label}>Date de déclaration *</Text>
                   <TouchableOpacity style={styles.dropdown} onPress={() => setShowDatePicker(true)}>
                     <Ionicons name="calendar-outline" size={18} color="#8E8E93" />
                     <Text style={[styles.dropdownText, !form.date_declaration && styles.placeholderText]}>
-                      {form.date_declaration ? formatDisplayDate(form.date_declaration) : 'Select declaration date'}
+                      {form.date_declaration ? formatDisplayDate(form.date_declaration) : 'Sélectionner la date de déclaration'}
                     </Text>
                   </TouchableOpacity>
                   <DateTimePickerModal
@@ -600,7 +600,7 @@ export default function DeclarationDetailsModal({ visible, onClose, declaration 
                   <Text style={styles.label}>Code</Text>
                   <TextInput value={form.code_declaration} onChangeText={(v) => setField('code_declaration', v)} style={styles.input} />
 
-                  <Text style={styles.label}>Declarant (optional)</Text>
+                  <Text style={styles.label}>Déclarant (optionnel)</Text>
                   <TouchableOpacity disabled={isLoadingOptions} onPress={() => setShowDeclarantDropdown(!showDeclarantDropdown)} style={styles.dropdown}>
                     <Text style={[styles.dropdownText, !form.id_declarent && styles.placeholderText]}>{getDeclarantName(form.id_declarent)}</Text>
                     <Ionicons name={showDeclarantDropdown ? 'chevron-up' : 'chevron-down'} size={20} color="#8E8E93" />
@@ -609,7 +609,7 @@ export default function DeclarationDetailsModal({ visible, onClose, declaration 
                     <View style={styles.dropdownList}>
                       <ScrollView showsVerticalScrollIndicator={false} nestedScrollEnabled>
                         <TouchableOpacity style={styles.dropdownItem} onPress={() => { setField('id_declarent', undefined); setShowDeclarantDropdown(false); }}>
-                          <Text style={styles.dropdownItemText}>No declarant</Text>
+                          <Text style={styles.dropdownItemText}>Aucun déclarant</Text>
                         </TouchableOpacity>
                         {users.map((u, index) => (
                           <TouchableOpacity
@@ -624,7 +624,7 @@ export default function DeclarationDetailsModal({ visible, onClose, declaration 
                     </View>
                   )}
 
-                  <Text style={styles.label}>Project (optional)</Text>
+                  <Text style={styles.label}>Projet (optionnel)</Text>
                   <TouchableOpacity disabled={isLoadingOptions} onPress={() => setShowProjectDropdown(!showProjectDropdown)} style={styles.dropdown}>
                     <Text style={[styles.dropdownText, !form.id_project && styles.placeholderText]}>{getProjectTitle(form.id_project)}</Text>
                     <Ionicons name={showProjectDropdown ? 'chevron-up' : 'chevron-down'} size={20} color="#8E8E93" />
@@ -633,7 +633,7 @@ export default function DeclarationDetailsModal({ visible, onClose, declaration 
                     <View style={styles.dropdownList}>
                       <ScrollView showsVerticalScrollIndicator={false} nestedScrollEnabled>
                         <TouchableOpacity style={styles.dropdownItem} onPress={() => { setField('id_project', undefined); setShowProjectDropdown(false); }}>
-                          <Text style={styles.dropdownItemText}>No project</Text>
+                          <Text style={styles.dropdownItemText}>Aucun projet</Text>
                         </TouchableOpacity>
                         {projects.map((p, index) => (
                           <TouchableOpacity
@@ -648,7 +648,7 @@ export default function DeclarationDetailsModal({ visible, onClose, declaration 
                     </View>
                   )}
 
-                  <Text style={styles.label}>Location</Text>
+                  <Text style={styles.label}>Localisation</Text>
                   <TouchableOpacity style={styles.dropdown} onPress={() => setIsMapModalVisible(true)}>
                     <Ionicons name="map-outline" size={18} color="#8E8E93" />
                     <Text style={[styles.dropdownText, !(form.latitude && form.longitude) && styles.placeholderText]}>
@@ -659,10 +659,10 @@ export default function DeclarationDetailsModal({ visible, onClose, declaration 
 
                   <View style={{ height: 12 }} />
                   <TouchableOpacity disabled={isSubmitting} onPress={submitUpdate} style={[styles.primaryButton, isSubmitting && { opacity: 0.6 }]}>
-                    <Text style={styles.primaryButtonText}>{isSubmitting ? 'Saving...' : 'Save changes'}</Text>
+                    <Text style={styles.primaryButtonText}>{isSubmitting ? 'Enregistrement...' : 'Sauvegarder les modifications'}</Text>
                   </TouchableOpacity>
                   <TouchableOpacity disabled={isSubmitting} onPress={closeUpdateModal} style={styles.secondaryButton}>
-                    <Text style={styles.secondaryButtonText}>Cancel</Text>
+                    <Text style={styles.secondaryButtonText}>Annuler</Text>
                   </TouchableOpacity>
                 </View>
               </ScrollView>
@@ -675,7 +675,7 @@ export default function DeclarationDetailsModal({ visible, onClose, declaration 
               <TouchableOpacity onPress={() => setIsDetailsMapVisible(false)} style={styles.closeButton}>
                 <Ionicons name="close" size={24} color="#1C1C1E" />
               </TouchableOpacity>
-              <Text style={styles.headerTitle}>Map View</Text>
+              <Text style={styles.headerTitle}>Vue Carte</Text>
               <View style={{ width: 24 }} />
             </View>
             <WebView
@@ -692,7 +692,7 @@ export default function DeclarationDetailsModal({ visible, onClose, declaration 
                         <TouchableOpacity onPress={() => setIsMapModalVisible(false)} style={styles.closeButton}>
                             <Ionicons name="close" size={24} color="#1C1C1E" />
                         </TouchableOpacity>
-                        <Text style={styles.headerTitle}>Select Location</Text>
+                        <Text style={styles.headerTitle}>Sélectionner la Localisation</Text>
                         <View style={{ width: 24 }} />
                     </View>
                     <WebView

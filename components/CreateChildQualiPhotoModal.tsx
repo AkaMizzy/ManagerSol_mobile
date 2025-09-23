@@ -144,7 +144,6 @@ export function CreateChildQualiPhotoForm({ onClose, onSuccess, parentItem }: Fo
   return (
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
       <View style={styles.container}>
-        <View style={{ height: insets.top, backgroundColor: '#ffffff' }} />
         <View style={styles.header}>
           <View style={{ width: 44 }} />
           <View style={styles.headerCenter}>

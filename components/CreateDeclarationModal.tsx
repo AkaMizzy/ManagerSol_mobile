@@ -30,6 +30,7 @@ interface CreateDeclarationModalProps {
   projects: Project[];
   companyUsers: CompanyUser[];
   currentUser: CompanyUser;
+  token: string; // Add token for authenticated API calls
   isLoading?: boolean;
   manifolderDetails?: ManifolderDetailsForDeclaration;
 }
@@ -45,21 +46,22 @@ export default function CreateDeclarationModal({
   projects,
   companyUsers,
   currentUser,
+  token,
   isLoading = false,
   manifolderDetails,
 }: CreateDeclarationModalProps) {
-  const [formData, setFormData] = useState<CreateDeclarationData>({
+  const [formData, setFormData] = useState<Omit<CreateDeclarationData, 'code_declaration'>>({
     title: '',
     id_declaration_type: '',
     severite: 5,
     id_zone: '',
     description: '',
     date_declaration: '',
-    code_declaration: '',
     id_declarent: currentUser?.id,
     latitude: undefined,
     longitude: undefined,
   });
+  const [peekedCode, setPeekedCode] = useState('Génération...');
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [showTypeDropdown, setShowTypeDropdown] = useState(false);
   const [showZoneDropdown, setShowZoneDropdown] = useState(false);
@@ -90,14 +92,13 @@ export default function CreateDeclarationModal({
 
   useEffect(() => {
     if (visible) {
-      const initialFormData: CreateDeclarationData = {
+      const initialFormData: Omit<CreateDeclarationData, 'code_declaration'> = {
         title: manifolderDetails ? `Déclaration pour ${manifolderDetails.manifolderDetail.questionTitle}` : '',
         id_declaration_type: '',
         severite: 5,
         id_zone: manifolderDetails ? manifolderDetails.manifolder.defaultZoneId : '',
         description: manifolderDetails ? `Lié à la question du manifolder: ${manifolderDetails.manifolderDetail.questionTitle}` : '',
         date_declaration: toISODate(new Date()),
-        code_declaration: '',
         id_declarent: currentUser?.id,
         latitude: undefined,
         longitude: undefined,
@@ -109,8 +110,31 @@ export default function CreateDeclarationModal({
       setErrors({});
       setSelectedPhotos([]);
       setShowLocationInput(false);
+
+      const fetchNextCode = async () => {
+        setPeekedCode('Génération...');
+        try {
+          const response = await fetch(`${API_CONFIG.BASE_URL}/codes/declaration/peek`, {
+            headers: {
+              'Authorization': `Bearer ${token}`
+            }
+          });
+          if (response.ok) {
+            const data = await response.json();
+            setPeekedCode(data.code);
+          } else {
+            console.error('Failed to fetch next code, status:', response.status);
+            setPeekedCode('Erreur de génération');
+          }
+        } catch (error) {
+          console.error('Error fetching next code:', error);
+          setPeekedCode('Erreur de connexion');
+        }
+      };
+      
+      fetchNextCode();
     }
-  }, [visible, currentUser?.id, manifolderDetails]);
+  }, [visible, currentUser?.id, manifolderDetails, token]);
 
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
@@ -130,9 +154,6 @@ export default function CreateDeclarationModal({
     if (!formData.date_declaration) {
       newErrors.date_declaration = 'La date de déclaration est requise';
     }
-    if (!formData.code_declaration.trim()) {
-      newErrors.code_declaration = 'Le code de déclaration est requis';
-    }
     if (formData.severite < 0 || formData.severite > 10) {
       newErrors.severite = 'La sévérité doit être entre 0 et 10';
     }
@@ -147,6 +168,7 @@ export default function CreateDeclarationModal({
     try {
       const dataWithPhotos = {
         ...formData,
+        code_declaration: '', // The backend generates the code, this is to satisfy the type.
         photos: selectedPhotos.length > 0 ? selectedPhotos : undefined
       };
       await onSubmit(dataWithPhotos);
@@ -594,14 +616,10 @@ export default function CreateDeclarationModal({
               {errors.id_declaration_type && <Text style={styles.errorText}>{errors.id_declaration_type}</Text>}
               
               {/* Code */}
-              <TextInput
-                style={[styles.inputContainer, styles.textInput, { marginTop: 12 }, errors.code_declaration && styles.inputError]}
-                placeholder="Code de la déclaration *"
-                placeholderTextColor="#9ca3af"
-                value={formData.code_declaration}
-                onChangeText={value => updateFormData('code_declaration', value)}
-              />
-              {errors.code_declaration && <Text style={styles.errorText}>{errors.code_declaration}</Text>}
+              <View style={[styles.inputContainer, { marginTop: 12, backgroundColor: '#f3f4f6' }]}>
+                <Text style={styles.inputLabel}>Code:</Text>
+                <Text style={styles.inputText}>{peekedCode}</Text>
+              </View>
               
               {/* Title */}
               <TextInput
@@ -954,6 +972,11 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#64748b',
     marginTop: 2
+  },
+  inputLabel: {
+    fontSize: 16,
+    color: '#6b7280',
+    fontWeight: '500',
   },
   inputContainer: {
     flexDirection: 'row',

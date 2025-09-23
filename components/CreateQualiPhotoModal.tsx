@@ -301,13 +301,7 @@ export default function CreateQualiPhotoModal({ visible, onClose, onSuccess, ini
           <ScrollView ref={scrollViewRef} style={styles.content} showsVerticalScrollIndicator={false}>
             {initialProjectId && initialZoneId ? (
               <View style={styles.card}>
-                <View style={styles.cardHeader}>
-                  <View style={styles.cardIconWrap}><Ionicons name="bookmark" size={18} color="#11224e" /></View>
-                  <View style={styles.cardHeaderText}>
-                    <Text style={styles.cardTitle}>Contexte de la Photo</Text>
-                    <Text style={styles.cardHint}>Projet et zone prédéfinis</Text>
-                  </View>
-                </View>
+                
                 <View style={styles.contextDisplay}>
                   <View style={styles.contextItem}>
                     <Ionicons name="briefcase-outline" size={16} color="#4b5563" />

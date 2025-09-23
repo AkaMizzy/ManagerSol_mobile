@@ -132,7 +132,6 @@ type QualiPhotoItemWithComment2 = QualiPhotoItem & {
 
    const renderMapView = () => (
     <>
-        <View style={{ height: insets.top }} />
         <View style={styles.header}>
             <Pressable onPress={() => setMapDetailVisible(false)} style={styles.closeBtn}>
                 <Ionicons name="arrow-back" size={24} color="#11224e" />
