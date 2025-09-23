@@ -566,14 +566,15 @@ export default function ManifoldDetails({
             <Text style={styles.infoValue}>{formatDate(manifolder.date)}</Text>
           </View>
           
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Heure de début</Text>
-            <Text style={styles.infoValue}>{formatTime(manifolder.heur_d || null)}</Text>
-          </View>
-          
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Heure de fin</Text>
-            <Text style={styles.infoValue}>{formatTime(manifolder.heur_f || null)}</Text>
+          <View style={styles.timeRow}>
+            <View style={styles.timeItem}>
+              <Text style={styles.infoLabel}>Heure de début</Text>
+              <Text style={styles.infoValue}>{formatTime(manifolder.heur_d || null)}</Text>
+            </View>
+            <View style={styles.timeItem}>
+              <Text style={styles.infoLabel}>Heure de fin</Text>
+              <Text style={styles.infoValue}>{formatTime(manifolder.heur_f || null)}</Text>
+            </View>
           </View>
         </View>
 
@@ -955,6 +956,15 @@ const styles = StyleSheet.create({
     color: '#1C1C1E',
     fontWeight: '400',
     lineHeight: 22,
+  },
+  timeRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+    gap: 16,
+  },
+  timeItem: {
+    flex: 1,
   },
   zoneRow: {
     flexDirection: 'row',
