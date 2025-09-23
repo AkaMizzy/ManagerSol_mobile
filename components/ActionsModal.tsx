@@ -414,6 +414,7 @@ export default function ActionsModal({ visible, actions, onClose, onCreateAction
           </View>
 
           {/* Search bar */}
+          
           <View style={styles.searchBar}>
             <Ionicons name="search" size={18} color="#8E8E93" />
             <TextInput
@@ -434,10 +435,9 @@ export default function ActionsModal({ visible, actions, onClose, onCreateAction
             <View style={styles.formCard}>
               <Text style={styles.formTitle}>New Action</Text>
               {/* Zone select */}
-              {parentZone ? (
+              {/* {parentZone ? (
                 <View style={{ marginBottom: 10 }}>
                   <Text style={styles.label}>Zone</Text>
-                  {/* Select header */}
                   <TouchableOpacity
                     style={styles.selectHeader}
                     onPress={() => setShowZoneDropdown((s) => !s)}
@@ -471,7 +471,7 @@ export default function ActionsModal({ visible, actions, onClose, onCreateAction
                     </View>
                   ) : null}
                 </View>
-              ) : null}
+              ) : null} */}
               <TextInput
                 style={styles.input}
                 placeholder="Title "
@@ -829,10 +829,10 @@ export default function ActionsModal({ visible, actions, onClose, onCreateAction
                       setShowDetailsModal(false);
                     }}>
                       <Ionicons name="add-circle-outline" size={18} color="#007AFF" />
-                      <Text style={styles.addMiniButtonText}>Add Mini Action</Text>
+                      <Text style={styles.addMiniButtonText}>Add sous-action</Text>
                     </TouchableOpacity>
                   )}
-                </View>
+                </View>    
               </View>
             )}
           </ScrollView>

@@ -150,6 +150,7 @@ export default function CreateDeclarationModal({
         photos: selectedPhotos.length > 0 ? selectedPhotos : undefined
       };
       await onSubmit(dataWithPhotos);
+      // No alert on success, just close the modal.
       onClose();
     } catch (error) {
       console.error('❌ Failed to create declaration:', error);
@@ -504,65 +505,10 @@ export default function CreateDeclarationModal({
 
           {/* Form */}
           <ScrollView style={styles.form} showsVerticalScrollIndicator={false}>
-            {/* Main Info Card */}
-            <View style={styles.card}>
-              <View style={styles.cardHeader}>
-                <View style={styles.cardIconWrap}><Ionicons name="document-text-outline" size={18} color="#11224e" /></View>
-                <View style={styles.cardHeaderText}>
-                  <Text style={styles.cardTitle}>Information Principale</Text>
-                  <Text style={styles.cardHint}>Type, code et titre de la déclaration</Text>
-                </View>
-              </View>
-              {/* Declaration Type */}
-              <TouchableOpacity
-                style={[styles.inputContainer, errors.id_declaration_type && styles.inputError]}
-                onPress={() => setShowTypeDropdown(!showTypeDropdown)}
-              >
-                <Text style={[styles.inputText, !formData.id_declaration_type && styles.placeholderText]}>
-                  {getDeclarationTypeTitle(formData.id_declaration_type)}
-                </Text>
-                <Ionicons name={showTypeDropdown ? 'chevron-up' : 'chevron-down'} size={20} color="#9ca3af" />
-              </TouchableOpacity>
-              {showTypeDropdown && (
-                <View style={styles.dropdownList}>
-                  {declarationTypes.map(type => (
-                    <TouchableOpacity key={type.id} style={styles.dropdownItem} onPress={() => { updateFormData('id_declaration_type', type.id); setShowTypeDropdown(false); }}>
-                      <Text style={styles.dropdownItemText}>{type.title}</Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              )}
-              {errors.id_declaration_type && <Text style={styles.errorText}>{errors.id_declaration_type}</Text>}
-              
-              {/* Code */}
-              <TextInput
-                style={[styles.inputContainer, styles.textInput, { marginTop: 12 }, errors.code_declaration && styles.inputError]}
-                placeholder="Code de la déclaration *"
-                placeholderTextColor="#9ca3af"
-                value={formData.code_declaration}
-                onChangeText={value => updateFormData('code_declaration', value)}
-              />
-              {errors.code_declaration && <Text style={styles.errorText}>{errors.code_declaration}</Text>}
-              
-              {/* Title */}
-              <TextInput
-                style={[styles.inputContainer, styles.textInput, { marginTop: 12 }, errors.title && styles.inputError]}
-                placeholder="Titre *"
-                placeholderTextColor="#9ca3af"
-                value={formData.title}
-                onChangeText={value => updateFormData('title', value)}
-              />
-              {errors.title && <Text style={styles.errorText}>{errors.title}</Text>}
-            </View>
-
             {/* Context Card */}
             <View style={styles.card}>
               <View style={styles.cardHeader}>
-                <View style={styles.cardIconWrap}><Ionicons name="briefcase-outline" size={18} color="#11224e" /></View>
-                <View style={styles.cardHeaderText}>
-                  <Text style={styles.cardTitle}>Contexte</Text>
-                  <Text style={styles.cardHint}>Projet, zone, date et déclarant</Text>
-                </View>
+                
               </View>
               {/* Project */}
               <TouchableOpacity style={styles.inputContainer} onPress={() => setShowProjectDropdown(!showProjectDropdown)}>
@@ -623,16 +569,56 @@ export default function CreateDeclarationModal({
                 </Text>
               </TouchableOpacity>
             </View>
+            {/* Main Info Card */}
+            <View style={styles.card}>
+              
+              {/* Declaration Type */}
+              <TouchableOpacity
+                style={[styles.inputContainer, errors.id_declaration_type && styles.inputError]}
+                onPress={() => setShowTypeDropdown(!showTypeDropdown)}
+              >
+                <Text style={[styles.inputText, !formData.id_declaration_type && styles.placeholderText]}>
+                  {getDeclarationTypeTitle(formData.id_declaration_type)}
+                </Text>
+                <Ionicons name={showTypeDropdown ? 'chevron-up' : 'chevron-down'} size={20} color="#9ca3af" />
+              </TouchableOpacity>
+              {showTypeDropdown && (
+                <View style={styles.dropdownList}>
+                  {declarationTypes.map(type => (
+                    <TouchableOpacity key={type.id} style={styles.dropdownItem} onPress={() => { updateFormData('id_declaration_type', type.id); setShowTypeDropdown(false); }}>
+                      <Text style={styles.dropdownItemText}>{type.title}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              )}
+              {errors.id_declaration_type && <Text style={styles.errorText}>{errors.id_declaration_type}</Text>}
+              
+              {/* Code */}
+              <TextInput
+                style={[styles.inputContainer, styles.textInput, { marginTop: 12 }, errors.code_declaration && styles.inputError]}
+                placeholder="Code de la déclaration *"
+                placeholderTextColor="#9ca3af"
+                value={formData.code_declaration}
+                onChangeText={value => updateFormData('code_declaration', value)}
+              />
+              {errors.code_declaration && <Text style={styles.errorText}>{errors.code_declaration}</Text>}
+              
+              {/* Title */}
+              <TextInput
+                style={[styles.inputContainer, styles.textInput, { marginTop: 12 }, errors.title && styles.inputError]}
+                placeholder="Titre *"
+                placeholderTextColor="#9ca3af"
+                value={formData.title}
+                onChangeText={value => updateFormData('title', value)}
+              />
+              {errors.title && <Text style={styles.errorText}>{errors.title}</Text>}
+            </View>
+
+            
 
             {/* Severity and Description Card */}
             <View style={styles.card}>
-              <View style={styles.cardHeader}>
-                <View style={styles.cardIconWrap}><Ionicons name="information-circle-outline" size={18} color="#11224e" /></View>
-                <View style={styles.cardHeaderText}>
-                  <Text style={styles.cardTitle}>Détails</Text>
-                  <Text style={styles.cardHint}>Niveau de sévérité et description</Text>
-                </View>
-              </View>
+              
               {/* Severity */}
               <View style={styles.severityContainer}>
                 <View style={styles.severityHeader}>

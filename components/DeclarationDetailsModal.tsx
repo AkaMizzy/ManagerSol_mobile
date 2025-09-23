@@ -3,6 +3,7 @@ import { Image } from 'expo-image';
 import React, { useEffect, useMemo, useState } from 'react';
 import { Alert, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import DateTimePickerModal from 'react-native-modal-datetime-picker';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { WebView } from 'react-native-webview';
 import API_CONFIG from '../app/config/api';
 import { useAuth } from '../contexts/AuthContext';
@@ -17,7 +18,9 @@ interface Props {
 
 export default function DeclarationDetailsModal({ visible, onClose, declaration }: Props) {
   const { token } = useAuth();
+  const insets = useSafeAreaInsets();
   const [isUpdateVisible, setIsUpdateVisible] = useState(false);
+  const [isDetailsMapVisible, setIsDetailsMapVisible] = useState(false);
 
   // Form state (title is read-only per backend PUT support)
   const [form, setForm] = useState({
@@ -45,7 +48,7 @@ export default function DeclarationDetailsModal({ visible, onClose, declaration 
   const [showProjectDropdown, setShowProjectDropdown] = useState(false);
   const [showDeclarantDropdown, setShowDeclarantDropdown] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
-  const [showLocationInput, setShowLocationInput] = useState(false);
+  const [isMapModalVisible, setIsMapModalVisible] = useState(false);
 
   const selectedTypeTitle = useMemo(() => {
     const t = types.find(x => x.id === form.id_declaration_type);
@@ -288,7 +291,7 @@ export default function DeclarationDetailsModal({ visible, onClose, declaration 
       if (data.type === 'locationSelected') {
         setField('latitude', String(data.latitude));
         setField('longitude', String(data.longitude));
-        setShowLocationInput(false);
+        setIsMapModalVisible(false);
       }
     } catch (error) {
       console.error('Error parsing map message:', error);
@@ -330,6 +333,32 @@ export default function DeclarationDetailsModal({ visible, onClose, declaration 
     }
     return 'Tap map to select location';
   }
+  
+  function getFullViewMapHtml() {
+    if (!declaration?.latitude || !declaration?.longitude) return '';
+    const lat = Number(declaration.latitude);
+    const lng = Number(declaration.longitude);
+    return `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+        <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+        <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+        <style> html, body, #map { height: 100%; width: 100%; margin: 0; padding: 0; } </style>
+      </head>
+      <body>
+        <div id="map"></div>
+        <script>
+          const map = L.map('map').setView([${lat}, ${lng}], 15);
+          L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap contributors' }).addTo(map);
+          L.marker([${lat}, ${lng}]).addTo(map);
+        </script>
+      </body>
+      </html>
+    `;
+  }
+
   const renderPhoto = (photoPath?: string) => {
     if (!photoPath) return null;
     const uri = `${API_CONFIG.BASE_URL}${photoPath}`;
@@ -340,7 +369,7 @@ export default function DeclarationDetailsModal({ visible, onClose, declaration 
     if (!declaration?.photos || declaration.photos.length === 0) return null;
     return (
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Photos :</Text>
+        <Text style={styles.sectionTitle}>Photos</Text>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 8 }}>
           {declaration.photos.map((p) => (
             <View key={p.id} style={styles.photoItem}>{renderPhoto(p.photo)}</View>
@@ -361,39 +390,80 @@ export default function DeclarationDetailsModal({ visible, onClose, declaration 
           <TouchableOpacity onPress={onClose} style={styles.closeButton}>
             <Ionicons name="close" size={24} color="#1C1C1E" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Declaration Details</Text>
+          <Text style={styles.headerTitle}>Détails de la déclaration</Text>
           <View style={{ width: 24 }} />
         </View>
 
         <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-          <View style={styles.card}>
+          <View style={styles.section}>
             <Text style={styles.title}>{declaration.title}</Text>
             <View style={styles.metaRow}>
-              <View style={styles.metaItem}><Ionicons name="calendar-outline" size={14} color="#8E8E93" /><Text style={styles.metaText}>{declaration.date_declaration}</Text></View>
-              <View style={styles.metaItem}><Ionicons name="pricetag-outline" size={14} color="#8E8E93" /><Text style={styles.metaText}>#{declaration.code_declaration}</Text></View>
+              <View style={styles.metaItem}>
+                <Ionicons name="calendar-outline" size={14} color="#8E8E93" />
+                <Text style={styles.metaText}>{formatDisplayDate(declaration.date_declaration)}</Text>
+              </View>
+              <View style={styles.metaItem}>
+                <Ionicons name="pricetag-outline" size={14} color="#8E8E93" />
+                <Text style={styles.metaText}>#{declaration.code_declaration}</Text>
+              </View>
             </View>
-            <View style={styles.badgeRow}>
-              <Text style={[styles.badge, severityBadgeColor(declaration.severite)]}>Severity {declaration.severite}/10</Text>
+            <View style={styles.severityContainer}>
+              <View style={[styles.severityBar, { width: `${declaration.severite * 10}%`, backgroundColor: getSeverityColor(declaration.severite) }]} />
+              <Text style={styles.severityText}>{declaration.severite}/10 - {getSeverityText(declaration.severite)}</Text>
             </View>
-            <View style={styles.kvList}>
-              <KV label="Type" value={declaration.declaration_type_title} />
-              <KV label="Zone" value={declaration.zone_title} />
-              <KV label="Project" value={declaration.project_title || '—'} />
-              <KV label="Company" value={declaration.company_title || '—'} />
-              <KV label="Declarant" value={declarantName || '—'} />
-              <KV label="Location" value={(declaration.latitude && declaration.longitude) ? `${declaration.latitude}, ${declaration.longitude}` : '—'} />
+          </View>
+          
+          {/* Details Section */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Détails</Text>
+            <View style={styles.detailsGrid}>
+              <View style={styles.detailRow}>
+                <DetailItem label="Type" value={declaration.declaration_type_title} icon="document-text-outline" />
+                <DetailItem label="Déclarant" value={declarantName || '—'} icon="person-outline" />
+              </View>
+              <View style={styles.detailRow}>
+                <DetailItem label="Zone" value={declaration.zone_title} icon="map-outline" />
+                <DetailItem label="Project" value={declaration.project_title || '—'} icon="briefcase-outline" />
+              </View>
+              <View style={styles.detailRow}>
+                <DetailItem label="Company" value={declaration.company_title || '—'} icon="business-outline" />
+              </View>
             </View>
+          </View>
+          {/* Description Section */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Description</Text>
+            <Text style={styles.description}>{declaration.description}</Text>
+          </View>
+          {renderPhotos()}
+          {/* Location Section */}
+          {(declaration.latitude && declaration.longitude) && (
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Description</Text>
-              <Text style={styles.description}>{declaration.description}</Text>
+              <Text style={styles.sectionTitle}>Position GPS</Text>
+              <TouchableOpacity onPress={() => setIsDetailsMapVisible(true)}>
+                <View style={styles.mapContainer}>
+                  <WebView
+                    source={{ html: getMiniMapHtml() }}
+                    style={styles.map}
+                    javaScriptEnabled
+                    scrollEnabled={false}
+                    pointerEvents="none"
+                  />
+                  <View style={styles.mapOverlay}>
+                    <Text style={styles.mapCoordinates}>{`${Number(declaration.latitude).toFixed(5)}, ${Number(declaration.longitude).toFixed(5)}`}</Text>
+                  </View>
+                </View>
+              </TouchableOpacity>
             </View>
-            {renderPhotos()}
-            <View style={{ height: 12 }} />
+          )}
+          
+          <View style={styles.actionsContainer}>
             <TouchableOpacity onPress={openUpdateModal} style={styles.primaryButton}>
-            <Ionicons name="create-outline" size={18} color="#f87b1b" />
-              <Text style={styles.primaryButtonText}>Update</Text>
+              <Ionicons name="create-outline" size={20} color="#FFFFFF" />
+              <Text style={styles.primaryButtonText}>Update Declaration</Text>
             </TouchableOpacity>
           </View>
+
         </ScrollView>
         {isUpdateVisible && (
           <Modal visible={isUpdateVisible} animationType="slide" presentationStyle="pageSheet" onRequestClose={closeUpdateModal}>
@@ -406,7 +476,7 @@ export default function DeclarationDetailsModal({ visible, onClose, declaration 
                 <View style={{ width: 24 }} />
               </View>
               <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-                <View style={styles.card}>
+                <View style={styles.section}>
                   <Text style={styles.label}>Title (read-only)</Text>
                   <TextInput value={declaration.title} editable={false} style={[styles.input, { backgroundColor: '#F2F2F7' }]} />
 
@@ -570,44 +640,13 @@ export default function DeclarationDetailsModal({ visible, onClose, declaration 
                   )}
 
                   <Text style={styles.label}>Location</Text>
-                  <TouchableOpacity style={styles.mapButton} onPress={() => setShowLocationInput(!showLocationInput)} activeOpacity={0.8}>
-                    <View style={styles.miniMapPreview}>
-                      <WebView
-                        source={{ html: getMiniMapHtml() }}
-                        style={styles.miniMap}
-                        javaScriptEnabled
-                        domStorageEnabled
-                        scrollEnabled={false}
-                        showsHorizontalScrollIndicator={false}
-                        showsVerticalScrollIndicator={false}
-                        bounces={false}
-                        pointerEvents="none"
-                      />
-                      <View style={styles.miniMapOverlay}>
-                        <Text style={styles.miniMapCoordinates}>{getCoordinateDisplay()}</Text>
-                      </View>
-                    </View>
-                    <Ionicons name={showLocationInput ? 'chevron-up' : 'chevron-down'} size={20} color="#8E8E93" />
+                  <TouchableOpacity style={styles.dropdown} onPress={() => setIsMapModalVisible(true)}>
+                    <Ionicons name="map-outline" size={18} color="#8E8E93" />
+                    <Text style={[styles.dropdownText, !(form.latitude && form.longitude) && styles.placeholderText]}>
+                      {getCoordinateDisplay()}
+                    </Text>
+                    <Ionicons name={'chevron-forward'} size={20} color="#8E8E93" />
                   </TouchableOpacity>
-                  {showLocationInput && (
-                    <View style={styles.mapContainer}>
-                      <WebView
-                        source={{ html: mapHtml }}
-                        style={styles.map}
-                        onMessage={handleMapMessage}
-                        javaScriptEnabled
-                        domStorageEnabled
-                        startInLoadingState
-                        showsHorizontalScrollIndicator={false}
-                        showsVerticalScrollIndicator={false}
-                        scrollEnabled
-                        bounces={false}
-                      />
-                      <View style={styles.mapInstructions}>
-                        <Text style={styles.mapInstructionsText}>Tap anywhere on the map to select location, then tap `Select This Location`</Text>
-                      </View>
-                    </View>
-                  )}
 
                   <View style={{ height: 12 }} />
                   <TouchableOpacity disabled={isSubmitting} onPress={submitUpdate} style={[styles.primaryButton, isSubmitting && { opacity: 0.6 }]}>
@@ -621,19 +660,57 @@ export default function DeclarationDetailsModal({ visible, onClose, declaration 
             </View>
           </Modal>
         )}
+        <Modal visible={isDetailsMapVisible} animationType="slide" presentationStyle="fullScreen" onRequestClose={() => setIsDetailsMapVisible(false)}>
+          <View style={{ flex: 1, backgroundColor: '#FFFFFF', paddingTop: insets.top }}>
+            <View style={styles.header}>
+              <TouchableOpacity onPress={() => setIsDetailsMapVisible(false)} style={styles.closeButton}>
+                <Ionicons name="close" size={24} color="#1C1C1E" />
+              </TouchableOpacity>
+              <Text style={styles.headerTitle}>Map View</Text>
+              <View style={{ width: 24 }} />
+            </View>
+            <WebView
+              source={{ html: getFullViewMapHtml() }}
+              style={{ flex: 1 }}
+              javaScriptEnabled
+            />
+          </View>
+        </Modal>
+        {isMapModalVisible && (
+            <Modal visible={isMapModalVisible} animationType="slide" presentationStyle="fullScreen" onRequestClose={() => setIsMapModalVisible(false)}>
+                <View style={{ flex: 1, backgroundColor: '#FFFFFF', paddingTop: insets.top }}>
+                    <View style={styles.header}>
+                        <TouchableOpacity onPress={() => setIsMapModalVisible(false)} style={styles.closeButton}>
+                            <Ionicons name="close" size={24} color="#1C1C1E" />
+                        </TouchableOpacity>
+                        <Text style={styles.headerTitle}>Select Location</Text>
+                        <View style={{ width: 24 }} />
+                    </View>
+                    <WebView
+                        source={{ html: mapHtml }}
+                        style={{ flex: 1 }}
+                        onMessage={handleMapMessage}
+                        javaScriptEnabled
+                        domStorageEnabled
+                        startInLoadingState
+                    />
+                </View>
+            </Modal>
+        )}
       </View>
     </Modal>
   );
 }
 
-function KV({ label, value }: { label: string; value: string }) {
-  return (
-    <View style={styles.kvRow}>
-      <Text style={styles.kvLabel}>{label}</Text>
-      <Text style={styles.kvValue}>{value}</Text>
+const DetailItem = ({ label, value, icon }: { label: string; value: string; icon: keyof typeof Ionicons.glyphMap }) => (
+  <View style={styles.detailItem}>
+    <Ionicons name={icon} size={20} color="#8E8E93" style={styles.detailIcon} />
+    <View style={styles.detailTextContainer}>
+      <Text style={styles.detailLabel}>{label}</Text>
+      <Text style={styles.detailValue}>{value}</Text>
     </View>
-  );
-}
+  </View>
+);
 
 function severityBadgeColor(sev: number) {
   if (sev >= 7) return { backgroundColor: '#FF3B30' };
@@ -642,80 +719,186 @@ function severityBadgeColor(sev: number) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F2F2F7' },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 16, backgroundColor: '#FFFFFF', borderBottomWidth: 1, borderBottomColor: '#E5E5EA' },
-  closeButton: { padding: 8 },
-  headerTitle: { fontSize: 18, fontWeight: '600', color: '#1C1C1E' },
+  container: { flex: 1, backgroundColor: '#F9F9FB' },
+  header: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    justifyContent: 'space-between', 
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: '#FFFFFF', 
+    borderBottomWidth: 1, 
+    borderBottomColor: '#E5E5EA' 
+  },
+  closeButton: { padding: 8, marginLeft: -8 },
+  headerTitle: { fontSize: 17, fontWeight: '600', color: '#1C1C1E' },
   content: { padding: 16 },
-  card: { backgroundColor: '#FFFFFF', borderRadius: 12, padding: 16, borderWidth: 1, borderColor: '#E5E5EA' },
-  title: { fontSize: 18, fontWeight: '700', color: '#1C1C1E', marginBottom: 6 },
-  metaRow: { flexDirection: 'row', gap: 16, marginBottom: 8 },
+  
+  // New Section Styles
+  section: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#E5E5EA',
+  },
+  sectionTitle: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#8E8E93',
+    textTransform: 'uppercase',
+    letterSpacing: 0.8,
+    marginBottom: 12,
+  },
+
+  // Header section
+  title: { fontSize: 22, fontWeight: '700', color: '#1C1C1E', marginBottom: 8 },
+  metaRow: { flexDirection: 'row', gap: 16, alignItems: 'center' },
   metaItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  metaText: { color: '#8E8E93' },
-  badgeRow: { flexDirection: 'row', marginBottom: 12 },
-  badge: { color: '#FFFFFF', fontWeight: '700', fontSize: 12, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12 },
-  kvList: { marginBottom: 12 },
-  kvRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 6 },
-  kvLabel: { color: '#8E8E93', fontSize: 13 },
-  kvValue: { color: '#1C1C1E', fontSize: 13, fontWeight: '500' },
-  section: { marginTop: 8 },
-  sectionTitle: { fontSize: 14, fontWeight: '700', color: '#1C1C1E', textTransform: 'uppercase', letterSpacing: 0.5 },
-  description: { color: '#1C1C1E', lineHeight: 20, marginTop: 6 },
-  photoItem: { width: 120, height: 80, borderRadius: 8, overflow: 'hidden', marginRight: 8 },
+  metaText: { color: '#8E8E93', fontSize: 13 },
+
+  // Severity Section
+  severityContainer: {
+    backgroundColor: '#F2F2F7',
+    borderRadius: 8,
+    overflow: 'hidden',
+    height: 30,
+    justifyContent: 'center',
+    marginTop: 16,
+  },
+  severityBar: {
+    height: '100%',
+    position: 'absolute',
+  },
+  severityText: {
+    paddingHorizontal: 12,
+    color: '#1C1C1E',
+    fontWeight: '600',
+    fontSize: 14,
+    position: 'relative',
+    zIndex: 1
+  },
+
+  // Details Grid
+  detailsGrid: {
+    gap: 16,
+  },
+  detailRow: {
+    flexDirection: 'row',
+    gap: 16,
+  },
+  detailItem: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  detailIcon: {
+    marginRight: 10,
+  },
+  detailTextContainer: {
+    flex: 1,
+  },
+  detailLabel: {
+    color: '#8E8E93',
+    fontSize: 13,
+  },
+  detailValue: {
+    color: '#1C1C1E',
+    fontSize: 14,
+    fontWeight: '500',
+  },
+
+  // Description
+  description: { 
+    color: '#3C3C43', 
+    fontSize: 15,
+    lineHeight: 22, 
+  },
+
+  // Location & Map
+  mapContainer: {
+    height: 180,
+    borderRadius: 10,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: '#E5E5EA',
+    position: 'relative',
+  },
+  map: { flex: 1 },
+  mapOverlay: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    paddingVertical: 6,
+  },
+  mapCoordinates: {
+    color: '#FFFFFF',
+    textAlign: 'center',
+    fontSize: 13,
+    fontWeight: '600',
+  },
+
+  // Photos
+  photoItem: { width: 120, height: 90, borderRadius: 8, overflow: 'hidden', marginRight: 10 },
   photo: { width: '100%', height: '100%' },
-  label: { color: '#1C1C1E', fontWeight: '600', marginTop: 8, marginBottom: 6 },
-  input: { backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#E5E5EA', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10 },
-  select: { backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#E5E5EA', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 12, justifyContent: 'center' },
-  selectText: { color: '#1C1C1E' },
-  optionList: { marginTop: 6, backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#E5E5EA', borderRadius: 10, paddingVertical: 4 },
-  optionItem: { paddingHorizontal: 12, paddingVertical: 10 },
-  optionText: { color: '#1C1C1E' },
-  primaryButton: { flex: 1,
+
+  // Actions
+  actionsContainer: {
+    marginTop: 8,
+    marginBottom: 24,
+  },
+  primaryButton: { 
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#f87b1b',
-    paddingVertical: 12,
-    borderRadius: 10,
-    gap: 6, },
+    backgroundColor: '#11224e',
+    paddingVertical: 14,
+    borderRadius: 12,
+    gap: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
   primaryButtonText: { 
-    color: '#f87b1b',
-    fontWeight: '600', },
-  secondaryButton: { marginTop: 8, paddingVertical: 12, borderRadius: 10, alignItems: 'center', borderWidth: 1, borderColor: '#f87b1b' },
-  secondaryButtonText: { color: '#f87b1b', fontWeight: '600' },
-  // Dropdown styles aligned with CreateDeclarationModal
-  dropdown: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#E5E5EA', borderRadius: 12, paddingHorizontal: 16, paddingVertical: 16 },
+    color: '#FFFFFF',
+    fontWeight: '600',
+    fontSize: 16
+  },
+  
+  // Styles for the Update Modal (mostly unchanged but kept for completeness)
+  severityHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginBottom: 12,
+  },
+  secondaryButton: { marginTop: 8, paddingVertical: 12, borderRadius: 10, alignItems: 'center', borderWidth: 1, borderColor: '#007AFF' },
+  secondaryButtonText: { color: '#007AFF', fontWeight: '600' },
+  label: { color: '#1C1C1E', fontWeight: '600', marginTop: 12, marginBottom: 8, fontSize: 15 },
+  input: { backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#E5E5EA', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10, fontSize: 16, color: '#1C1C1E' },
+  dropdown: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#E5E5EA', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 12 },
   dropdownText: { fontSize: 16, color: '#1C1C1E', flex: 1 },
   placeholderText: { color: '#8E8E93' },
-  dropdownList: { backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#E5E5EA', borderRadius: 12, marginTop: 4, maxHeight: 200, overflow: 'hidden', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4, elevation: 3 },
+  dropdownList: { backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#E5E5EA', borderRadius: 10, marginTop: 4, maxHeight: 200 },
   dropdownItem: { paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#F2F2F7' },
-  dropdownItemLast: { paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 0 },
+  dropdownItemLast: { borderBottomWidth: 0 },
   dropdownItemText: { fontSize: 16, color: '#1C1C1E' },
   zoneItemRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   zoneSelectedRow: { flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 },
   zoneLogo: { width: 24, height: 24, borderRadius: 4 },
-  // Severity selector styles
-  severityContainer: { alignItems: 'center' },
-  severityHeader: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 12 },
-  severityValue: { fontSize: 18, fontWeight: '600', marginBottom: 0 },
+  severityValue: { fontSize: 18, fontWeight: '600' },
   severityBadge: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16 },
-  severityBadgeText: { fontSize: 12, fontWeight: '600', color: '#FFFFFF', textTransform: 'uppercase' },
-  severitySlider: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  severityDot: { width: 20, height: 20, borderRadius: 10, backgroundColor: '#E5E5EA', borderWidth: 2, borderColor: '#E5E5EA' },
-  severityDotActive: { borderColor: '#E5E5EA' },
-  severityDotSelected: { backgroundColor: '#FFFFFF', borderWidth: 3 },
-  // Map styles (ported from create modal for consistency)
-  mapButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#E5E5EA', borderRadius: 12, paddingHorizontal: 16, paddingVertical: 16 },
-  mapContainer: { backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#E5E5EA', borderRadius: 12, marginTop: 4, overflow: 'hidden' },
-  map: { height: 400, width: '100%', borderRadius: 8 },
-  mapInstructions: { padding: 12, backgroundColor: '#F2F2F7', borderTopWidth: 1, borderTopColor: '#E5E5EA' },
-  mapInstructionsText: { fontSize: 12, color: '#8E8E93', textAlign: 'center' },
-  miniMapPreview: { flex: 1, height: 60, borderRadius: 8, overflow: 'hidden', position: 'relative' },
+  severityBadgeText: { fontSize: 12, fontWeight: '600', color: '#FFFFFF' },
+  severitySlider: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 4 },
+  severityDot: { width: 22, height: 22, borderRadius: 11, backgroundColor: '#E5E5EA', borderWidth: 2, borderColor: 'transparent' },
+  severityDotActive: {},
+  severityDotSelected: { borderColor: '#007AFF' },
   miniMap: { width: '100%', height: '100%' },
-  miniMapOverlay: { position: 'absolute', bottom: 0, left: 0, right: 0, backgroundColor: 'rgba(0, 0, 0, 0.7)', padding: 4, alignItems: 'center' },
-  miniMapCoordinates: { fontSize: 10, color: '#FFFFFF', fontWeight: '600', textAlign: 'center' },
 });
 
 
