@@ -2,16 +2,16 @@ import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import React, { useMemo, useState } from 'react';
 import {
-    Alert,
-    KeyboardAvoidingView,
-    Modal,
-    Platform,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  Alert,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import DateTimePickerModal from 'react-native-modal-datetime-picker';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -24,7 +24,13 @@ import { ManifolderType } from '../types/manifolder';
 interface Props {
   visible: boolean;
   onClose: () => void;
-  onSuccess: (result: { manifolderId: string; code_formatted: string }) => void;
+  onSuccess: (result: {
+    manifolderId: string;
+    code_formatted: string;
+    date: string;
+    heur_d?: string;
+    heur_f?: string;
+  }) => void;
   projects: Project[];
   zones: Zone[];
   types: ManifolderType[];
@@ -105,28 +111,23 @@ export default function CreateManifolderModal({
       }, token!);
 
       if (!result?.manifolderId) {
-        throw new Error('La création du manifolder a échoué, aucun ID retourné.');
+        throw new Error('La création du manifold a échoué, aucun ID retourné.');
       }
 
       resetForm();
       onSuccess({
         manifolderId: result.manifolderId,
         code_formatted: result.code_formatted,
+        date: formatDate(date),
+        heur_d: heurD ? formatTime(heurD) : undefined,
+        heur_f: heurF ? formatTime(heurF) : undefined,
       });
     } catch (e: any) {
-      Alert.alert('Erreur', e.message || 'La création du manifolder a échoué');
+      Alert.alert('Erreur', e.message || 'La création du manifolde a échoué');
     } finally {
       setSubmitting(false);
     }
   }
-
-  const getZoneLogo = (zoneId: string) => {
-    const zone = zones.find(z => z.id === zoneId);
-    if (zone?.logo) {
-      return `${API_CONFIG.BASE_URL}${zone.logo}`;
-    }
-    return null;
-  };
 
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
@@ -137,54 +138,16 @@ export default function CreateManifolderModal({
               <Ionicons name="close" size={24} color="#6b7280" />
             </TouchableOpacity>
             <View style={styles.headerCenter}>
-              <Text style={styles.headerTitle}>Créer un Manifolder</Text>
+              <Text style={styles.headerTitle}>Créer un Manifold</Text>
               <Text style={styles.headerSubtitle}>Remplissez les détails ci-dessous</Text>
             </View>
             <View style={styles.placeholder} />
           </View>
 
           <ScrollView style={styles.form} showsVerticalScrollIndicator={false}>
-            {/* Main Info Card */}
-            <View style={styles.card}>
-              <View style={styles.cardHeader}>
-                <View style={styles.cardIconWrap}><Ionicons name="document-text-outline" size={18} color="#11224e" /></View>
-                <View style={styles.cardHeaderText}>
-                  <Text style={styles.cardTitle}>Information Principale</Text>
-                  <Text style={styles.cardHint}>Titre et type du manifolder</Text>
-                </View>
-              </View>
-              <TextInput
-                style={[styles.inputContainer, styles.textInput]}
-                placeholder="Titre *"
-                placeholderTextColor="#9ca3af"
-                value={title}
-                onChangeText={setTitle}
-              />
-               <TouchableOpacity style={[styles.inputContainer, { marginTop: 12 }]} onPress={() => setShowTypeDropdown(!showTypeDropdown)}>
-                 <Text style={[styles.inputText, !typeId && styles.placeholderText]}>
-                   {typeId ? (types.find(t => t.id === typeId)?.title || 'Type') : 'Sélectionner le type *'}
-                 </Text>
-                 <Ionicons name={showTypeDropdown ? 'chevron-up' : 'chevron-down'} size={20} color="#9ca3af" />
-               </TouchableOpacity>
-               {showTypeDropdown && (
-                 <View style={styles.dropdownList}>
-                   {types.map(t => (
-                     <TouchableOpacity key={t.id} style={styles.dropdownItem} onPress={() => { setTypeId(t.id); setShowTypeDropdown(false); }}>
-                       <Text style={styles.dropdownItemText}>{t.title}</Text>
-                     </TouchableOpacity>
-                   ))}
-                 </View>
-               )}
-            </View>
-
             {/* Context Card */}
             <View style={styles.card}>
-              <View style={styles.cardHeader}>
-                <View style={styles.cardIconWrap}><Ionicons name="briefcase-outline" size={18} color="#11224e" /></View>
-                <View style={styles.cardHeaderText}>
-                  <Text style={styles.cardTitle}>Contexte</Text>
-                  <Text style={styles.cardHint}>Projet et zone associés</Text>
-                </View>
+              <View style={styles.cardHeader}>                
               </View>
               <TouchableOpacity style={styles.inputContainer} onPress={() => setShowProjectDropdown(!showProjectDropdown)}>
                 <Text style={[styles.inputText, !projectId && styles.placeholderText]}>
@@ -219,16 +182,38 @@ export default function CreateManifolderModal({
                 </View>
               )}
             </View>
+            {/* Main Info Card */}
+            <View style={styles.card}>
+             
+               <TouchableOpacity style={[styles.inputContainer, { marginTop: 12 }]} onPress={() => setShowTypeDropdown(!showTypeDropdown)}>
+                 <Text style={[styles.inputText, !typeId && styles.placeholderText]}>
+                   {typeId ? (types.find(t => t.id === typeId)?.title || 'Type') : 'Sélectionner le type *'}
+                 </Text>
+                 <Ionicons name={showTypeDropdown ? 'chevron-up' : 'chevron-down'} size={20} color="#9ca3af" />
+               </TouchableOpacity>
+               {showTypeDropdown && (
+                 <View style={styles.dropdownList}>
+                   {types.map(t => (
+                     <TouchableOpacity key={t.id} style={styles.dropdownItem} onPress={() => { setTypeId(t.id); setShowTypeDropdown(false); }}>
+                       <Text style={styles.dropdownItemText}>{t.title}</Text>
+                     </TouchableOpacity>
+                   ))}
+                 </View>
+               )}
+               <View style={styles.cardHeader}></View>
+                <TextInput
+                style={[styles.inputContainer, styles.textInput]}
+                placeholder="Titre *"
+                placeholderTextColor="#9ca3af"
+                value={title}
+                onChangeText={setTitle}
+              />
+            </View>
+
+            
 
             {/* Details Card */}
             <View style={styles.card}>
-               <View style={styles.cardHeader}>
-                <View style={styles.cardIconWrap}><Ionicons name="information-circle-outline" size={18} color="#11224e" /></View>
-                <View style={styles.cardHeaderText}>
-                  <Text style={styles.cardTitle}>Détails</Text>
-                  <Text style={styles.cardHint}>Date, heures et description</Text>
-                </View>
-              </View>
 
               <TouchableOpacity style={styles.inputContainer} onPress={() => setShowDatePicker(true)}>
                 <Ionicons name="calendar-outline" size={18} color="#6b7280" />
@@ -265,7 +250,7 @@ export default function CreateManifolderModal({
               onPress={handleSubmit}
               disabled={submitting}
             >
-              <Text style={styles.submitButtonText}>{submitting ? 'Création en cours...' : 'Créer le Manifolder'}</Text>
+              <Text style={styles.submitButtonText}>{submitting ? 'Création en cours...' : 'Créer le Manifold'}</Text>
             </TouchableOpacity>
           </View>
 

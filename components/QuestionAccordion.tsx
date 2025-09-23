@@ -587,7 +587,7 @@ export default function QuestionAccordion({
               )}
 
             {/* Zone Selection */}
-            <View style={styles.zoneContainer}>
+            {/* <View style={styles.zoneContainer}>
               <Text style={styles.zoneLabel}>Zone:</Text>
               <Pressable 
                 style={styles.zonePickerContainer}
@@ -598,7 +598,7 @@ export default function QuestionAccordion({
                 </Text>
                 <Ionicons name="chevron-down" size={20} color="#8E8E93" />
               </Pressable>
-            </View>
+            </View> */}
 
             {/* Status Selection */}
             <View style={styles.statusContainer}>

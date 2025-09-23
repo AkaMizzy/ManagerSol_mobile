@@ -317,22 +317,6 @@ export default function ManifolderQuestions({
     }
   };
 
-  const handleVocalFileUpload = async (questionId: string, file: { uri: string; name: string; type: string }) => {
-    if (!token || !manifolderId) return;
-    const zoneId = questionZones[questionId] || defaultZoneId;
-    if (!zoneId) return;
-
-    try {
-        const response = await manifolderService.uploadManifolderFile(manifolderId, questionId, file, token, zoneId);
-        setVocalAnswers(prev => ({
-            ...prev,
-            [questionId]: response.file,
-        }));
-    } catch (error: any) {
-        Alert.alert('Upload Error', error.message || 'Failed to upload vocal file');
-    }
-  };
-
   const handleVocalFileRemove = (questionId: string) => {
     setVocalAnswers(prev => {
         const newVocalAnswers = { ...prev };
@@ -512,7 +496,6 @@ export default function ManifolderQuestions({
       // Store the answer ID for future reference and refresh local state
       await loadQuestions();
 
-      Alert.alert('Success', 'Answer submitted successfully!');
     } catch (error: any) {
       Alert.alert('Error', error.message || 'Failed to submit answer');
     } finally {
@@ -697,13 +680,19 @@ export default function ManifolderQuestions({
           const aIsSubmitted = submittedQuestions.has(a.id);
           const bIsSubmitted = submittedQuestions.has(b.id);
           
-          // If both have same submission status, maintain original order
-          if (aIsSubmitted === bIsSubmitted) {
-            return 0;
+          if (aIsSubmitted !== bIsSubmitted) {
+            return aIsSubmitted ? 1 : -1;
           }
-          
-          // Unanswered questions (false) come before answered questions (true)
-          return aIsSubmitted ? 1 : -1;
+
+          // Both have same submission status, sort by order then title
+          const orderA = a.order ?? Number.MAX_SAFE_INTEGER;
+          const orderB = b.order ?? Number.MAX_SAFE_INTEGER;
+
+          if (orderA !== orderB) {
+            return orderA - orderB;
+          }
+
+          return a.title.localeCompare(b.title);
         });
       };
 
@@ -758,20 +747,7 @@ export default function ManifolderQuestions({
       >
         {/* Header */}
         <View style={styles.header}>
-          <View style={styles.headerContent}>
-            <View style={styles.questionIcon}>
-              <Ionicons name="document-text-outline" size={20} color="#11224e" />
-            </View>
-            <View style={styles.headerText}>
-              <Text style={styles.headerTitle}>
-                {formatManifolderType(manifolderType)} Questions
-              </Text>
-              <Text style={styles.headerSubtitle}>
-              Répondez à toutes les questions pour compléter le manifolder
-              </Text>
-            </View>
-          </View>
-          
+        
           {/* Counter inside header */}
           <View style={styles.counterContainer}>
             <AnsweredQuestionsCounter 

@@ -48,6 +48,7 @@ export interface ManifolderQuestion {
   type: QuestionType;
   context: string;
   quantity?: boolean;
+  order?: number;
   created_at: string;
   updated_at: string;
   // Added for frontend compatibility (set by backend as defaults)

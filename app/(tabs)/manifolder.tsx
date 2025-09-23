@@ -102,7 +102,13 @@ export default function ManifolderTab() {
     return () => { mounted = false; };
   }, [token]);
 
-  const handleCreateSuccess = async (result: { manifolderId: string; code_formatted: string }) => {
+  const handleCreateSuccess = async (result: {
+    manifolderId: string;
+    code_formatted: string;
+    date: string;
+    heur_d?: string;
+    heur_f?: string;
+  }) => {
     setIsCreateModalVisible(false);
 
     try {
@@ -252,16 +258,28 @@ export default function ManifolderTab() {
                   <Ionicons name="briefcase-outline" size={16} color="#6B7280" />
                   <Text style={styles.headerDetailText} numberOfLines={1}>{selectedManifolderData?.project_title || 'No project'}</Text>
                 </View>
-                <View style={styles.headerDetailSeparator} />
                 <View style={styles.headerDetailItem}>
                   <Ionicons name="location-outline" size={16} color="#6B7280" />
                   <Text style={styles.headerDetailText} numberOfLines={1}>{selectedManifolderData?.zone_title || 'No zone'}</Text>
                 </View>
-                <View style={styles.headerDetailSeparator} />
                 <View style={styles.headerDetailItem}>
                   <Ionicons name="document-text-outline" size={16} color="#6B7280" />
                   <Text style={styles.headerDetailText} numberOfLines={1}>{selectedManifolderData?.type_title || 'No type'}</Text>
                 </View>
+                {selectedManifolderData?.date && (
+                  <View style={styles.headerDetailItem}>
+                    <Ionicons name="calendar-outline" size={16} color="#6B7280" />
+                    <Text style={styles.headerDetailText} numberOfLines={1}>{selectedManifolderData.date}</Text>
+                  </View>
+                )}
+                {(selectedManifolderData?.heur_d || selectedManifolderData?.heur_f) && (
+                  <View style={styles.headerDetailItem}>
+                    <Ionicons name="time-outline" size={16} color="#6B7280" />
+                    <Text style={styles.headerDetailText} numberOfLines={1}>
+                      {[selectedManifolderData.heur_d, selectedManifolderData.heur_f].filter(Boolean).join(' - ')}
+                    </Text>
+                  </View>
+                )}
               </View>
             </View>
           </View>
@@ -362,6 +380,8 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 12,
     marginTop: 8,
+    flexWrap: 'wrap',
+    gap: 12,
   },
   headerDetailItem: {
     flexDirection: 'row',
@@ -378,12 +398,6 @@ const styles = StyleSheet.create({
     color: '#6B7280',
     fontWeight: '500',
     flexShrink: 1,
-  },
-  headerDetailSeparator: {
-    width: 1,
-    height: 16,
-    backgroundColor: '#E5E7EB',
-    marginHorizontal: 8,
   },
   createButton: {
     flexDirection: 'row',
