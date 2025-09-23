@@ -1,14 +1,14 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import React, { useEffect, useMemo, useState } from 'react';
-import { Alert, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Alert, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, Dimensions } from 'react-native';
 import DateTimePickerModal from 'react-native-modal-datetime-picker';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { WebView } from 'react-native-webview';
 import API_CONFIG from '../app/config/api';
 import { useAuth } from '../contexts/AuthContext';
 import declarationService from '../services/declarationService';
-import { CompanyUser, Declaration, DeclarationType, Project, Zone } from '../types/declaration';
+import { CompanyUser, Declaration, DeclarationType, Project, Zone, DeclarationPhoto } from '../types/declaration';
 
 interface Props {
   visible: boolean;
@@ -21,6 +21,8 @@ export default function DeclarationDetailsModal({ visible, onClose, declaration 
   const insets = useSafeAreaInsets();
   const [isUpdateVisible, setIsUpdateVisible] = useState(false);
   const [isDetailsMapVisible, setIsDetailsMapVisible] = useState(false);
+  const [isImagePreviewVisible, setImagePreviewVisible] = useState(false);
+  const [selectedImageIndex, setSelectedImageIndex] = useState(0);
 
   // Form state (title is read-only per backend PUT support)
   const [form, setForm] = useState({
@@ -365,14 +367,21 @@ export default function DeclarationDetailsModal({ visible, onClose, declaration 
     return <Image source={{ uri }} style={styles.photo} contentFit="cover" />;
   };
 
+  const openImagePreview = (index: number) => {
+    setSelectedImageIndex(index);
+    setImagePreviewVisible(true);
+  };
+
   const renderPhotos = () => {
     if (!declaration?.photos || declaration.photos.length === 0) return null;
     return (
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Photos</Text>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 8 }}>
-          {declaration.photos.map((p) => (
-            <View key={p.id} style={styles.photoItem}>{renderPhoto(p.photo)}</View>
+          {declaration.photos.map((p, index) => (
+            <TouchableOpacity key={p.id} onPress={() => openImagePreview(index)} style={styles.photoItem}>
+              {renderPhoto(p.photo)}
+            </TouchableOpacity>
           ))}
         </ScrollView>
       </View>
@@ -697,10 +706,66 @@ export default function DeclarationDetailsModal({ visible, onClose, declaration 
                 </View>
             </Modal>
         )}
+
+        {/* Image Preview Modal */}
+        {declaration?.photos && declaration.photos.length > 0 && (
+          <Modal visible={isImagePreviewVisible} transparent animationType="fade" onRequestClose={() => setImagePreviewVisible(false)}>
+            <ImageViewer
+              images={declaration.photos}
+              initialIndex={selectedImageIndex}
+              onClose={() => setImagePreviewVisible(false)}
+            />
+          </Modal>
+        )}
       </View>
     </Modal>
   );
 }
+
+const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
+
+const ImageViewer = ({ images, initialIndex, onClose }: { images: DeclarationPhoto[], initialIndex: number, onClose: () => void }) => {
+  const insets = useSafeAreaInsets();
+  const [currentIndex, setCurrentIndex] = useState(initialIndex);
+
+  const handleScroll = (event: any) => {
+    const contentOffsetX = event.nativeEvent.contentOffset.x;
+    const index = Math.round(contentOffsetX / screenWidth);
+    if (index !== currentIndex) {
+      setCurrentIndex(index);
+    }
+  };
+
+  return (
+    <View style={styles.imageViewerContainer}>
+      <ScrollView
+        horizontal
+        pagingEnabled
+        showsHorizontalScrollIndicator={false}
+        onMomentumScrollEnd={handleScroll}
+        contentOffset={{ x: initialIndex * screenWidth, y: 0 }}
+        style={{ flex: 1 }}
+      >
+        {images.map((img) => (
+          <View key={img.id} style={styles.imageViewerPage}>
+            <Image
+              source={{ uri: `${API_CONFIG.BASE_URL}${img.photo}` }}
+              style={styles.fullScreenImage}
+              contentFit="contain"
+            />
+          </View>
+        ))}
+      </ScrollView>
+      <View style={[styles.imageViewerHeader, { top: insets.top }]}>
+        <TouchableOpacity onPress={onClose} style={styles.imageViewerClose}>
+          <Ionicons name="close" size={28} color="#FFFFFF" />
+        </TouchableOpacity>
+        <Text style={styles.imageViewerCounter}>{currentIndex + 1} / {images.length}</Text>
+        <View style={{ width: 28 }} />
+      </View>
+    </View>
+  );
+};
 
 const DetailItem = ({ label, value, icon }: { label: string; value: string; icon: keyof typeof Ionicons.glyphMap }) => (
   <View style={styles.detailItem}>
@@ -899,6 +964,40 @@ const styles = StyleSheet.create({
   severityDotActive: {},
   severityDotSelected: { borderColor: '#007AFF' },
   miniMap: { width: '100%', height: '100%' },
+
+  // Image Viewer Styles
+  imageViewerContainer: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.9)',
+  },
+  imageViewerPage: {
+    width: screenWidth,
+    height: screenHeight,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  fullScreenImage: {
+    width: '100%',
+    height: '80%',
+  },
+  imageViewerHeader: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  imageViewerClose: {
+    padding: 8,
+  },
+  imageViewerCounter: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
+  },
 });
 
 
