@@ -1,13 +1,13 @@
 import { Ionicons } from '@expo/vector-icons';
 import React, { useState } from 'react';
 import {
-    Image,
-    Modal,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  Image,
+  Modal,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { CreateInventaireData, InventaireDeclaration, UserZone, ZoneBloc } from '../services/inventaireService';
@@ -54,7 +54,7 @@ export default function CreateInventaireModal({
         const blocs = await onFetchBlocs(zone.id_zone);
         setAvailableBlocs(blocs);
       } catch (error) {
-        setErrorMessage('Failed to load blocs for this zone');
+        setErrorMessage('Échec du chargement des blocs pour cette zone');
         setAvailableBlocs([]);
       } finally {
         setLoadingBlocs(false);
@@ -64,12 +64,12 @@ export default function CreateInventaireModal({
 
   const handleSubmit = async () => {
     if (!selectedZone) {
-      setErrorMessage('Please select a zone to continue.');
+      setErrorMessage('Veuillez sélectionner une zone pour continuer.');
       return;
     }
 
     if (!selectedDeclaration) {
-      setErrorMessage('Please select an inventaire declaration.');
+      setErrorMessage('Veuillez sélectionner une déclaration d\'inventaire.');
       return;
     }
 
@@ -89,7 +89,7 @@ export default function CreateInventaireModal({
       setErrorMessage(null);
       onClose();
     } catch {
-      setErrorMessage('Failed to create inventaire. Please try again.');
+      setErrorMessage('Échec de la création de l\'inventaire. Veuillez réessayer.');
     }
   };
 
@@ -109,11 +109,11 @@ export default function CreateInventaireModal({
     const isZone = 'zone_title' in item;
     const isBloc = 'intitule' in item;
     const title = isZone
-      ? (item.zone_title || item.bloc_title || 'Unknown Zone')
+      ? (item.zone_title || item.bloc_title || 'Zone inconnue')
       : isBloc
-      ? (item.intitule || 'Unknown Bloc')
-      : (item.title || 'Unknown Declaration');
-    const subtitle = isZone ? null : isBloc ? 'Bloc' : (item.declaration_type_title || 'Declaration');
+      ? (item.intitule || 'Bloc inconnu')
+      : (item.title || 'Déclaration inconnue');
+    const subtitle = isZone ? null : isBloc ? 'Bloc' : (item.declaration_type_title || 'Déclaration');
     const iconName = isZone ? 'location' : isBloc ? 'cube' : 'documents';
     const zoneLogo = isZone ? (item as UserZone).zone_logo : null;
 
@@ -160,8 +160,8 @@ export default function CreateInventaireModal({
             <Ionicons name="close" size={24} color="#6b7280" />
           </TouchableOpacity>
           <View style={styles.headerCenter}>
-            <Text style={styles.headerTitle}>Create New Inventaire</Text>
-            <Text style={styles.headerSubtitle}>Link an inventaire to a specific zone or bloc</Text>
+            <Text style={styles.headerTitle}>Créer un nouvel inventaire</Text>
+            <Text style={styles.headerSubtitle}>Lier un inventaire à une zone ou un bloc spécifique</Text>
           </View>
           <View style={styles.placeholder} />
         </View>
@@ -185,12 +185,12 @@ export default function CreateInventaireModal({
               </View>
               <View style={styles.cardHeaderText}>
                 <Text style={styles.cardTitle}>Zone</Text>
-                <Text style={styles.cardHint}>Choose the zone you want to inventory</Text>
+                <Text style={styles.cardHint}>Choisissez la zone que vous souhaitez inventorier</Text>
               </View>
               {selectedZone && (
                 <View style={styles.pill}>
                   <Ionicons name="checkmark" size={14} color="#16a34a" />
-                  <Text style={styles.pillText}>Selected</Text>
+                  <Text style={styles.pillText}>Sélectionné</Text>
                 </View>
               )}
             </View>
@@ -214,7 +214,7 @@ export default function CreateInventaireModal({
                     </View>
                   )}
                   <Text style={[styles.dropdownButtonText, !selectedZone && styles.placeholderText]}>
-                    {selectedZone ? (selectedZone.zone_title || selectedZone.bloc_title) : 'Choose a zone'}
+                    {selectedZone ? (selectedZone.zone_title || selectedZone.bloc_title) : 'Choisissez une zone'}
                   </Text>
                 </View>
                 <Ionicons name={showZoneDropdown ? 'chevron-up' : 'chevron-down'} size={20} color="#6b7280" />
@@ -225,7 +225,7 @@ export default function CreateInventaireModal({
               <View style={styles.dropdown}>
                 {zones.length === 0 ? (
                   <View style={styles.dropdownItem}>
-                    <Text style={styles.dropdownItemTitle}>No zones available</Text>
+                    <Text style={styles.dropdownItemTitle}>Aucune zone disponible</Text>
                   </View>
                 ) : (
                   zones.map((zone) =>
@@ -243,20 +243,20 @@ export default function CreateInventaireModal({
                 <Ionicons name="cube" size={18} color="#11224e" />
               </View>
               <View style={styles.cardHeaderText}>
-                <Text style={styles.cardTitle}>Bloc (Optional)</Text>
-                <Text style={styles.cardHint}>Choose a specific bloc within the selected zone</Text>
+                <Text style={styles.cardTitle}>Bloc (Optionnel)</Text>
+                <Text style={styles.cardHint}>Choisissez un bloc spécifique dans la zone sélectionnée</Text>
               </View>
               {selectedBloc && (
                 <View style={styles.pill}>
                   <Ionicons name="checkmark" size={14} color="#16a34a" />
-                  <Text style={styles.pillText}>Selected</Text>
+                  <Text style={styles.pillText}>Sélectionné</Text>
                 </View>
               )}
             </View>
             {!selectedZone && (
               <View style={styles.disabledBanner}>
                 <Ionicons name="lock-closed" size={14} color="#6b7280" />
-                <Text style={styles.disabledBannerText}>Select a zone first to choose a bloc</Text>
+                <Text style={styles.disabledBannerText}>Sélectionnez d&apos;abord une zone pour choisir un bloc</Text>
               </View>
             )}
 
@@ -275,12 +275,12 @@ export default function CreateInventaireModal({
                   (!selectedBloc && !loadingBlocs) && styles.placeholderText
                 ]}>
                   {loadingBlocs 
-                    ? 'Loading blocs...' 
+                    ? 'Chargement des blocs...' 
                     : selectedBloc 
                     ? selectedBloc.intitule 
                     : !selectedZone 
-                    ? 'Select a zone first' 
-                    : 'Choose a bloc (optional)'
+                    ? 'Sélectionnez d\'abord une zone' 
+                    : 'Choisissez un bloc (optionnel)'
                   }
                 </Text>
                 <Ionicons 
@@ -295,7 +295,7 @@ export default function CreateInventaireModal({
               <View style={styles.dropdown}>
                 {availableBlocs.length === 0 ? (
                   <View style={styles.dropdownItem}>
-                    <Text style={styles.dropdownItemTitle}>No blocs available for this zone</Text>
+                    <Text style={styles.dropdownItemTitle}>Aucun bloc disponible pour cette zone</Text>
                   </View>
                 ) : (
                   availableBlocs.map((bloc) =>
@@ -318,12 +318,12 @@ export default function CreateInventaireModal({
               </View>
               <View style={styles.cardHeaderText}>
                 <Text style={styles.cardTitle}>Inventaire</Text>
-                <Text style={styles.cardHint}>Select an existing inventaire declaration</Text>
+                <Text style={styles.cardHint}>Sélectionnez une déclaration d&apos;inventaire existante</Text>
               </View>
               {selectedDeclaration && (
                 <View style={styles.pill}>
                   <Ionicons name="checkmark" size={14} color="#16a34a" />
-                  <Text style={styles.pillText}>Selected</Text>
+                  <Text style={styles.pillText}>Sélectionné</Text>
                 </View>
               )}
             </View>
@@ -335,7 +335,7 @@ export default function CreateInventaireModal({
             >
               <View style={styles.dropdownButtonContent}>
                 <Text style={[styles.dropdownButtonText, !selectedDeclaration && styles.placeholderText]}>
-                  {selectedDeclaration ? selectedDeclaration.title : 'Choose an inventaire'}
+                  {selectedDeclaration ? selectedDeclaration.title : 'Choisissez un inventaire'}
                 </Text>
                 <Ionicons name={showDeclarationDropdown ? 'chevron-up' : 'chevron-down'} size={20} color="#6b7280" />
               </View>
@@ -345,7 +345,7 @@ export default function CreateInventaireModal({
               <View style={styles.dropdown}>
                 {declarations.length === 0 ? (
                   <View style={styles.dropdownItem}>
-                    <Text style={styles.dropdownItemTitle}>No declarations available</Text>
+                    <Text style={styles.dropdownItemTitle}>Aucune déclaration disponible</Text>
                   </View>
                 ) : (
                   declarations.map((declaration) =>
@@ -374,12 +374,12 @@ export default function CreateInventaireModal({
             {loading ? (
               <>
                 <Ionicons name="hourglass" size={16} color="#FFFFFF" />
-                <Text style={styles.submitButtonText}>Creating...</Text>
+                <Text style={styles.submitButtonText}>Création en cours...</Text>
               </>
             ) : (
               <>
                 <Ionicons name="save" size={16} color="#FFFFFF" />
-                <Text style={styles.submitButtonText}>Create Inventaire</Text>
+                <Text style={styles.submitButtonText}>Créer l&apos;inventaire</Text>
               </>
             )}
           </TouchableOpacity>

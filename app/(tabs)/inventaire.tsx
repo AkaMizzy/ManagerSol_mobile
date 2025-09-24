@@ -30,7 +30,7 @@ export default function InventaireScreen() {
       setDeclarations(declarationsData);
     } catch (error) {
       console.error('Error loading inventaire data:', error);
-      Alert.alert('Error', 'Failed to load data. Please try again.');
+      Alert.alert('Erreur', 'Échec du chargement des données. Veuillez réessayer.');
     }
   }, [token]);
 
@@ -41,7 +41,7 @@ export default function InventaireScreen() {
 
   const handleCreateInventaire = useCallback(() => {
     if (declarations.length === 0) {
-      Alert.alert('No Inventaires Available', 'There are no inventaire declarations available. Please contact your administrator.');
+      Alert.alert('Aucun inventaire disponible', 'Aucune déclaration d\'inventaire n\'est disponible. Veuillez contacter votre administrateur.');
       return;
     }
     setModalVisible(true);
@@ -53,12 +53,12 @@ export default function InventaireScreen() {
     setCreating(true);
     try {
       await inventaireService.createInventaireZone(data, token);
-      Alert.alert('Success', 'Inventaire created successfully!');
+      Alert.alert('Succès', 'Inventaire créé avec succès !');
       // Refresh data to show the new inventaire
       await loadData();
     } catch (error) {
       console.error('Error creating inventaire:', error);
-      Alert.alert('Error', 'Failed to create inventaire. Please try again.');
+      Alert.alert('Erreur', 'Échec de la création de l\'inventaire. Veuillez réessayer.');
     } finally {
       setCreating(false);
     }
@@ -88,7 +88,7 @@ export default function InventaireScreen() {
         declarations={declarations}
         loading={creating}
         onFetchBlocs={async (zoneId: string) => {
-          if (!token) throw new Error('No token available');
+          if (!token) throw new Error('Aucun jeton disponible');
           return inventaireService.getBlocsByZone(zoneId, token);
         }}
       />

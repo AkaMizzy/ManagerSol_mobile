@@ -15,7 +15,7 @@ export function CustomTabBar({ state, descriptors, navigation }: BottomTabBarPro
         paddingTop: Platform.OS === 'android' ? 6 : 8,
       }
     ]}>
-      {state.routes.filter(r => r.name !== 'profile' && r.name !== 'index' && r.name !== 'tasks' && r.name !== 'qualiphoto').map((route, index) => {
+      {state.routes.filter(r => r.name !== 'profile' && r.name !== 'index' && r.name !== 'tasks' && r.name !== 'qualiphoto' && r.name !== 'planning').map((route, index) => {
         const { options } = descriptors[route.key];
         const isFocused = state.index === index;
 
