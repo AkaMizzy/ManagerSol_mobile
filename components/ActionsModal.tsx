@@ -67,7 +67,7 @@ export default function ActionsModal({ visible, actions, onClose, onCreateAction
   const pickImage = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
-      Alert.alert('Permission required', 'Please allow access to your photos.');
+      Alert.alert('Autorisation requise', 'Veuillez autoriser l\'accès à vos photos.');
       return;
     }
     const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, quality: 0.8 });
@@ -79,7 +79,7 @@ export default function ActionsModal({ visible, actions, onClose, onCreateAction
   const pickEditImage = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
-      Alert.alert('Permission required', 'Please allow access to your photos.');
+      Alert.alert('Autorisation requise', 'Veuillez autoriser l\'accès à vos photos.');
       return;
     }
     const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, quality: 0.8 });
@@ -91,7 +91,7 @@ export default function ActionsModal({ visible, actions, onClose, onCreateAction
   const pickSubActionImage = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
-      Alert.alert('Permission required', 'Please allow access to your photos.');
+      Alert.alert('Autorisation requise', 'Veuillez autoriser l\'accès à vos photos.');
       return;
     }
     const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, quality: 0.8 });
@@ -102,7 +102,7 @@ export default function ActionsModal({ visible, actions, onClose, onCreateAction
 
   const fetchCompanyUsers = async () => {
     if (!token) {
-      Alert.alert('Error', 'Authentication required');
+      Alert.alert('Erreur', 'Authentification requise');
       return;
     }
     
@@ -115,14 +115,14 @@ export default function ActionsModal({ visible, actions, onClose, onCreateAction
       });
       
       if (!response.ok) {
-        throw new Error('Failed to fetch company users');
+        throw new Error('Échec de la récupération des utilisateurs de l\'entreprise');
       }
       
       const users = await response.json();
       setCompanyUsers(users);
     } catch (error) {
       console.error('Error fetching company users:', error);
-      Alert.alert('Error', 'Failed to load company users');
+      Alert.alert('Erreur', 'Échec du chargement des utilisateurs de l\'entreprise');
     } finally {
       setLoadingUsers(false);
     }
@@ -140,7 +140,7 @@ export default function ActionsModal({ visible, actions, onClose, onCreateAction
       resetForm();
       setShowForm(false);
     } catch (e) {
-      Alert.alert('Error', (e as Error).message || 'Failed to create action');
+      Alert.alert('Erreur', (e as Error).message || "Échec de la création de l'action");
     }
   };
 
@@ -176,7 +176,7 @@ export default function ActionsModal({ visible, actions, onClose, onCreateAction
       setEditForm({});
       setEditPhoto(undefined);
     } catch (e) {
-      Alert.alert('Error', (e as Error).message || 'Failed to update action');
+      Alert.alert('Erreur', (e as Error).message || "Échec de la mise à jour de l'action");
     }
   };
 
@@ -224,10 +224,10 @@ export default function ActionsModal({ visible, actions, onClose, onCreateAction
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.error || 'Failed to create sub-action');
+        throw new Error(error.error || 'Échec de la création de la sous-action');
       }
 
-      Alert.alert('Success', 'Sub-action created successfully');
+      Alert.alert('Succès', 'Sous-action créée avec succès');
       resetSubActionForm();
       setShowDetailsModal(false);
       // Refresh sub-actions for the parent action
@@ -235,7 +235,7 @@ export default function ActionsModal({ visible, actions, onClose, onCreateAction
         fetchSubActions(selectedAction.id, selectedAction.id_declaration);
       }
     } catch (e) {
-      Alert.alert('Error', (e as Error).message || 'Failed to create sub-action');
+      Alert.alert('Erreur', (e as Error).message || 'Échec de la création de la sous-action');
     }
   };
 
@@ -251,7 +251,7 @@ export default function ActionsModal({ visible, actions, onClose, onCreateAction
       });
 
       if (!response.ok) {
-        throw new Error('Failed to fetch sub-actions');
+        throw new Error('Échec de la récupération des sous-actions');
       }
 
       const subActions = await response.json();
@@ -335,9 +335,9 @@ export default function ActionsModal({ visible, actions, onClose, onCreateAction
   }
 
   const getSelectedUserName = () => {
-    if (!form.assigned_to) return 'Select user';
+    if (!form.assigned_to) return 'Sélectionner un utilisateur';
     const user = companyUsers.find(u => u.id === form.assigned_to);
-    return user ? `${user.firstname} ${user.lastname}` : 'Select user';
+    return user ? `${user.firstname} ${user.lastname}` : 'Sélectionner un utilisateur';
   };
   const renderPhoto = (photo?: string | null) => {
     if (!photo) return null;
@@ -399,7 +399,7 @@ export default function ActionsModal({ visible, actions, onClose, onCreateAction
           <TouchableOpacity onPress={onClose} style={styles.closeButton}>
             <Ionicons name="close" size={24} color="#1C1C1E" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Declaration Actions</Text>
+          <Text style={styles.headerTitle}>Actions de déclaration</Text>
           <View style={styles.placeholder} />
         </View>
 
@@ -409,7 +409,7 @@ export default function ActionsModal({ visible, actions, onClose, onCreateAction
           <View style={styles.createBar}>
             <TouchableOpacity style={styles.createButton} onPress={() => setShowForm((s) => !s)}>
               <Ionicons name={showForm ? 'remove' : 'add'} size={20} color="#007AFF" />
-              <Text style={styles.createButtonText}>{showForm ? 'Close' : 'Add Action'}</Text>
+              <Text style={styles.createButtonText}>{showForm ? 'Fermer' : 'Ajouter une action'}</Text>
             </TouchableOpacity>
           </View>
 
@@ -418,14 +418,14 @@ export default function ActionsModal({ visible, actions, onClose, onCreateAction
           <View style={styles.searchBar}>
             <Ionicons name="search" size={18} color="#8E8E93" />
             <TextInput
-              placeholder="Search actions by title"
+              placeholder="Rechercher des actions par titre"
               placeholderTextColor="#8E8E93"
               value={searchQuery}
               onChangeText={setSearchQuery}
               style={styles.searchInput}
             />
             {searchQuery.length > 0 ? (
-              <TouchableOpacity onPress={() => setSearchQuery('')} accessibilityLabel="Clear search">
+              <TouchableOpacity onPress={() => setSearchQuery('')} accessibilityLabel="Effacer la recherche">
                 <Ionicons name="close-circle" size={18} color="#C7C7CC" />
               </TouchableOpacity>
             ) : null}
@@ -433,7 +433,7 @@ export default function ActionsModal({ visible, actions, onClose, onCreateAction
 
           {showForm && (
             <View style={styles.formCard}>
-              <Text style={styles.formTitle}>New Action</Text>
+              <Text style={styles.formTitle}>Nouvelle action</Text>
               {/* Zone select */}
               {/* {parentZone ? (
                 <View style={{ marginBottom: 10 }}>
@@ -474,7 +474,7 @@ export default function ActionsModal({ visible, actions, onClose, onCreateAction
               ) : null} */}
               <TextInput
                 style={styles.input}
-                placeholder="Title "
+                placeholder="Titre "
                 placeholderTextColor="#8E8E93"
                 value={form.title}
                 onChangeText={(t) => setForm((p) => ({ ...p, title: t }))}
@@ -490,7 +490,7 @@ export default function ActionsModal({ visible, actions, onClose, onCreateAction
               
               {/* User Assignment */}
               <View style={{ marginBottom: 10 }}>
-                <Text style={styles.label}>Assign To</Text>
+                <Text style={styles.label}>Affecter à</Text>
                 <TouchableOpacity
                   style={styles.selectHeader}
                   onPress={() => setShowUserDropdown((s) => !s)}
@@ -509,11 +509,11 @@ export default function ActionsModal({ visible, actions, onClose, onCreateAction
                     <ScrollView style={{ maxHeight: 220 }}>
                       {loadingUsers ? (
                         <View style={styles.loadingItem}>
-                          <Text style={styles.loadingText}>Loading users...</Text>
+                          <Text style={styles.loadingText}>Chargement des utilisateurs...</Text>
                         </View>
                       ) : companyUsers.length === 0 ? (
                         <View style={styles.loadingItem}>
-                          <Text style={styles.loadingText}>No users available</Text>
+                          <Text style={styles.loadingText}>Aucun utilisateur disponible</Text>
                         </View>
                       ) : (
                         companyUsers.map((user) => (
@@ -541,7 +541,7 @@ export default function ActionsModal({ visible, actions, onClose, onCreateAction
                 <TouchableOpacity style={styles.dateInput} onPress={() => setShowPlanPicker(true)} activeOpacity={0.7}>
                   <Ionicons name="calendar-outline" size={18} color="#8E8E93" />
                   <Text style={[styles.dateText, !form.date_planification && styles.placeholderText]}>
-                    {form.date_planification ? formatDisplayDate(form.date_planification) : 'Planned date'}
+                    {form.date_planification ? formatDisplayDate(form.date_planification) : 'Date planifiée'}
                   </Text>
                 </TouchableOpacity>
                 <DateTimePickerModal
@@ -559,7 +559,7 @@ export default function ActionsModal({ visible, actions, onClose, onCreateAction
                 <TouchableOpacity style={styles.dateInput} onPress={() => setShowExecPicker(true)} activeOpacity={0.7}>
                   <Ionicons name="calendar-outline" size={18} color="#8E8E93" />
                   <Text style={[styles.dateText, !form.date_execution && styles.placeholderText]}>
-                    {form.date_execution ? formatDisplayDate(form.date_execution) : 'Execution date'}
+                    {form.date_execution ? formatDisplayDate(form.date_execution) : 'Date d\'exécution'}
                   </Text>
                 </TouchableOpacity>
                 <DateTimePickerModal
@@ -576,12 +576,20 @@ export default function ActionsModal({ visible, actions, onClose, onCreateAction
               <View style={styles.row}>
                 <TouchableOpacity style={styles.photoBtn} onPress={pickImage}>
                   <Ionicons name="camera-outline" size={18} color="#8E8E93" />
-                  <Text style={styles.photoBtnText}>{photo ? 'Change Photo' : 'Add Photo'}</Text>
+                  <Text style={styles.photoBtnText}>{photo ? 'Changer la photo' : 'Ajouter une photo'}</Text>
                 </TouchableOpacity>
-                {photo ? <Text style={styles.photoName}>1 photo selected</Text> : null}
+                {photo ? <Text style={styles.photoName}>1 photo sélectionnée</Text> : null}
               </View>
+              {photo ? (
+                <View style={styles.previewContainer}>
+                  <Image source={{ uri: photo.uri }} style={styles.previewImage} />
+                  <TouchableOpacity onPress={() => setPhoto(undefined)} style={styles.removeImageButton}>
+                    <Ionicons name="close-circle" size={24} color="red" />
+                  </TouchableOpacity>
+                </View>
+              ) : null}
               <TouchableOpacity style={styles.submitBtn} onPress={handleCreate}>
-                <Text style={styles.submitBtnText}>Create Action</Text>
+                <Text style={styles.submitBtnText}>Créer une action</Text>
               </TouchableOpacity>
             </View>
           )}
@@ -589,7 +597,7 @@ export default function ActionsModal({ visible, actions, onClose, onCreateAction
           {!filteredParentActions || filteredParentActions.length === 0 ? (
             <View style={styles.emptyState}>
               <Ionicons name="list-outline" size={48} color="#C7C7CC" />
-              <Text style={styles.emptyTitle}>{searchQuery ? 'No matches found' : 'No actions have been added for this declaration yet.'}</Text>
+              <Text style={styles.emptyTitle}>{searchQuery ? 'Aucun résultat trouvé' : 'Aucune action n\'a encore été ajoutée pour cette déclaration.'}</Text>
             </View>
           ) : (
                          filteredParentActions.map((action: DeclarationAction) => {
@@ -602,9 +610,9 @@ export default function ActionsModal({ visible, actions, onClose, onCreateAction
                              <View key={action.id} style={styles.card}>
                                <TouchableOpacity onPress={() => handleActionPress(action)} activeOpacity={0.7}>
                                  <View style={styles.cardHeader}>
-                                   <Text style={styles.cardTitle}>{action.title || 'Untitled action'}</Text>
+                                   <Text style={styles.cardTitle}>{action.title || 'Action sans titre'}</Text>
                                    <View style={styles.statusPill}>
-                                     <Text style={styles.statusText}>{String(action.status ?? 'pending')}</Text>
+                                     <Text style={styles.statusText}>{String(action.status ?? 'en attente')}</Text>
                                    </View>
                                  </View>
                                  
@@ -619,7 +627,7 @@ export default function ActionsModal({ visible, actions, onClose, onCreateAction
                                    <View style={styles.userInfoRow}>
                                      {action.creator_firstname || action.creator_lastname ? (
                                        <View style={styles.userInfoItem}>
-                                         <Text style={styles.userInfoLabel}>Created by</Text>
+                                         <Text style={styles.userInfoLabel}>Créé par</Text>
                                          <Text style={styles.userInfoValue}>
                                            {[action.creator_firstname, action.creator_lastname].filter(Boolean).join(' ')}
                                          </Text>
@@ -628,7 +636,7 @@ export default function ActionsModal({ visible, actions, onClose, onCreateAction
                                      
                                      {action.assigned_firstname || action.assigned_lastname ? (
                                        <View style={styles.userInfoItem}>
-                                         <Text style={styles.userInfoLabel}>Assigned to</Text>
+                                         <Text style={styles.userInfoLabel}>Affecté à</Text>
                                          <Text style={styles.userInfoValue}>
                                            {[action.assigned_firstname, action.assigned_lastname].filter(Boolean).join(' ')}
                                          </Text>
@@ -641,14 +649,14 @@ export default function ActionsModal({ visible, actions, onClose, onCreateAction
                                      <View style={styles.dateInfoRow}>
                                        {action.date_execution ? (
                                          <View style={styles.dateInfoItem}>
-                                           <Text style={styles.dateInfoLabel}>Execute date</Text>
+                                           <Text style={styles.dateInfoLabel}>Date d&apos;exécution</Text>
                                            <Text style={styles.dateInfoValue}>
                                              {new Date(action.date_execution).toLocaleDateString()}
                                            </Text>
                                          </View>
                                        ) : action.date_planification ? (
                                          <View style={styles.dateInfoItem}>
-                                           <Text style={styles.dateInfoLabel}>Planned date</Text>
+                                           <Text style={styles.dateInfoLabel}>Date planifiée</Text>
                                            <Text style={styles.dateInfoValue}>
                                              {new Date(action.date_planification).toLocaleDateString()}
                                            </Text>
@@ -674,7 +682,7 @@ export default function ActionsModal({ visible, actions, onClose, onCreateAction
                                           color="#8E8E93" 
                                         />
                                         <Text style={styles.subActionsCount}>
-                                          {isLoading ? 'Loading...' : `${subActionsForThisAction.length} sub-action${subActionsForThisAction.length !== 1 ? 's' : ''}`}
+                                          {isLoading ? 'Chargement...' : `${subActionsForThisAction.length} sous-action${subActionsForThisAction.length !== 1 ? 's' : ''}`}
                                         </Text>
                                       </View>
                                     </TouchableOpacity>
@@ -689,9 +697,9 @@ export default function ActionsModal({ visible, actions, onClose, onCreateAction
                                            activeOpacity={0.7}
                                          >
                                            <View style={styles.subActionHeader}>
-                                             <Text style={styles.subActionTitle}>{subAction.title || 'Untitled sub-action'}</Text>
+                                             <Text style={styles.subActionTitle}>{subAction.title || 'Sous-action sans titre'}</Text>
                                              <View style={styles.subActionStatusPill}>
-                                               <Text style={styles.subActionStatusText}>{String(subAction.status ?? 'pending')}</Text>
+                                               <Text style={styles.subActionStatusText}>{String(subAction.status ?? 'en attente')}</Text>
                                              </View>
                                            </View>
                                            
@@ -704,12 +712,12 @@ export default function ActionsModal({ visible, actions, onClose, onCreateAction
                                            <View style={styles.subActionMeta}>
                                              {subAction.creator_firstname || subAction.creator_lastname ? (
                                                <Text style={styles.subActionMetaText}>
-                                                 By: {[subAction.creator_firstname, subAction.creator_lastname].filter(Boolean).join(' ')}
+                                                 Par: {[subAction.creator_firstname, subAction.creator_lastname].filter(Boolean).join(' ')}
                                                </Text>
                                              ) : null}
                                              {subAction.date_planification && (
                                                <Text style={styles.subActionMetaText}>
-                                                 Planned: {new Date(subAction.date_planification).toLocaleDateString()}
+                                                 Planifié: {new Date(subAction.date_planification).toLocaleDateString()}
                                                </Text>
                                              )}
                                            </View>
@@ -720,7 +728,7 @@ export default function ActionsModal({ visible, actions, onClose, onCreateAction
                                    
                                    {isExpanded && subActionsForThisAction.length === 0 && !isLoading && (
                                      <View style={styles.noSubActions}>
-                                       <Text style={styles.noSubActionsText}>No sub-actions found</Text>
+                                       <Text style={styles.noSubActionsText}>Aucune sous-action trouvée</Text>
                                      </View>
                                    )}
                                  </View>
@@ -744,14 +752,14 @@ export default function ActionsModal({ visible, actions, onClose, onCreateAction
              <TouchableOpacity onPress={() => setShowDetailsModal(false)} style={styles.closeButton}>
                <Ionicons name="close" size={24} color="#1C1C1E" />
              </TouchableOpacity>
-             <Text style={styles.headerTitle}>Action Details</Text>
+             <Text style={styles.headerTitle}>Détails de l&apos;action</Text>
              <View style={styles.placeholder} />
            </View>
 
            <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
              {selectedAction && (
               <View>
-                <Text style={styles.detailsTitle}>{selectedAction.title || 'Untitled action'}</Text>
+                <Text style={styles.detailsTitle}>{selectedAction.title || 'Action sans titre'}</Text>
                 {selectedAction.description ? (
                   <Text style={styles.detailsDesc}>{selectedAction.description}</Text>
                 ) : null}
@@ -759,10 +767,10 @@ export default function ActionsModal({ visible, actions, onClose, onCreateAction
                 {renderPhoto(selectedAction.photo)}
 
                 <View style={styles.detailsSection}>
-                  <Text style={styles.sectionHeader}>People</Text>
+                  <Text style={styles.sectionHeader}>Personnes</Text>
                   {selectedAction.creator_firstname || selectedAction.creator_lastname ? (
                     <View style={styles.detailRow}>
-                      <Text style={styles.detailLabel}>Created by</Text>
+                      <Text style={styles.detailLabel}>Créé par</Text>
                       <Text style={styles.detailValue}>
                         {[selectedAction.creator_firstname, selectedAction.creator_lastname].filter(Boolean).join(' ')}
                       </Text>
@@ -770,7 +778,7 @@ export default function ActionsModal({ visible, actions, onClose, onCreateAction
                   ) : null}
                   {selectedAction.assigned_firstname || selectedAction.assigned_lastname ? (
                     <View style={styles.detailRow}>
-                      <Text style={styles.detailLabel}>Assigned to</Text>
+                      <Text style={styles.detailLabel}>Affecté à</Text>
                       <Text style={styles.detailValue}>
                         {[selectedAction.assigned_firstname, selectedAction.assigned_lastname].filter(Boolean).join(' ')}
                       </Text>
@@ -781,13 +789,13 @@ export default function ActionsModal({ visible, actions, onClose, onCreateAction
                 <View style={styles.detailsSection}>
                   <Text style={styles.sectionHeader}>Dates</Text>
                   <View style={styles.detailRow}>
-                    <Text style={styles.detailLabel}>Planned date</Text>
+                    <Text style={styles.detailLabel}>Date planifiée</Text>
                     <Text style={styles.detailValue}>
                       {selectedAction.date_planification ? new Date(selectedAction.date_planification).toLocaleDateString() : '—'}
                     </Text>
                   </View>
                   <View style={styles.detailRow}>
-                    <Text style={styles.detailLabel}>Execution date</Text>
+                    <Text style={styles.detailLabel}>Date d&apos;exécution</Text>
                     <Text style={styles.detailValue}>
                       {selectedAction.date_execution ? new Date(selectedAction.date_execution).toLocaleDateString() : '—'}
                     </Text>
@@ -795,24 +803,24 @@ export default function ActionsModal({ visible, actions, onClose, onCreateAction
                 </View>
 
                 <View style={styles.detailsSection}>
-                  <Text style={styles.sectionHeader}>Context</Text>
+                  <Text style={styles.sectionHeader}>Contexte</Text>
                   <View style={styles.detailRow}>
                     <Text style={styles.detailLabel}>Zone</Text>
                     <Text style={styles.detailValue}>{getZoneTitleById(selectedAction.id_zone)}</Text>
                   </View>
                   <View style={styles.detailRow}>
-                    <Text style={styles.detailLabel}>Company</Text>
+                    <Text style={styles.detailLabel}>Entreprise</Text>
                     <Text style={styles.detailValue}>{selectedAction.company_title || '—'}</Text>
                   </View>
                   <View style={styles.detailRow}>
-                    <Text style={styles.detailLabel}>Status</Text>
-                    <Text style={styles.detailValue}>{String(selectedAction.status ?? 'pending')}</Text>
+                    <Text style={styles.detailLabel}>Statut</Text>
+                    <Text style={styles.detailValue}>{String(selectedAction.status ?? 'en attente')}</Text>
                   </View>
                   {!selectedAction.id_parent_action && (
                     <View style={styles.detailRow}>
-                      <Text style={styles.detailLabel}>Sub-actions</Text>
+                      <Text style={styles.detailLabel}>Sous-actions</Text>
                       <Text style={styles.detailValue}>
-                        {subActionsMap[selectedAction.id]?.length || 0} sub-action{(subActionsMap[selectedAction.id]?.length || 0) !== 1 ? 's' : ''}
+                        {subActionsMap[selectedAction.id]?.length || 0} sous-action{(subActionsMap[selectedAction.id]?.length || 0) !== 1 ? 's' : ''}
                       </Text>
                     </View>
                   )}
@@ -821,7 +829,7 @@ export default function ActionsModal({ visible, actions, onClose, onCreateAction
                 <View style={styles.actionsRow}>
                   <TouchableOpacity style={styles.updateButton} onPress={handleUpdate}>
                     <Ionicons name="create-outline" size={18} color="#f87b1b" />
-                    <Text style={styles.updateButtonText}>Update</Text>
+                    <Text style={styles.updateButtonText}>Mettre à jour</Text>
                   </TouchableOpacity>
                   {!selectedAction.id_parent_action && (
                     <TouchableOpacity style={styles.addMiniButton} onPress={() => {
@@ -829,7 +837,7 @@ export default function ActionsModal({ visible, actions, onClose, onCreateAction
                       setShowDetailsModal(false);
                     }}>
                       <Ionicons name="add-circle-outline" size={18} color="#007AFF" />
-                      <Text style={styles.addMiniButtonText}>Add sous-action</Text>
+                      <Text style={styles.addMiniButtonText}>Ajouter une sous-action</Text>
                     </TouchableOpacity>
                   )}
                 </View>    
@@ -851,17 +859,17 @@ export default function ActionsModal({ visible, actions, onClose, onCreateAction
              <TouchableOpacity onPress={resetEditForm} style={styles.closeButton}>
                <Ionicons name="close" size={24} color="#1C1C1E" />
              </TouchableOpacity>
-             <Text style={styles.headerTitle}>Edit Action</Text>
+             <Text style={styles.headerTitle}>Modifier l&apos;action</Text>
              <View style={styles.placeholder} />
            </View>
 
            <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
              <View style={styles.formCard}>
-               <Text style={styles.formTitle}>Update Action</Text>
+               <Text style={styles.formTitle}>Mettre à jour l&apos;action</Text>
                
                <TextInput
                  style={styles.input}
-                 placeholder="Title"
+                 placeholder="Titre"
                  placeholderTextColor="#8E8E93"
                  value={editForm.title}
                  onChangeText={(t) => setEditForm((p) => ({ ...p, title: t }))}
@@ -918,7 +926,7 @@ export default function ActionsModal({ visible, actions, onClose, onCreateAction
 
                {/* User Assignment */}
                <View style={{ marginBottom: 10 }}>
-                 <Text style={styles.label}>Assign To</Text>
+                 <Text style={styles.label}>Affecter à</Text>
                  <TouchableOpacity
                    style={styles.selectHeader}
                    onPress={() => setShowEditUserDropdown((s) => !s)}
@@ -927,9 +935,9 @@ export default function ActionsModal({ visible, actions, onClose, onCreateAction
                    <View style={styles.selectedPreview}>
                      <Text style={[styles.dateText, !editForm.assigned_to && styles.placeholderText]}>
                        {(() => {
-                         if (!editForm.assigned_to) return 'Select user';
+                         if (!editForm.assigned_to) return 'Sélectionner un utilisateur';
                          const user = companyUsers.find(u => u.id === editForm.assigned_to);
-                         return user ? `${user.firstname} ${user.lastname}` : 'Select user';
+                         return user ? `${user.firstname} ${user.lastname}` : 'Sélectionner un utilisateur';
                        })()}
                      </Text>
                    </View>
@@ -964,7 +972,7 @@ export default function ActionsModal({ visible, actions, onClose, onCreateAction
                  <TouchableOpacity style={styles.dateInput} onPress={() => setShowEditPlanPicker(true)} activeOpacity={0.7}>
                    <Ionicons name="calendar-outline" size={18} color="#8E8E93" />
                    <Text style={[styles.dateText, !editForm.date_planification && styles.placeholderText]}>
-                     {editForm.date_planification ? formatDisplayDate(editForm.date_planification) : 'Planned date'}
+                     {editForm.date_planification ? formatDisplayDate(editForm.date_planification) : 'Date planifiée'}
                    </Text>
                  </TouchableOpacity>
                  <DateTimePickerModal
@@ -982,7 +990,7 @@ export default function ActionsModal({ visible, actions, onClose, onCreateAction
                  <TouchableOpacity style={styles.dateInput} onPress={() => setShowEditExecPicker(true)} activeOpacity={0.7}>
                    <Ionicons name="calendar-outline" size={18} color="#8E8E93" />
                    <Text style={[styles.dateText, !editForm.date_execution && styles.placeholderText]}>
-                     {editForm.date_execution ? formatDisplayDate(editForm.date_execution) : 'Execution date'}
+                     {editForm.date_execution ? formatDisplayDate(editForm.date_execution) : "Date d'exécution"}
                    </Text>
                  </TouchableOpacity>
                  <DateTimePickerModal
@@ -1000,13 +1008,22 @@ export default function ActionsModal({ visible, actions, onClose, onCreateAction
                                <View style={styles.row}>
                   <TouchableOpacity style={styles.photoBtn} onPress={pickEditImage}>
                     <Ionicons name="camera-outline" size={18} color="#8E8E93" />
-                    <Text style={styles.photoBtnText}>{editPhoto ? 'Change Photo' : 'Add Photo'}</Text>
+                    <Text style={styles.photoBtnText}>{editPhoto ? 'Changer la photo' : 'Ajouter une photo'}</Text>
                   </TouchableOpacity>
-                  {editPhoto ? <Text style={styles.photoName}>1 photo selected</Text> : null}
+                  {editPhoto ? <Text style={styles.photoName}>1 photo sélectionnée</Text> : null}
                 </View>
 
+                {editPhoto ? (
+                  <View style={styles.previewContainer}>
+                    <Image source={{ uri: editPhoto.uri }} style={styles.previewImage} />
+                    <TouchableOpacity onPress={() => setEditPhoto(undefined)} style={styles.removeImageButton}>
+                      <Ionicons name="close-circle" size={24} color="red" />
+                    </TouchableOpacity>
+                  </View>
+                ) : null}
+
                <TouchableOpacity style={styles.submitBtn} onPress={handleEditSubmit}>
-                 <Text style={styles.submitBtnText}>Update Action</Text>
+                 <Text style={styles.submitBtnText}>Mettre à jour l&apos;action</Text>
                </TouchableOpacity>
              </View>
            </ScrollView>
@@ -1025,18 +1042,18 @@ export default function ActionsModal({ visible, actions, onClose, onCreateAction
              <TouchableOpacity onPress={resetSubActionForm} style={styles.closeButton}>
                <Ionicons name="close" size={24} color="#1C1C1E" />
              </TouchableOpacity>
-             <Text style={styles.headerTitle}>Add Mini Action</Text>
+             <Text style={styles.headerTitle}>Ajouter une mini-action</Text>
              <View style={styles.placeholder} />
            </View>
 
            <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
                            <View style={styles.formCard}>
-                <Text style={styles.formTitle}>New Mini Action</Text>
+                <Text style={styles.formTitle}>Nouvelle mini-action</Text>
                 <Text style={styles.subActionParentInfo}>
-                  Parent: {selectedAction?.title || 'Untitled action'}
+                  Parent: {selectedAction?.title || 'Action sans titre'}
                 </Text>
                 <Text style={styles.subActionParentInfo}>
-                  This will be a sub-action of the selected parent action
+                  Ce sera une sous-action de l&apos;action parente sélectionnée
                 </Text>
                
                {/* Zone select */}
@@ -1080,7 +1097,7 @@ export default function ActionsModal({ visible, actions, onClose, onCreateAction
 
                <TextInput
                  style={styles.input}
-                 placeholder="Title"
+                 placeholder="Titre"
                  placeholderTextColor="#8E8E93"
                  value={subActionForm.title}
                  onChangeText={(t) => setSubActionForm((p) => ({ ...p, title: t }))}
@@ -1097,7 +1114,7 @@ export default function ActionsModal({ visible, actions, onClose, onCreateAction
                
                {/* User Assignment */}
                <View style={{ marginBottom: 10 }}>
-                 <Text style={styles.label}>Assign To</Text>
+                 <Text style={styles.label}>Affecter à</Text>
                  <TouchableOpacity
                    style={styles.selectHeader}
                    onPress={() => setShowSubActionUserDropdown((s) => !s)}
@@ -1106,9 +1123,9 @@ export default function ActionsModal({ visible, actions, onClose, onCreateAction
                    <View style={styles.selectedPreview}>
                      <Text style={[styles.dateText, !subActionForm.assigned_to && styles.placeholderText]}>
                        {(() => {
-                         if (!subActionForm.assigned_to) return 'Select user';
+                         if (!subActionForm.assigned_to) return 'Sélectionner un utilisateur';
                          const user = companyUsers.find(u => u.id === subActionForm.assigned_to);
-                         return user ? `${user.firstname} ${user.lastname}` : 'Select user';
+                         return user ? `${user.firstname} ${user.lastname}` : 'Sélectionner un utilisateur';
                        })()}
                      </Text>
                    </View>
@@ -1143,7 +1160,7 @@ export default function ActionsModal({ visible, actions, onClose, onCreateAction
                  <TouchableOpacity style={styles.dateInput} onPress={() => setShowSubActionPlanPicker(true)} activeOpacity={0.7}>
                    <Ionicons name="calendar-outline" size={18} color="#8E8E93" />
                    <Text style={[styles.dateText, !subActionForm.date_planification && styles.placeholderText]}>
-                     {subActionForm.date_planification ? formatDisplayDate(subActionForm.date_planification) : 'Planned date'}
+                     {subActionForm.date_planification ? formatDisplayDate(subActionForm.date_planification) : 'Date planifiée'}
                    </Text>
                  </TouchableOpacity>
                  <DateTimePickerModal
@@ -1161,7 +1178,7 @@ export default function ActionsModal({ visible, actions, onClose, onCreateAction
                  <TouchableOpacity style={styles.dateInput} onPress={() => setShowSubActionExecPicker(true)} activeOpacity={0.7}>
                    <Ionicons name="calendar-outline" size={18} color="#8E8E93" />
                    <Text style={[styles.dateText, !subActionForm.date_execution && styles.placeholderText]}>
-                     {subActionForm.date_execution ? formatDisplayDate(subActionForm.date_execution) : 'Execution date'}
+                     {subActionForm.date_execution ? formatDisplayDate(subActionForm.date_execution) : "Date d'exécution"}
                    </Text>
                  </TouchableOpacity>
                  <DateTimePickerModal
@@ -1179,13 +1196,22 @@ export default function ActionsModal({ visible, actions, onClose, onCreateAction
                <View style={styles.row}>
                  <TouchableOpacity style={styles.photoBtn} onPress={pickSubActionImage}>
                    <Ionicons name="camera-outline" size={18} color="#8E8E93" />
-                   <Text style={styles.photoBtnText}>{subActionPhoto ? 'Change Photo' : 'Add Photo'}</Text>
+                   <Text style={styles.photoBtnText}>{subActionPhoto ? 'Changer la photo' : 'Ajouter une photo'}</Text>
                  </TouchableOpacity>
-                 {subActionPhoto ? <Text style={styles.photoName}>1 photo selected</Text> : null}
+                 {subActionPhoto ? <Text style={styles.photoName}>1 photo sélectionnée</Text> : null}
                </View>
 
+              {subActionPhoto ? (
+                <View style={styles.previewContainer}>
+                  <Image source={{ uri: subActionPhoto.uri }} style={styles.previewImage} />
+                  <TouchableOpacity onPress={() => setSubActionPhoto(undefined)} style={styles.removeImageButton}>
+                    <Ionicons name="close-circle" size={24} color="red" />
+                  </TouchableOpacity>
+                </View>
+              ) : null}
+
                <TouchableOpacity style={styles.submitBtn} onPress={handleCreateSubAction}>
-                 <Text style={styles.submitBtnText}>Create Mini Action</Text>
+                 <Text style={styles.submitBtnText}>Créer une mini-action</Text>
                </TouchableOpacity>
              </View>
            </ScrollView>
@@ -1367,6 +1393,25 @@ const styles = StyleSheet.create({
   noSubActions: { paddingVertical: 16, alignItems: 'center' },
   noSubActionsText: { fontSize: 14, color: '#8E8E93', fontStyle: 'italic' },
 
+  previewContainer: {
+    marginTop: 10,
+    marginBottom: 10,
+    alignItems: 'center',
+    position: 'relative',
+  },
+  previewImage: {
+    width: '100%',
+    height: 200,
+    borderRadius: 8,
+  },
+  removeImageButton: {
+    position: 'absolute',
+    top: 5,
+    right: 5,
+    backgroundColor: 'white',
+    borderRadius: 12,
+    padding: 2,
+  },
 });
 
 

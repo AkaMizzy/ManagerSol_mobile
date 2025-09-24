@@ -179,6 +179,16 @@ export default function DashboardScreen() {
             </Pressable>
 
             <Pressable
+              onPress={() => router.push('/planning')}
+              style={styles.quickAction}
+              accessibilityRole="button"
+              accessibilityLabel="Ouvrir Planning"
+            >
+              <Ionicons name="calendar" size={20} color="#f87b1b" />
+              <Text style={styles.linkButton}>Planning</Text>
+            </Pressable>
+
+            <Pressable
               onPress={() => setEventModalVisible(true)}
               accessibilityRole="button"
               accessibilityLabel="Ajouter activité"

@@ -13,7 +13,7 @@ interface ComingSoonScreenProps {
   pageName?: string;
 }
 
-export default function ComingSoonScreen({ pageName = "This page" }: ComingSoonScreenProps) {
+export default function ComingSoonScreen({ pageName = "Cette page" }: ComingSoonScreenProps) {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.content}>
@@ -27,12 +27,12 @@ export default function ComingSoonScreen({ pageName = "This page" }: ComingSoonS
         </View>
 
         {/* Coming Soon Text */}
-        <Text style={styles.comingSoonText}>Coming Soon</Text>
+        <Text style={styles.comingSoonText}>Bientôt disponible</Text>
         <Text style={styles.subText}>
-          {pageName} is currently under construction
+          La page &quot;{pageName}&quot; est actuellement en construction
         </Text>
         <Text style={styles.descriptionText}>
-          We're working hard to bring you this feature. Stay tuned for updates!
+          Nous travaillons d&apos;arrache-pied pour vous offrir cette fonctionnalité. Restez à l&apos;écoute !
         </Text>
 
         {/* Construction Icon */}
