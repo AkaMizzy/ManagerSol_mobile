@@ -190,54 +190,56 @@ export default function QualiPhotoGalleryScreen() {
 
         <View style={styles.filterContainer}>
           <View style={styles.filtersRow}>
-            {/* Project dropdown */}
-            <View style={styles.dropdownWrap}>
-              <Pressable accessibilityRole="button" accessibilityLabel="Sélectionner un projet" onPress={() => { setProjectOpen(v => !v); setZoneOpen(false); }} style={styles.selectBtn}>
-                <Text style={[styles.selectText, !selectedProject && styles.selectPlaceholder]}>
-                  {selectedProject ? (projects.find(p => p.id === selectedProject)?.title || 'Projet') : 'Sélectionner un projet'}
-                </Text>
-              </Pressable>
-              {projectOpen && (
-                <View style={styles.selectMenu}>
-                  <ScrollView>
-                    <Pressable style={styles.selectItem} onPress={() => { setSelectedProject(undefined); setSelectedZone(undefined); setProjectOpen(false); }}>
-                      <Text style={styles.selectItemText}>Tous les projets</Text>
-                    </Pressable>
-                    {(loadingProjects ? [] : projects).map(p => (
-                      <Pressable key={p.id} style={styles.selectItem} onPress={() => { setSelectedProject(p.id); setProjectOpen(false); }}>
-                        <Text numberOfLines={1} style={styles.selectItemText}>{p.title}</Text>
+            <View style={styles.dropdownsContainer}>
+              {/* Project dropdown */}
+              <View style={styles.dropdownWrap}>
+                <Pressable accessibilityRole="button" accessibilityLabel="Sélectionner un projet" onPress={() => { setProjectOpen(v => !v); setZoneOpen(false); }} style={styles.selectBtn}>
+                  <Text style={[styles.selectText, !selectedProject && styles.selectPlaceholder]} numberOfLines={1}>
+                    {selectedProject ? (projects.find(p => p.id === selectedProject)?.title || 'Projet') : 'Sélectionner un projet'}
+                  </Text>
+                </Pressable>
+                {projectOpen && (
+                  <View style={styles.selectMenu}>
+                    <ScrollView>
+                      <Pressable style={styles.selectItem} onPress={() => { setSelectedProject(undefined); setSelectedZone(undefined); setProjectOpen(false); }}>
+                        <Text style={styles.selectItemText}>Tous les projets</Text>
                       </Pressable>
-                    ))}
-                    {loadingProjects && <View style={styles.selectItem}><Text style={styles.selectItemText}>Chargement...</Text></View>}
-                    {!loadingProjects && projects.length === 0 && <View style={styles.selectItem}><Text style={styles.selectItemText}>Aucun projet</Text></View>}
-                  </ScrollView>
-                </View>
-              )}
-            </View>
+                      {(loadingProjects ? [] : projects).map(p => (
+                        <Pressable key={p.id} style={styles.selectItem} onPress={() => { setSelectedProject(p.id); setProjectOpen(false); }}>
+                          <Text numberOfLines={1} style={styles.selectItemText}>{p.title}</Text>
+                        </Pressable>
+                      ))}
+                      {loadingProjects && <View style={styles.selectItem}><Text style={styles.selectItemText}>Chargement...</Text></View>}
+                      {!loadingProjects && projects.length === 0 && <View style={styles.selectItem}><Text style={styles.selectItemText}>Aucun projet</Text></View>}
+                    </ScrollView>
+                  </View>
+                )}
+              </View>
 
-            {/* Zone dropdown */}
-            <View style={[styles.dropdownWrap, !selectedProject && styles.dropdownDisabled]}>
-              <Pressable accessibilityRole="button" accessibilityLabel="Sélectionner une zone" disabled={!selectedProject} onPress={() => { if (!selectedProject) return; setZoneOpen(v => !v); setProjectOpen(false); }} style={[styles.selectBtn, !selectedProject && styles.selectBtnDisabled]}>
-                <Text style={[styles.selectText, !selectedZone && styles.selectPlaceholder]}>
-                  {selectedZone ? (zones.find(z => z.id === selectedZone)?.title || 'Zone') : (selectedProject ? 'Sélectionner une zone' : 'Sélectionner un projet d\'abord')}
-                </Text>
-              </Pressable>
-              {selectedProject && zoneOpen && (
-                <View style={styles.selectMenu}>
-                  <ScrollView>
-                    <Pressable style={styles.selectItem} onPress={() => { setSelectedZone(undefined); setZoneOpen(false); }}>
-                      <Text style={styles.selectItemText}>Toutes les zones</Text>
-                    </Pressable>
-                    {(loadingZones ? [] : zones).map(z => (
-                      <Pressable key={z.id} style={styles.selectItem} onPress={() => { setSelectedZone(z.id); setZoneOpen(false); }}>
-                        <Text numberOfLines={1} style={styles.selectItemText}>{z.title}</Text>
+              {/* Zone dropdown */}
+              <View style={[styles.dropdownWrap, !selectedProject && styles.dropdownDisabled]}>
+                <Pressable accessibilityRole="button" accessibilityLabel="Sélectionner une zone" disabled={!selectedProject} onPress={() => { if (!selectedProject) return; setZoneOpen(v => !v); setProjectOpen(false); }} style={[styles.selectBtn, !selectedProject && styles.selectBtnDisabled]}>
+                  <Text style={[styles.selectText, !selectedZone && styles.selectPlaceholder]} numberOfLines={1}>
+                    {selectedZone ? (zones.find(z => z.id === selectedZone)?.title || 'Zone') : (selectedProject ? 'Sélectionner une zone' : 'Sélectionner un projet d\'abord')}
+                  </Text>
+                </Pressable>
+                {selectedProject && zoneOpen && (
+                  <View style={styles.selectMenu}>
+                    <ScrollView>
+                      <Pressable style={styles.selectItem} onPress={() => { setSelectedZone(undefined); setZoneOpen(false); }}>
+                        <Text style={styles.selectItemText}>Toutes les zones</Text>
                       </Pressable>
-                    ))}
-                    {loadingZones && <View style={styles.selectItem}><Text style={styles.selectItemText}>Chargement...</Text></View>}
-                    {!loadingZones && zones.length === 0 && <View style={styles.selectItem}><Text style={styles.selectItemText}>Aucune zone</Text></View>}
-                  </ScrollView>
-                </View>
-              )}
+                      {(loadingZones ? [] : zones).map(z => (
+                        <Pressable key={z.id} style={styles.selectItem} onPress={() => { setSelectedZone(z.id); setZoneOpen(false); }}>
+                          <Text numberOfLines={1} style={styles.selectItemText}>{z.title}</Text>
+                        </Pressable>
+                      ))}
+                      {loadingZones && <View style={styles.selectItem}><Text style={styles.selectItemText}>Chargement...</Text></View>}
+                      {!loadingZones && zones.length === 0 && <View style={styles.selectItem}><Text style={styles.selectItemText}>Aucune zone</Text></View>}
+                    </ScrollView>
+                  </View>
+                )}
+              </View>
             </View>
             <View style={styles.actionsWrapper}>
               <Pressable
@@ -374,6 +376,12 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   filtersRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  dropdownsContainer: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
