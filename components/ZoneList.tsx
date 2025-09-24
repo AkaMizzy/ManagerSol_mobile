@@ -27,7 +27,7 @@ export default function ZoneList({ zones, onZonePress, onCreateInventaire }: Zon
   }
 
   const renderZoneItem = ({ item }: { item: UserZone }) => {
-    const displayTitle = item.zone_title || item.bloc_title || 'Unknown Zone';
+    const displayTitle = item.zone_title || item.bloc_title || 'Zone inconnue';
     const displaySubtitle = formatCoords(item.zone_latitude as any, item.zone_longitude as any);
     const logoUrl = item.zone_logo || undefined;
 
@@ -77,13 +77,13 @@ export default function ZoneList({ zones, onZonePress, onCreateInventaire }: Zon
       <View style={styles.emptyIconContainer}>
         <Ionicons name="location-outline" size={80} color="#cbd5e1" />
       </View>
-      <Text style={styles.emptyTitle}>No Zones Assigned</Text>
+      <Text style={styles.emptyTitle}>Aucune zone assignée</Text>
       <Text style={styles.emptySubtitle}>
-        You don&apos;t have any zones assigned yet.{'\n'}Contact your administrator to get access to zones.
+        Vous n&apos;avez pas encore de zones assignées.{'\n'}Contactez votre administrateur pour obtenir l&apos;accès aux zones.
       </Text>
       <TouchableOpacity style={styles.emptyActionButton} onPress={onCreateInventaire}>
         <Ionicons name="add-circle-outline" size={20} color="#f87b1b" />
-        <Text style={styles.emptyActionText}>Request Access</Text>
+        <Text style={styles.emptyActionText}>Demander l&apos;accès</Text>
       </TouchableOpacity>
     </View>
   );
@@ -92,8 +92,8 @@ export default function ZoneList({ zones, onZonePress, onCreateInventaire }: Zon
     <View style={styles.header}>
       <View style={styles.headerContent}>
         <View style={styles.headerText}>
-          <Text style={styles.headerTitle}>Your Zones</Text>
-          <Text style={styles.headerSubtitle}>{zones.length} zone{zones.length !== 1 ? 's' : ''} assigned</Text>
+          <Text style={styles.headerTitle}>Vos Zones</Text>
+          <Text style={styles.headerSubtitle}>{zones.length} zone{zones.length !== 1 ? 's' : ''} assignée{zones.length !== 1 ? 's' : ''}</Text>
         </View>
         <TouchableOpacity
           style={styles.createButton}
@@ -101,7 +101,7 @@ export default function ZoneList({ zones, onZonePress, onCreateInventaire }: Zon
           activeOpacity={0.8}
         >
           <Ionicons name="add" size={18} color="#FFFFFF" />
-          <Text style={styles.createButtonText}>New Inventaire</Text>
+          <Text style={styles.createButtonText}>Nouvel Inventaire</Text>
         </TouchableOpacity>
       </View>
     </View>

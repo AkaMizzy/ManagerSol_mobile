@@ -1,9 +1,9 @@
 import { Image } from 'expo-image';
 import {
-    Dimensions,
-    StyleSheet,
-    Text,
-    View,
+  Dimensions,
+  StyleSheet,
+  Text,
+  View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -17,6 +17,7 @@ export default function ComingSoonScreen({ pageName = "Cette page" }: ComingSoon
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.content}>
+        <Text style={styles.pageNameText}>{pageName}</Text>
         {/* Construction GIF */}
         <View style={styles.gifContainer}>
           <Image
@@ -29,7 +30,7 @@ export default function ComingSoonScreen({ pageName = "Cette page" }: ComingSoon
         {/* Coming Soon Text */}
         <Text style={styles.comingSoonText}>Bientôt disponible</Text>
         <Text style={styles.subText}>
-          La page &quot;{pageName}&quot; est actuellement en construction
+          Cette page est actuellement en construction
         </Text>
         <Text style={styles.descriptionText}>
           Nous travaillons d&apos;arrache-pied pour vous offrir cette fonctionnalité. Restez à l&apos;écoute !
@@ -56,6 +57,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 32,
+  },
+  pageNameText: {
+    fontSize: 36,
+    fontWeight: '800',
+    color: '#f87b1b',
+    marginBottom: 24,
+    textAlign: 'center',
+    letterSpacing: -0.5,
   },
   gifContainer: {
     width: 200,
