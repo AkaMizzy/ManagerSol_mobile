@@ -23,6 +23,7 @@ export default function CreateQualiPhotoModal({ visible, onClose, onSuccess, ini
   const [zones, setZones] = useState<QualiZone[]>([]);
   const [selectedProject, setSelectedProject] = useState<string | null>(null);
   const [selectedZone, setSelectedZone] = useState<string | null>(null);
+  const [title, setTitle] = useState<string>('');
   const [dateTaken, setDateTaken] = useState<string>('');
   const [comment, setComment] = useState<string>('');
   const [photo, setPhoto] = useState<{ uri: string; name: string; type: string } | null>(null);
@@ -153,6 +154,7 @@ export default function CreateQualiPhotoModal({ visible, onClose, onSuccess, ini
       const created = await qualiphotoService.create({
         id_project: selectedProject || undefined,
         id_zone: selectedZone,
+        title: title || undefined,
         commentaire: comment || undefined,
         date_taken: dateTaken || undefined,
         photo,
@@ -164,6 +166,7 @@ export default function CreateQualiPhotoModal({ visible, onClose, onSuccess, ini
       // reset
       setSelectedProject(null);
       setSelectedZone(null);
+      setTitle('');
       setDateTaken('');
       setComment('');
       setPhoto(null);
@@ -186,6 +189,7 @@ export default function CreateQualiPhotoModal({ visible, onClose, onSuccess, ini
   const handleClose = () => {
     setSelectedProject(null);
     setSelectedZone(null);
+    setTitle('');
     setDateTaken('');
     setComment('');
     setPhoto(null);
@@ -453,6 +457,21 @@ export default function CreateQualiPhotoModal({ visible, onClose, onSuccess, ini
                 <View style={styles.cardHeaderText}><Text style={styles.cardTitle}>Détails</Text><Text style={styles.cardHint}>Vous pouvez ajouter un commentaire</Text></View>
               </View>
               <View style={{ gap: 10 }}>
+                <View style={styles.inputWrap}>
+                  <Ionicons name="text-outline" size={16} color="#6b7280" />
+                  <TextInput
+                    placeholder="Titre (optionnel)"
+                    placeholderTextColor="#9ca3af"
+                    value={title}
+                    onChangeText={setTitle}
+                    style={styles.input}
+                    onFocus={() => {
+                      setTimeout(() => {
+                        scrollViewRef.current?.scrollToEnd({ animated: true });
+                      }, 100);
+                    }}
+                  />
+                </View>
                 
                 <View style={[styles.inputWrap, { alignItems: 'flex-start' }]}>
                   <Ionicons name="chatbubble-ellipses-outline" size={16} color="#6b7280" style={{ marginTop: 4 }} />

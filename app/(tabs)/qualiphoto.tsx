@@ -5,7 +5,7 @@ import QualiPhotoFilterModal from '@/components/QualiPhotoFilterModal';
 import { useAuth } from '@/contexts/AuthContext';
 import qualiphotoService, { QualiPhotoItem, QualiProject, QualiZone } from '@/services/qualiphotoService';
 import { Ionicons } from '@expo/vector-icons';
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, FlatList, Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -26,8 +26,7 @@ function formatDateForGrid(dateStr?: string | null): string {
 export default function QualiPhotoGalleryScreen() {
   const { user, token } = useAuth();
   const [photos, setPhotos] = useState<QualiPhotoItem[]>([]);
-  const [page, setPage] = useState(1);
-  const [limit] = useState(30);
+  const [limit] = useState(10);
   const [total, setTotal] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -53,9 +52,7 @@ export default function QualiPhotoGalleryScreen() {
 
   const isCreateDisabled = !selectedProject || !selectedZone || photoExists || checkingIfPhotoExists;
 
-  const canLoadMore = useMemo(() => photos.length < total, [photos.length, total]);
-
-  const fetchPhotos = useCallback(async (reset = false) => {
+  const fetchPhotos = useCallback(async () => {
     if (!token) return;
     if (fetchingRef.current) return;
     fetchingRef.current = true;
@@ -63,16 +60,15 @@ export default function QualiPhotoGalleryScreen() {
     setErrorMessage(null);
     const requestId = ++requestIdRef.current;
     try {
-      const currentPage = reset ? 1 : page;
       const { items, total: t } = await qualiphotoService.list({
         id_project: selectedZone ? undefined : selectedProject,
         id_zone: selectedZone || undefined,
-        page: currentPage,
+        page: 1,
         limit,
       }, token);
       if (requestId !== requestIdRef.current) return;
       setTotal(t);
-      setPhotos(prev => reset ? items : [...prev, ...items]);
+      setPhotos(items);
     } catch (e) {
       if (requestId === requestIdRef.current) {
         console.error('Failed to load QualiPhoto', e);
@@ -84,7 +80,7 @@ export default function QualiPhotoGalleryScreen() {
         setIsLoading(false);
       }
     }
-  }, [token, selectedProject, selectedZone, page, limit]);
+  }, [token, selectedProject, selectedZone, limit]);
 
   // Check if a photo already exists for the selected project/zone
   useEffect(() => {
@@ -114,7 +110,7 @@ export default function QualiPhotoGalleryScreen() {
     if (!token) return;
     setIsRefreshing(true);
     try {
-      await fetchPhotos(true);
+      await fetchPhotos();
     } finally {
       setIsRefreshing(false);
     }
@@ -145,18 +141,8 @@ export default function QualiPhotoGalleryScreen() {
 
   // Refetch photos on filter change
   useEffect(() => {
-    setPage(1);
-    fetchPhotos(true);
-  }, [selectedProject, selectedZone, fetchPhotos]);
-
-  const onEndReached = useCallback(() => {
-    if (isLoading || !canLoadMore) return;
-    setPage((p) => p + 1);
-  }, [isLoading, canLoadMore]);
-
-  useEffect(() => {
-    if (page > 1) fetchPhotos(false);
-  }, [page, fetchPhotos]);
+    fetchPhotos();
+  }, [fetchPhotos]);
 
   const renderItem = useCallback(({ item }: { item: QualiPhotoItem }) => (
     <View style={styles.card}>
@@ -283,8 +269,6 @@ export default function QualiPhotoGalleryScreen() {
           columnWrapperStyle={styles.row}
           renderItem={renderItem}
           contentContainerStyle={styles.listContent}
-          onEndReachedThreshold={0.4}
-          onEndReached={onEndReached}
           refreshing={isRefreshing}
           onRefresh={refresh}
           ListEmptyComponent={
@@ -299,7 +283,6 @@ export default function QualiPhotoGalleryScreen() {
           }
           ListFooterComponent={
             <>
-              {isLoading && photos.length > 0 ? <ActivityIndicator color="#11224e" style={{ marginVertical: 12 }} /> : null}
               {/* Spacer for custom tab bar */}
               <View style={{ height: 50 }} />
             </>
@@ -314,8 +297,7 @@ export default function QualiPhotoGalleryScreen() {
         initialZoneId={selectedZone}
         onSuccess={() => {
           setModalVisible(false);
-          setPage(1);
-          fetchPhotos(true);
+          fetchPhotos();
         }}
       />
 

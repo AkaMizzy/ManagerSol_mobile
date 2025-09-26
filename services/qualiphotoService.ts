@@ -5,6 +5,7 @@ export type QualiPhotoItem = {
   id_project: string;
   id_zone: string;
   photo: string;
+  title: string | null;
   commentaire: string | null;
   date_taken: string | null;
   voice_note: string | null;
@@ -42,6 +43,7 @@ export type QualiZone = {
 type CreateQualiPhotoPayload = {
   id_project?: string;
   id_zone: string;
+  title?: string;
   commentaire?: string;
   date_taken?: string;
   photo: { uri: string; name: string; type: string };
@@ -112,6 +114,7 @@ class QualiPhotoService {
     const formData = new FormData();
     if (payload.id_project) formData.append('id_project', payload.id_project);
     formData.append('id_zone', payload.id_zone);
+    if (payload.title) formData.append('title', payload.title);
     if (payload.commentaire) formData.append('commentaire', payload.commentaire);
     if (payload.date_taken) formData.append('date_taken', payload.date_taken);
     if (payload.latitude) formData.append('latitude', String(payload.latitude));
