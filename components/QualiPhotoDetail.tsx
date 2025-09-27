@@ -2,8 +2,8 @@ import qualiphotoService, { Comment, QualiPhotoItem } from '@/services/qualiphot
 import { Ionicons } from '@expo/vector-icons';
 import { Audio } from 'expo-av';
 import React, { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Alert, Image, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import MapView, { Marker, Provider } from 'react-native-maps';
+import { ActivityIndicator, Alert, Image, Linking, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import MapView, { Marker } from 'react-native-maps';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CreateChildQualiPhotoForm } from './CreateChildQualiPhotoModal';
 
@@ -147,6 +147,21 @@ type QualiPhotoItemWithComment2 = QualiPhotoItem & {
     }
   };
 
+  const handleMapPress = () => {
+    if (!item?.latitude || !item.longitude) return;
+
+    const url = Platform.select({
+      ios: `maps:${item.latitude},${item.longitude}?q=${item.latitude},${item.longitude}`,
+      android: `geo:${item.latitude},${item.longitude}?q=${item.latitude},${item.longitude}`,
+    });
+
+    if (url) {
+      Linking.openURL(url).catch(() => {
+        Alert.alert("Erreur", "Impossible d'ouvrir l'application de cartographie.");
+      });
+    }
+  };
+
   const renderChildItem = ({ item: child }: { item: QualiPhotoItem }) => (
     <TouchableOpacity style={styles.childGridItem} onPress={() => setItem(child)}>
       <Image source={{ uri: child.photo }} style={styles.childThumbnail} />
@@ -171,7 +186,6 @@ type QualiPhotoItemWithComment2 = QualiPhotoItem & {
             <View style={{ width: 40 }} />
         </View>
         <MapView
-            provider={(Platform.OS === 'android' ? 'osmdroid' : 'google') as Provider}
             style={{ flex: 1 }}
             initialRegion={{
                 latitude: item!.latitude!,
@@ -258,7 +272,7 @@ type QualiPhotoItemWithComment2 = QualiPhotoItem & {
                     </TouchableOpacity>
                   )}
                   {item.latitude && item.longitude && (
-                    <TouchableOpacity style={styles.actionButton} onPress={() => setMapDetailVisible(true)}>
+                    <TouchableOpacity style={styles.actionButton} onPress={handleMapPress}>
                       <Image source={mapIcon} style={styles.actionIcon} />
                     </TouchableOpacity>
                   )}

@@ -108,6 +108,7 @@ export default function ManifolderQuestions({
       });
       setQuestionStatuses(initialQuestionStatuses);
       
+      let submittedQuestionIds: Set<string> = new Set();
                       // Try to load existing answers
        try {
          const answersResponse = await manifolderService.getManifolderAnswers(manifolderId, token);
@@ -186,10 +187,34 @@ export default function ManifolderQuestions({
          setAnswerIds(existingAnswerIds);
          setSubmittedQuestions(existingSubmittedQuestions);
          setHasBeenSubmittedQuestions(existingHasBeenSubmittedQuestions);
+        submittedQuestionIds = existingSubmittedQuestions;
        } catch {
          // If no existing answers, that's fine
          console.log('No existing answers found');
        }
+
+      // Expand the first unanswered question
+      const sortedQuestions = [...response.questions].sort((a, b) => {
+        const aIsSubmitted = submittedQuestionIds.has(a.id);
+        const bIsSubmitted = submittedQuestionIds.has(b.id);
+        if (aIsSubmitted !== bIsSubmitted) {
+          return aIsSubmitted ? 1 : -1;
+        }
+        const orderA = a.order ?? Number.MAX_SAFE_INTEGER;
+        const orderB = b.order ?? Number.MAX_SAFE_INTEGER;
+        if (orderA !== orderB) {
+          return orderA - orderB;
+        }
+        return a.title.localeCompare(b.title);
+      });
+
+      const firstUnansweredQuestion = sortedQuestions.find(q => !submittedQuestionIds.has(q.id));
+      if (firstUnansweredQuestion) {
+        setExpandedQuestions(new Set([firstUnansweredQuestion.id]));
+      } else {
+        setExpandedQuestions(new Set());
+      }
+
     } catch (error: any) {
       Alert.alert('Error', error.message || 'Failed to load questions');
     } finally {
@@ -300,6 +325,15 @@ export default function ManifolderQuestions({
     if (!token) return;
 
     try {
+        // If there is an unsaved answer for the question, submit it before duplicating.
+      const hasUnsavedAnswer =
+        (answers[questionId] || vocalAnswers[questionId] || imageAnswers[questionId]) &&
+        !submittedQuestions.has(questionId);
+
+      if (hasUnsavedAnswer) {
+        await handleSubmitSingleAnswer(questionId);
+      }
+
       // Call backend API to duplicate the question
       const result = await manifolderService.duplicateManifolderQuestion(questionId, manifolderId, token);
       const newQuestion = result.newElement;
@@ -481,15 +515,38 @@ export default function ManifolderQuestions({
       await manifolderService.submitSingleAnswer(submitData, token);
 
       // Mark as submitted
-      setSubmittedQuestions(prev => new Set(prev).add(questionId));
+      const newSubmitted = new Set(submittedQuestions).add(questionId);
+      setSubmittedQuestions(newSubmitted);
       
       // Track that this question has been submitted before
       setHasBeenSubmittedQuestions(prev => new Set(prev).add(questionId));
       
       // Auto-collapse the accordion after successful submission
+      // and open the next unanswered question
       setExpandedQuestions(prev => {
         const newSet = new Set(prev);
         newSet.delete(questionId);
+
+        const sorted = [...questions].sort((a, b) => {
+          const aIsSubmitted = newSubmitted.has(a.id);
+          const bIsSubmitted = newSubmitted.has(b.id);
+          if (aIsSubmitted !== bIsSubmitted) {
+            return aIsSubmitted ? 1 : -1;
+          }
+          const orderA = a.order ?? Number.MAX_SAFE_INTEGER;
+          const orderB = b.order ?? Number.MAX_SAFE_INTEGER;
+          if (orderA !== orderB) {
+            return orderA - orderB;
+          }
+          return a.title.localeCompare(b.title);
+        });
+
+        const nextUnanswered = sorted.find(q => !newSubmitted.has(q.id));
+
+        if (nextUnanswered) {
+          newSet.add(nextUnanswered.id);
+        }
+
         return newSet;
       });
       
