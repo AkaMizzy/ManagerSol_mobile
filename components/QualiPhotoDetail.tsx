@@ -3,7 +3,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Audio } from 'expo-av';
 import React, { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Alert, Image, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import MapView, { Marker } from 'react-native-maps';
+import MapView, { Marker, Provider } from 'react-native-maps';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CreateChildQualiPhotoForm } from './CreateChildQualiPhotoModal';
 
@@ -171,6 +171,7 @@ type QualiPhotoItemWithComment2 = QualiPhotoItem & {
             <View style={{ width: 40 }} />
         </View>
         <MapView
+            provider={(Platform.OS === 'android' ? 'osmdroid' : 'google') as Provider}
             style={{ flex: 1 }}
             initialRegion={{
                 latitude: item!.latitude!,
