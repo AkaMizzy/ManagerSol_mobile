@@ -257,16 +257,15 @@ type QualiPhotoItemWithComment2 = QualiPhotoItem & {
                   {!isLoadingChildren && children.length === 0 && item.before === 1 && (
                       <Text style={styles.noChildrenText}>Aucune photo suivie n&apos;a encore été ajoutée.</Text>
                   )}
-                  <View style={styles.childListContainer}>
+                  <View style={styles.childGridContainer}>
                     {children.map((child) => (
-                      <TouchableOpacity key={child.id} style={styles.childItem} onPress={() => setItem(child)}>
-                        <View style={styles.childItemContent}>
-                          {child.date_taken && (
-                            <Text style={styles.childDate}>{formatDate(child.date_taken)}</Text>
-                          )}
-                          <Text style={styles.childComment} numberOfLines={1}>{child.commentaire || 'Aucun commentaire'}</Text>
-                        </View>
+                      <TouchableOpacity key={child.id} style={styles.childGridItem} onPress={() => setItem(child)}>
                         <Image source={{ uri: child.photo }} style={styles.childThumbnail} />
+                        <View style={styles.childGridOverlay}>
+                          {child.date_taken && (
+                            <Text style={styles.childGridDate}>{formatDate(child.date_taken)}</Text>
+                          )}
+                        </View>
                       </TouchableOpacity>
                     ))}
                   </View>
@@ -591,6 +590,34 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: '#6b7280',
     marginRight: 8,
+  },
+  childGridContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    marginTop: 8,
+  },
+  childGridItem: {
+    width: '49%',
+    marginBottom: 8,
+    borderRadius: 12,
+    overflow: 'hidden',
+    position: 'relative',
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+  },
+  childGridOverlay: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    padding: 8,
+  },
+  childGridDate: {
+    color: '#FFFFFF',
+    fontSize: 10,
+    fontWeight: '600',
   },
   noChildrenText: {
     textAlign: 'center',

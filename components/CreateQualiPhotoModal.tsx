@@ -442,10 +442,19 @@ export default function CreateQualiPhotoModal({ visible, onClose, onSuccess, ini
                     </TouchableOpacity>
                   </View>
                 ) : (
-                  <TouchableOpacity style={styles.voiceRecordButton} onPress={startRecording}>
-                    <Ionicons name="mic-outline" size={18} color="#11224e" />
-                    <Text style={styles.voiceRecordButtonText}>Ajouter une note vocale</Text>
-                  </TouchableOpacity>
+                  <View style={styles.voiceActionsContainer}>
+                    <TouchableOpacity style={styles.voiceRecordButton} onPress={startRecording}>
+                      <Ionicons name="mic-outline" size={18} color="#11224e" />
+                      <Text style={styles.voiceRecordButtonText}>Ajouter une note vocale</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity 
+                      style={[styles.voiceRecordButton, styles.transcribeButton]} 
+                      onPress={() => Alert.alert('Bientôt disponible', 'La fonctionnalité de transcription sera bientôt disponible.')}
+                    >
+                      <Ionicons name="document-text-outline" size={18} color="#11224e" />
+                      <Text style={styles.voiceRecordButtonText}>Transcrire</Text>
+                    </TouchableOpacity>
+                  </View>
                 )}  
               </View>
             </View>
@@ -460,7 +469,7 @@ export default function CreateQualiPhotoModal({ visible, onClose, onSuccess, ini
                 <View style={styles.inputWrap}>
                   <Ionicons name="text-outline" size={16} color="#6b7280" />
                   <TextInput
-                    placeholder="Titre (optionnel)"
+                    placeholder="Titre"
                     placeholderTextColor="#9ca3af"
                     value={title}
                     onChangeText={setTitle}
@@ -649,7 +658,12 @@ const styles = StyleSheet.create({
   voiceNoteContainer: {
     marginTop: 12,
   },
+  voiceActionsContainer: {
+    flexDirection: 'row',
+    gap: 8,
+  },
   voiceRecordButton: {
+    flex: 1,
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
@@ -657,6 +671,10 @@ const styles = StyleSheet.create({
     backgroundColor: '#f1f5f9',
     borderRadius: 10,
     gap: 8,
+  },
+  transcribeButton: {
+    flex: 0,
+    paddingHorizontal: 16,
   },
   voiceRecordButtonText: {
     color: '#11224e',
