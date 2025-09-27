@@ -1,4 +1,4 @@
-import qualiphotoService, { QualiPhotoItem } from '@/services/qualiphotoService';
+import qualiphotoService, { Comment, QualiPhotoItem } from '@/services/qualiphotoService';
 import { Ionicons } from '@expo/vector-icons';
 import { Audio } from 'expo-av';
 import React, { useEffect, useMemo, useState } from 'react';
@@ -32,12 +32,14 @@ type QualiPhotoItemWithComment2 = QualiPhotoItem & {
   const [isChildModalVisible, setChildModalVisible] = useState(false);
   const [children, setChildren] = useState<QualiPhotoItem[]>([]);
   const [isLoadingChildren, setIsLoadingChildren] = useState(false);
-  const [item, setItem] = useState<QualiPhotoItemWithComment2 | null>(initialItem || null);
+  const [item, setItem] = useState<QualiPhotoItem | null>(initialItem || null);
   const [isImagePreviewVisible, setImagePreviewVisible] = useState(false);
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [isCommentModalVisible, setCommentModalVisible] = useState(false);
   const [newComment, setNewComment] = useState('');
   const [isSubmittingComment, setIsSubmittingComment] = useState(false);
+  const [comments, setComments] = useState<Comment[]>([]);
+  const [isLoadingComments, setIsLoadingComments] = useState(false);
 
   useEffect(() => {
     setItem(initialItem || null);
@@ -45,14 +47,29 @@ type QualiPhotoItemWithComment2 = QualiPhotoItem & {
   }, [initialItem]);
 
   useEffect(() => {
-    if (item && item.before === 1 && token) {
-      setIsLoadingChildren(true);
-      qualiphotoService.getChildren(item.id, token, sortOrder)
-        .then(setChildren)
-        .catch(() => setChildren([]))
-        .finally(() => setIsLoadingChildren(false));
+    if (item && item.id && token) {
+      if (item.after === 1) {
+        setIsLoadingComments(true);
+        qualiphotoService.getComments(item.id, token)
+          .then(setComments)
+          .catch(() => setComments([]))
+          .finally(() => setIsLoadingComments(false));
+      } else {
+        setComments([]);
+      }
+
+      if (item.before === 1) {
+        setIsLoadingChildren(true);
+        qualiphotoService.getChildren(item.id, token, sortOrder)
+          .then(setChildren)
+          .catch(() => setChildren([]))
+          .finally(() => setIsLoadingChildren(false));
+      } else {
+        setChildren([]);
+      }
     } else {
       setChildren([]);
+      setComments([]);
     }
   }, [item, token, sortOrder]);
 
@@ -130,6 +147,18 @@ type QualiPhotoItemWithComment2 = QualiPhotoItem & {
     }
   };
 
+  const renderChildItem = ({ item: child }: { item: QualiPhotoItem }) => (
+    <TouchableOpacity style={styles.childGridItem} onPress={() => setItem(child)}>
+      <Image source={{ uri: child.photo }} style={styles.childThumbnail} />
+      <View style={styles.childGridOverlay}>
+        {child.title && <Text style={styles.childGridTitle} numberOfLines={1}>{child.title}</Text>}
+        {child.date_taken && (
+          <Text style={styles.childGridDate}>{formatDate(child.date_taken)}</Text>
+        )}
+      </View>
+    </TouchableOpacity>
+  );
+
    const renderMapView = () => (
     <>
         <View style={styles.header}>
@@ -173,7 +202,7 @@ type QualiPhotoItemWithComment2 = QualiPhotoItem & {
             </Pressable>
           )}
           <View style={styles.headerTitles}>
-           
+            {!!item?.title && <Text style={styles.title}>{item.title}</Text>}
             {!!item && <Text numberOfLines={1} style={styles.subtitle}>{subtitle}</Text>}
           </View>
           <View style={{ width: 40 }} />
@@ -206,9 +235,8 @@ type QualiPhotoItemWithComment2 = QualiPhotoItem & {
                 )}
 
                 {typeof item.commentaire === 'string' && item.commentaire.trim().length > 0 ? (
-                  <MetaRow label="Commentaire" value={item.commentaire} multiline />
+                  <MetaRow label="Description" value={item.commentaire} multiline />
                 ) : null}
-                {item.commentaire2 && <MetaRow label="Commentaire 2" value={item.commentaire2} multiline />}
               </View>
               <TouchableOpacity onPress={() => setImagePreviewVisible(true)} activeOpacity={0.9}>
                 <View style={styles.imageWrap}>
@@ -242,14 +270,29 @@ type QualiPhotoItemWithComment2 = QualiPhotoItem & {
                       <Ionicons name={sortOrder === 'desc' ? 'arrow-down' : 'arrow-up'} size={32} color="#11224e" />
                     </TouchableOpacity>
                   )}
-                  {item.after === 1 && !item.commentaire2 && (
+                  {item.after === 1 && (
                     <TouchableOpacity style={styles.actionButton} onPress={() => setCommentModalVisible(true)}>
-                      <Ionicons name="pencil" size={32} color="#11224e" />
+                      <Ionicons name="add-circle-outline" size={32} color="#11224e" />
                     </TouchableOpacity>
                   )}
                 </View>
               )}
 
+              {/* Comments Section */}
+              {item.after === 1 && (comments.length > 0 || isLoadingComments) && (
+                <View style={styles.metaCard}>
+                  <Text style={styles.sectionTitle}>Commentaires</Text>
+                  {isLoadingComments && <ActivityIndicator style={{ marginVertical: 16 }} />}
+                  {comments.map((comment) => (
+                    <MetaRow 
+                      key={comment.id} 
+                      label={`De ${comment.user_name || 'Utilisateur'} le ${formatDate(comment.created_at)}`} 
+                      value={comment.commentaire_text} 
+                      multiline 
+                    />
+                  ))}
+                </View>
+              )}
               
               {item.before === 1 && (
                 <View style={styles.metaCard}>
@@ -262,6 +305,7 @@ type QualiPhotoItemWithComment2 = QualiPhotoItem & {
                       <TouchableOpacity key={child.id} style={styles.childGridItem} onPress={() => setItem(child)}>
                         <Image source={{ uri: child.photo }} style={styles.childThumbnail} />
                         <View style={styles.childGridOverlay}>
+                          {child.title && <Text style={styles.childGridTitle} numberOfLines={1}>{child.title}</Text>}
                           {child.date_taken && (
                             <Text style={styles.childGridDate}>{formatDate(child.date_taken)}</Text>
                           )}
@@ -291,9 +335,12 @@ type QualiPhotoItemWithComment2 = QualiPhotoItem & {
 
     setIsSubmittingComment(true);
     try {
-      await qualiphotoService.updateCommentaire2(item.id, newComment, token);
-      // Optimistically update the item
-      setItem(prev => prev ? { ...prev, commentaire2: newComment } : null);
+      await qualiphotoService.addComment(item.id, newComment, token);
+      
+      // Refetch comments
+      const updatedComments = await qualiphotoService.getComments(item.id, token);
+      setComments(updatedComments);
+
       setCommentModalVisible(false);
       setNewComment('');
       Alert.alert('Succès', 'Commentaire ajouté avec succès.');
@@ -453,7 +500,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#e5e7eb',
+    borderColor: '#f87b1b',
     overflow: 'hidden',
   },
   image: {
@@ -465,7 +512,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#e5e7eb',
+    borderColor: '#f87b1b',
     padding: 12,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
@@ -556,6 +603,12 @@ const styles = StyleSheet.create({
     borderTopColor: '#e5e7eb',
     paddingTop: 12,
   },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#1e293b',
+    marginBottom: 8,
+  },
   childListContainer: {
     marginTop: 8,
     gap: 12,
@@ -613,6 +666,12 @@ const styles = StyleSheet.create({
     right: 0,
     backgroundColor: 'rgba(0,0,0,0.5)',
     padding: 8,
+    gap: 2,
+  },
+  childGridTitle: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: 'bold',
   },
   childGridDate: {
     color: '#FFFFFF',

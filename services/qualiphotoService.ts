@@ -21,6 +21,13 @@ export type QualiPhotoItem = {
   user_lastname?: string;
 };
 
+export type Comment = {
+  id: string;
+  commentaire_text: string;
+  created_at: string;
+  user_name?: string;
+};
+
 export type QualiPhotoListResponse = {
   items: QualiPhotoItem[];
   page: number;
@@ -102,11 +109,15 @@ class QualiPhotoService {
     return this.makeRequest<{ exists: boolean }>(endpoint, token, { method: 'GET' });
   }
 
-  async updateCommentaire2(id: string, commentaire2: string, token: string): Promise<{ success: boolean }> {
-    return this.makeRequest<{ success: boolean }>(`/qualiphoto/${id}`, token, {
-      method: 'PUT',
+  async getComments(qualiphotoId: string, token: string): Promise<Comment[]> {
+    return this.makeRequest<Comment[]>(`/qualiphoto/${qualiphotoId}/comments`, token, { method: 'GET' });
+  }
+
+  async addComment(qualiphotoId: string, commentaire_text: string, token: string): Promise<{ success: boolean }> {
+    return this.makeRequest<{ success: boolean }>(`/qualiphoto/${qualiphotoId}/comments`, token, {
+      method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ commentaire2 }),
+      body: JSON.stringify({ commentaire_text }),
     });
   }
 

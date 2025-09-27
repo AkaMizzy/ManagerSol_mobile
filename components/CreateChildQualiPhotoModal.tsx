@@ -17,6 +17,7 @@ type FormProps = {
 export function CreateChildQualiPhotoForm({ onClose, onSuccess, parentItem }: FormProps) {
   const { token } = useAuth();
   const insets = useSafeAreaInsets();
+  const [title, setTitle] = useState('');
   const [comment, setComment] = useState('');
   const [photo, setPhoto] = useState<{ uri: string; name: string; type: string } | null>(null);
   const [voiceNote, setVoiceNote] = useState<{ uri: string; name: string; type: string } | null>(null);
@@ -58,6 +59,7 @@ export function CreateChildQualiPhotoForm({ onClose, onSuccess, parentItem }: Fo
       const created = await qualiphotoService.create({
         id_project: parentItem.id_project,
         id_zone: parentItem.id_zone,
+        title: title || undefined,
         commentaire: comment,
         photo,
         latitude: parentItem.latitude ?? undefined,
@@ -200,9 +202,33 @@ export function CreateChildQualiPhotoForm({ onClose, onSuccess, parentItem }: Fo
             )}
           </View>
 
+          {/* Details Section */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Détails (Optionnel)</Text>
+            <View style={styles.sectionCard}>
+              <TextInput
+                placeholder="Titre"
+                value={title}
+                onChangeText={setTitle}
+                style={styles.input}
+                placeholderTextColor="#9ca3af"
+              />
+              <View style={styles.separator} />
+              <TextInput
+                placeholder="Description..."
+                value={comment}
+                onChangeText={setComment}
+                style={[styles.input, { minHeight: 80 }]}
+                multiline
+                placeholderTextColor="#9ca3af"
+              />
+            </View>
+          </View>
+
           {/* Voice Note Section */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Note Vocale (Optionnel)</Text>
+            <View style={styles.sectionCard}>
             {isRecording ? (
               <View style={styles.recordingWrap}>
                 <Text style={styles.recordingText}>Enregistrement... {formatDuration(recordingDuration)}</Text>
@@ -221,24 +247,21 @@ export function CreateChildQualiPhotoForm({ onClose, onSuccess, parentItem }: Fo
                 </Pressable>
               </View>
             ) : (
-              <TouchableOpacity style={styles.recordButton} onPress={startRecording}>
-                <Ionicons name="mic-outline" size={22} color="#374151" />
-                <Text style={styles.recordButtonText}>Enregistrer une note</Text>
-              </TouchableOpacity>
+              <View style={styles.voiceActionsContainer}>
+                <TouchableOpacity style={styles.recordButton} onPress={startRecording}>
+                  <Ionicons name="mic-outline" size={22} color="#374151" />
+                  <Text style={styles.recordButtonText}>Enregistrer une note</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.recordButton, styles.transcribeButton]}
+                  onPress={() => Alert.alert('Bientôt disponible', 'La fonctionnalité de transcription sera bientôt disponible.')}
+                >
+                  <Ionicons name="document-text-outline" size={22} color="#374151" />
+                  <Text style={styles.recordButtonText}>Transcrire</Text>
+                </TouchableOpacity>
+              </View>
             )}
           </View>
-
-          {/* Comment Section */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Commentaire</Text>
-            <TextInput
-              placeholder="Ajoutez un commentaire (facultatif)..."
-              value={comment}
-              onChangeText={setComment}
-              style={styles.input}
-              multiline
-              placeholderTextColor="#9ca3af"
-            />
           </View>
         </ScrollView>
 
@@ -338,6 +361,13 @@ const styles = StyleSheet.create({
   section: {
     marginBottom: 24,
   },
+  sectionCard: {
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#f87b1b',
+    overflow: 'hidden',
+  },
   sectionTitle: {
     fontSize: 16,
     fontWeight: '600',
@@ -400,7 +430,12 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#374151'
   },
+  voiceActionsContainer: {
+    flexDirection: 'row',
+    gap: 8,
+  },
   recordButton: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -408,6 +443,10 @@ const styles = StyleSheet.create({
     height: 52,
     backgroundColor: '#f3f4f6',
     borderRadius: 10,
+  },
+  transcribeButton: {
+    flex: 0,
+    paddingHorizontal: 16,
   },
   recordButtonText: {
     fontSize: 15,
@@ -476,15 +515,17 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   input: { 
-    minHeight: 100, 
+    minHeight: 52,
     textAlignVertical: 'top', 
-    borderWidth: 1, 
-    borderColor: '#d1d5db', 
-    borderRadius: 10, 
     padding: 12, 
     backgroundColor: '#ffffff',
     fontSize: 15,
     lineHeight: 20
+  },
+  separator: {
+    height: 1,
+    backgroundColor: '#e5e7eb',
+    marginHorizontal: 12,
   },
   footer: { 
     padding: 16, 

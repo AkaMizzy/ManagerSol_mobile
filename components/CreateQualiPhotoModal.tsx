@@ -463,7 +463,7 @@ export default function CreateQualiPhotoModal({ visible, onClose, onSuccess, ini
             <View style={styles.card}>
               <View style={styles.cardHeader}>
                 <View style={styles.cardIconWrap}><Ionicons name="calendar" size={18} color="#11224e" /></View>
-                <View style={styles.cardHeaderText}><Text style={styles.cardTitle}>Détails</Text><Text style={styles.cardHint}>Vous pouvez ajouter un commentaire</Text></View>
+                <View style={styles.cardHeaderText}><Text style={styles.cardTitle}>Détails</Text><Text style={styles.cardHint}>Vous pouvez ajouter un titre et une description</Text></View>
               </View>
               <View style={{ gap: 10 }}>
                 <View style={styles.inputWrap}>
@@ -485,7 +485,7 @@ export default function CreateQualiPhotoModal({ visible, onClose, onSuccess, ini
                 <View style={[styles.inputWrap, { alignItems: 'flex-start' }]}>
                   <Ionicons name="chatbubble-ellipses-outline" size={16} color="#6b7280" style={{ marginTop: 4 }} />
                   <TextInput
-                    placeholder="Commentaire (optionnel)"
+                    placeholder="Description"
                     placeholderTextColor="#9ca3af"
                     value={comment}
                     onChangeText={setComment}
@@ -552,7 +552,7 @@ const styles = StyleSheet.create({
   content: { flex: 1, paddingHorizontal: 16 },
   alertBanner: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#fffbeb', borderColor: '#f59e0b', borderWidth: 1, paddingHorizontal: 12, paddingVertical: 8, marginHorizontal: 16, marginTop: 8, borderRadius: 10 },
   alertBannerText: { color: '#b45309', flex: 1, fontSize: 12 },
-  card: { backgroundColor: '#FFFFFF', borderRadius: 16, padding: 16, marginTop: 16, marginHorizontal: 8, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8, elevation: 2, borderWidth: 1, borderColor: '#f1f5f9' },
+  card: { backgroundColor: '#FFFFFF', borderRadius: 16, padding: 16, marginTop: 16, marginHorizontal: 8, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8, elevation: 2, borderWidth: 1, borderColor: '#f87b1b' },
   cardDisabled: { opacity: 0.6 },
   cardHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 10 },
   cardIconWrap: { width: 28, height: 28, borderRadius: 14, backgroundColor: '#eef2ff', justifyContent: 'center', alignItems: 'center', marginRight: 10 },
