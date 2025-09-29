@@ -37,7 +37,7 @@ function FilterDropdown({ label, options }: { label: string; options: string[] }
                   setIsOpen(false);
                 }}
               >
-                <Text>{option}</Text>
+                <Text style={styles.dropdownItemText}>{option}</Text>
               </Pressable>
             ))}
           </ScrollView>
@@ -60,7 +60,7 @@ export default function QualiPhotoFilterModal({ visible, onClose }: Props) {
           <View style={styles.header}>
             <Text style={styles.title}>Filtrer par</Text>
             <Pressable onPress={onClose}>
-              <Ionicons name="close-circle" size={24} color="#9ca3af" />
+              <Ionicons name="close-circle" size={24} color="#11224e" />
             </Pressable>
           </View>
           <ScrollView contentContainerStyle={styles.content}>
@@ -95,6 +95,8 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 20,
     padding: 16,
     maxHeight: '80%',
+    borderWidth: 1,
+    borderColor: '#f87b1b',
   },
   header: {
     flexDirection: 'row',
@@ -107,6 +109,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 20,
     fontWeight: 'bold',
+    color: '#11224e',
   },
   content: {
     paddingTop: 16,
@@ -129,7 +132,7 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   doneButton: {
-    backgroundColor: '#11224e',
+    backgroundColor: '#f87b1b',
     marginLeft: 8,
   },
   buttonText: {
@@ -149,18 +152,20 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     marginBottom: 8,
+    color: '#11224e',
   },
   dropdownHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#d1d5db',
+    borderColor: '#f87b1b',
     borderRadius: 8,
     padding: 12,
   },
   dropdownHeaderText: {
     fontSize: 16,
+    color: '#11224e',
   },
   dropdownMenu: {
     marginTop: 4,
@@ -173,5 +178,8 @@ const styles = StyleSheet.create({
     padding: 12,
     borderBottomWidth: 1,
     borderBottomColor: '#e5e7eb',
+  },
+  dropdownItemText: {
+    color: '#11224e',
   },
 });

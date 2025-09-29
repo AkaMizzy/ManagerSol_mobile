@@ -2,7 +2,7 @@ import qualiphotoService, { Comment, QualiPhotoItem } from '@/services/qualiphot
 import { Ionicons } from '@expo/vector-icons';
 import { Audio } from 'expo-av';
 import React, { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Alert, Image, Linking, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, Image, LayoutAnimation, Linking, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, UIManager, View } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CreateChildQualiPhotoForm } from './CreateChildQualiPhotoModal';
@@ -12,6 +12,50 @@ import AppHeader from './AppHeader';
 
 const cameraIcon = require('@/assets/icons/camera.png');
 const mapIcon = require('@/assets/icons/map.png');
+
+
+if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
+
+type ChildPhotoCardProps = {
+  child: QualiPhotoItem;
+  onPress: () => void;
+};
+
+const ChildPhotoCard: React.FC<ChildPhotoCardProps> = ({ child, onPress }) => {
+  const [isVisible, setIsVisible] = useState(true);
+
+  const toggleVisibility = () => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    setIsVisible(!isVisible);
+  };
+
+  return (
+    <View style={styles.childGridItem}>
+      <TouchableOpacity onPress={isVisible ? onPress : toggleVisibility}>
+        {isVisible ? (
+          <>
+            <Image source={{ uri: child.photo }} style={styles.childThumbnail} />
+            <View style={styles.childGridOverlay}>
+              {child.title && <Text style={styles.childGridTitle} numberOfLines={1}>{child.title}</Text>}
+              {child.date_taken && <Text style={styles.childGridDate}>{formatDate(child.date_taken)}</Text>}
+            </View>
+          </>
+        ) : (
+          <View style={styles.hiddenImagePlaceholder}>
+            <Ionicons name="image-outline" size={32} color="#9ca3af" />
+            <Text style={styles.hiddenImageText}>Image cachée</Text>
+            <Text style={styles.hiddenImageSubText}>Appuyez pour réafficher</Text>
+          </View>
+        )}
+      </TouchableOpacity>
+      <TouchableOpacity onPress={toggleVisibility} style={styles.eyeIcon}>
+        <Ionicons name={isVisible ? 'eye-outline' : 'eye-off-outline'} size={24} color="#fff" />
+      </TouchableOpacity>
+    </View>
+  );
+};
 
 type Props = {
   visible: boolean;
@@ -317,15 +361,11 @@ type QualiPhotoItemWithComment2 = QualiPhotoItem & {
                   )}
                   <View style={styles.childGridContainer}>
                     {children.map((child) => (
-                      <TouchableOpacity key={child.id} style={styles.childGridItem} onPress={() => setItem(child)}>
-                        <Image source={{ uri: child.photo }} style={styles.childThumbnail} />
-                        <View style={styles.childGridOverlay}>
-                          {child.title && <Text style={styles.childGridTitle} numberOfLines={1}>{child.title}</Text>}
-                          {child.date_taken && (
-                            <Text style={styles.childGridDate}>{formatDate(child.date_taken)}</Text>
-                          )}
-                        </View>
-                      </TouchableOpacity>
+                      <ChildPhotoCard
+                        key={child.id}
+                        child={child}
+                        onPress={() => setItem(child)}
+                      />
                     ))}
                   </View>
                 </View>
@@ -538,7 +578,7 @@ const styles = StyleSheet.create({
   metaRow: {
     marginBottom: 10,
     borderTopWidth: 1,
-    borderColor: '#e5e7eb',
+    borderColor: '#f87b1b',
     paddingTop: 10,
   },
   metaLabel: {
@@ -693,6 +733,14 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: '600',
   },
+  eyeIcon: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    borderRadius: 16,
+    padding: 4,
+  },
   noChildrenText: {
     textAlign: 'center',
     color: '#6b7280',
@@ -706,6 +754,8 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     backgroundColor: '#f1f5f9',
     borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#f87b1b',
   },
   actionButton: {
     padding: 8,
@@ -800,6 +850,28 @@ const styles = StyleSheet.create({
   },
   commentModalButtonText: {
     fontSize: 16,
+  },
+  hiddenImagePlaceholder: {
+    width: '100%',
+    aspectRatio: 16 / 9,
+    backgroundColor: '#f3f4f6',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#f87b1b',
+    borderStyle: 'dashed',
+    borderRadius: 12,
+  },
+  hiddenImageText: {
+    marginTop: 8,
+    color: '#6b7280',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  hiddenImageSubText: {
+    marginTop: 4,
+    color: '#9ca3af',
+    fontSize: 12,
   },
 });
 
