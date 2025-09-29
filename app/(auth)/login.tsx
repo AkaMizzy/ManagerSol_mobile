@@ -16,6 +16,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import CustomAlert from '../../components/CustomAlert';
+import ForgotPasswordModal from '../../components/ForgotPasswordModal';
 
 interface LoginForm {
   email: string;
@@ -45,6 +46,7 @@ export default function LoginScreen() {
     title: '',
     message: '',
   });
+  const [isForgotPasswordModalVisible, setForgotPasswordModalVisible] = useState(false);
 
   // Watch for authentication changes - navigation will be handled by AuthWrapper
   useEffect(() => {
@@ -184,7 +186,10 @@ export default function LoginScreen() {
                   </View>
                 </View>
 
-                <TouchableOpacity style={styles.forgotPassword}>
+                <TouchableOpacity
+                  style={styles.forgotPassword}
+                  onPress={() => setForgotPasswordModalVisible(true)}
+                >
                   <Text style={styles.forgotPasswordText}>Mot de passe oublié?</Text>
                 </TouchableOpacity>
 
@@ -226,6 +231,11 @@ export default function LoginScreen() {
         message={alert.message}
         onClose={hideAlert}
         duration={alert.type === 'success' ? 2000 : 4000}
+      />
+
+      <ForgotPasswordModal
+        visible={isForgotPasswordModalVisible}
+        onClose={() => setForgotPasswordModalVisible(false)}
       />
     </SafeAreaView>
   );
@@ -270,6 +280,8 @@ const styles = StyleSheet.create({
     shadowRadius: 15,
     elevation: 10,
     marginBottom: 24,
+    borderWidth: 2,
+    borderColor: '#f87b1b',
   },
   logoImage: {
     width: '75%',
@@ -296,7 +308,7 @@ const styles = StyleSheet.create({
   inputLabel: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#11224e',
+    color: '#f87b1b',
     marginBottom: 8,
   },
   inputWrapper: {
@@ -306,7 +318,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     paddingHorizontal: 12,
     borderWidth: 1,
-    borderColor: '#F3F4F6',
+    borderColor: '#f87b1b',
     height: 56,
   },
   inputWrapperFocused: {
@@ -348,10 +360,16 @@ const styles = StyleSheet.create({
   },
   forgotPassword: {
     alignSelf: 'flex-end',
-    marginBottom: 24,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderWidth: 1,
+    borderColor: '#f87b1b',
+    marginBottom: 10,
   },
   forgotPasswordText: {
-    color: '#11224e',
+    color: '#f87b1b',
     fontSize: 14,
     fontWeight: '600',
   },
@@ -379,7 +397,7 @@ const styles = StyleSheet.create({
     color: '#11224e',
   },
   websiteText: {
-    fontSize: 12,
+    fontSize: 14,
     color: '#f87b1b',
     fontWeight: '600',
     marginTop: 4,

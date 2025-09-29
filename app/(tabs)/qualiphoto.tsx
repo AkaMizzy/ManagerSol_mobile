@@ -27,7 +27,7 @@ export default function QualiPhotoGalleryScreen() {
   const { user, token } = useAuth();
   const [photos, setPhotos] = useState<QualiPhotoItem[]>([]);
   const [limit] = useState(10);
-  const [total, setTotal] = useState(0);
+   const [total, setTotal] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [projects, setProjects] = useState<QualiProject[]>([]);
