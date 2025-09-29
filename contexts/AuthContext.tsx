@@ -10,6 +10,7 @@ interface User {
   lastname: string;
   role: string;
   company_id: string | null;
+  photo?: string | null;
 }
 
 interface AuthState {

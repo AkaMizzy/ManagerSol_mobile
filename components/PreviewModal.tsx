@@ -3,14 +3,14 @@ import { Audio, ResizeMode, Video } from 'expo-av';
 import { Image } from 'expo-image';
 import React, { useEffect, useState } from 'react';
 import {
-  Alert,
-  Dimensions,
-  Linking,
-  Modal,
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
+    Alert,
+    Dimensions,
+    Linking,
+    Modal,
+    Pressable,
+    StyleSheet,
+    Text,
+    View,
 } from 'react-native';
 
 interface PreviewModalProps {
@@ -19,6 +19,7 @@ interface PreviewModalProps {
   mediaUrl?: string;
   mediaType?: 'image' | 'video' | 'file' | 'voice';
   title?: string;
+  onEdit?: () => void; // Add this line
 }
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
@@ -29,6 +30,7 @@ export default function PreviewModal({
   mediaUrl,
   mediaType,
   title,
+  onEdit, // Add this line
 }: PreviewModalProps) {
   const [sound, setSound] = useState<Audio.Sound | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -260,6 +262,19 @@ export default function PreviewModal({
               </Text>
             )}
           </View>
+
+          {/* Edit Button for Images */}
+          {mediaType === 'image' && onEdit && (
+            <Pressable
+              style={styles.editButton}
+              onPress={onEdit}
+              accessibilityRole="button"
+              accessibilityLabel="Edit photo"
+            >
+              <Ionicons name="create-outline" size={24} color="#FFFFFF" />
+            </Pressable>
+          )}
+
           <Pressable
             style={styles.closeButton}
             onPress={onClose}
@@ -319,6 +334,15 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  editButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 10,
   },
   mediaContainer: {
     flex: 1,

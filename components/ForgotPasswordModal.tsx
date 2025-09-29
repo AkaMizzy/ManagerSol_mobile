@@ -167,7 +167,7 @@ const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({ visible, onCl
           <Ionicons
             name={showNewPassword ? 'eye-off-outline' : 'eye-outline'}
             size={22}
-            color="#6B7280"
+            color="#f87b1b"
           />
         </TouchableOpacity>
       </View>
@@ -187,7 +187,7 @@ const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({ visible, onCl
           <Ionicons
             name={showConfirmPassword ? 'eye-off-outline' : 'eye-outline'}
             size={22}
-            color="#6B7280"
+            color="#f87b1b"
           />
         </TouchableOpacity>
       </View>
@@ -255,7 +255,9 @@ const styles = StyleSheet.create({
     width: '90%',
     backgroundColor: '#FFFFFF',
     borderRadius: 20,
-    padding: 24,
+    paddingHorizontal: 24,
+    paddingBottom: 24,
+    paddingTop: 50,
     alignItems: 'center',
     shadowColor: '#000',
     shadowOffset: {
@@ -306,7 +308,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: '#f87b1b',
   },
   inputField: {
     flex: 1,
