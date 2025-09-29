@@ -17,6 +17,8 @@ function formatDateForGrid(dateStr?: string | null): string {
       month: 'short',
       day: '2-digit',
       year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
     }).format(date);
   } catch {
     return '';
@@ -155,11 +157,11 @@ export default function QualiPhotoGalleryScreen() {
         <Image source={{ uri: item.photo }} style={styles.image} resizeMode="cover" />
       </Pressable>
       <View style={styles.meta}>
-        {item.project_title ? <Text style={styles.metaText} numberOfLines={1}>{item.project_title}</Text> : null}
         <View style={styles.metaRow}>
+          <Text style={styles.metaText} numberOfLines={1}>{item.project_title || ''}</Text>
           {item.zone_title ? <Text style={styles.metaSubText} numberOfLines={1}>{item.zone_title}</Text> : null}
-          {item.date_taken ? <Text style={styles.metaDate}>{formatDateForGrid(item.date_taken)}</Text> : null}
         </View>
+        {item.date_taken ? <Text style={styles.metaDate}>{formatDateForGrid(item.date_taken)}</Text> : null}
       </View>
     </View>
   ), []);
@@ -173,15 +175,14 @@ export default function QualiPhotoGalleryScreen() {
       <AppHeader user={user || undefined} />
       <View style={styles.header}>
         
-
         <View style={styles.filterContainer}>
           <View style={styles.filtersRow}>
             <View style={styles.dropdownsContainer}>
               {/* Project dropdown */}
               <View style={styles.dropdownWrap}>
-                <Pressable accessibilityRole="button" accessibilityLabel="Sélectionner un projet" onPress={() => { setProjectOpen(v => !v); setZoneOpen(false); }} style={styles.selectBtn}>
+                <Pressable accessibilityRole="button" accessibilityLabel="Projet" onPress={() => { setProjectOpen(v => !v); setZoneOpen(false); }} style={styles.selectBtn}>
                   <Text style={[styles.selectText, !selectedProject && styles.selectPlaceholder]} numberOfLines={1}>
-                    {selectedProject ? (projects.find(p => p.id === selectedProject)?.title || 'Projet') : 'Sélectionner un projet'}
+                    {selectedProject ? (projects.find(p => p.id === selectedProject)?.title || 'Projet') : 'Projet'}
                   </Text>
                 </Pressable>
                 {projectOpen && (
@@ -204,9 +205,9 @@ export default function QualiPhotoGalleryScreen() {
 
               {/* Zone dropdown */}
               <View style={[styles.dropdownWrap, !selectedProject && styles.dropdownDisabled]}>
-                <Pressable accessibilityRole="button" accessibilityLabel="Sélectionner une zone" disabled={!selectedProject} onPress={() => { if (!selectedProject) return; setZoneOpen(v => !v); setProjectOpen(false); }} style={[styles.selectBtn, !selectedProject && styles.selectBtnDisabled]}>
+                <Pressable accessibilityRole="button" accessibilityLabel="Zone" disabled={!selectedProject} onPress={() => { if (!selectedProject) return; setZoneOpen(v => !v); setProjectOpen(false); }} style={[styles.selectBtn, !selectedProject && styles.selectBtnDisabled]}>
                   <Text style={[styles.selectText, !selectedZone && styles.selectPlaceholder]} numberOfLines={1}>
-                    {selectedZone ? (zones.find(z => z.id === selectedZone)?.title || 'Zone') : (selectedProject ? 'Sélectionner une zone' : 'Sélectionner un projet d\'abord')}
+                    {selectedZone ? (zones.find(z => z.id === selectedZone)?.title || 'Zone') : (selectedProject ? 'Zone' : 'Zone')}
                   </Text>
                 </Pressable>
                 {selectedProject && zoneOpen && (
@@ -325,7 +326,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#E5E5EA',
+    borderBottomColor: '#f87b1b',
   },
   headerTop: {
     flexDirection: 'row',
@@ -384,7 +385,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: '#e5e7eb',
+    borderColor: '#f87b1b',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.04,
@@ -487,8 +488,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
     borderRadius: 12,
     overflow: 'hidden',
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: '#e5e7eb',
+    borderWidth: 1,
+    borderColor: '#f87b1b',
   },
   imageWrap: {
     width: '100%',
@@ -512,23 +513,24 @@ const styles = StyleSheet.create({
     color: '#111827',
     fontWeight: '600',
     fontSize: 13,
+    flexShrink: 1,
+    marginRight: 8,
   },
   metaRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    marginTop: 2,
+    justifyContent: 'space-between',
   },
   metaSubText: {
     color: '#6b7280',
     fontSize: 12,
-    flex: 1, // Allow text to shrink
+    flexShrink: 1,
   },
   metaDate: {
     color: '#9ca3af',
     fontSize: 11,
     fontWeight: '500',
-    marginLeft: 4, // Space between zone and date
+    marginTop: 4,
   },
 });
 

@@ -615,7 +615,7 @@ const styles = StyleSheet.create({
   },
   photoPickerButton: {
     borderWidth: 2,
-    borderColor: '#d1d5db',
+    borderColor: '#f87b1b',
     borderStyle: 'dashed',
     borderRadius: 12,
     paddingVertical: 32,
@@ -687,7 +687,7 @@ const styles = StyleSheet.create({
   captureButtonText: { color: '#FFFFFF', fontWeight: '600' },
   secondaryButton: { backgroundColor: '#f3f4f6', borderRadius: 10, paddingVertical: 10, paddingHorizontal: 12 },
   secondaryButtonText: { color: '#111827', fontWeight: '600' },
-  inputWrap: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#fff', borderWidth: 1, borderColor: '#e5e7eb', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10 },
+  inputWrap: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#fff', borderWidth: 1, borderColor: '#f87b1b', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10 },
   input: { flex: 1, color: '#111827' },
   recordingWrap: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#fef2f2', padding: 12, borderRadius: 10 },
   recordingText: { color: '#dc2626', fontWeight: '600' },
