@@ -63,6 +63,22 @@ type CreateQualiPhotoPayload = {
 class QualiPhotoService {
   private baseUrl = API_CONFIG.BASE_URL;
 
+  private toAbsoluteUrl(path: string | null | undefined): string | null {
+    if (!path) return null;
+    if (path.startsWith('http://') || path.startsWith('https://')) {
+      return path;
+    }
+    return `${this.baseUrl}${path.startsWith('/') ? '' : '/'}${path}`;
+  }
+
+  private normalizeQualiPhotoItem(item: Partial<QualiPhotoItem>): Partial<QualiPhotoItem> {
+    return {
+      ...item,
+      photo: this.toAbsoluteUrl(item.photo) ?? '',
+      voice_note: this.toAbsoluteUrl(item.voice_note),
+    };
+  }
+
   private async makeRequest<T>(endpoint: string, token: string, options: RequestInit = {}): Promise<T> {
     if (!token) throw new Error('Authentication token required');
     const res = await fetch(`${this.baseUrl}${endpoint}`, {
@@ -83,7 +99,11 @@ class QualiPhotoService {
     if (params.id_zone) url.searchParams.set('id_zone', params.id_zone);
     url.searchParams.set('page', String(params.page ?? 1));
     url.searchParams.set('limit', String(params.limit ?? 30));
-    return this.makeRequest<QualiPhotoListResponse>(url.toString().replace(this.baseUrl, ''), token);
+    const response = await this.makeRequest<QualiPhotoListResponse>(url.toString().replace(this.baseUrl, ''), token);
+    return {
+      ...response,
+      items: response.items.map(item => this.normalizeQualiPhotoItem(item) as QualiPhotoItem),
+    };
   }
 
   async getChildren(parentId: string, token: string, sort: 'asc' | 'desc' = 'desc'): Promise<QualiPhotoItem[]> {
@@ -92,7 +112,7 @@ class QualiPhotoService {
     url.searchParams.set('sort', sort);
     url.searchParams.set('limit', '100'); // Get all children for now
     const response = await this.makeRequest<QualiPhotoListResponse>(url.toString().replace(this.baseUrl, ''), token);
-    return response.items;
+    return response.items.map(item => this.normalizeQualiPhotoItem(item) as QualiPhotoItem);
   }
 
   async getProjects(token: string): Promise<QualiProject[]> {
@@ -101,7 +121,11 @@ class QualiPhotoService {
   }
 
   async getZonesByProject(projectId: string, token: string): Promise<QualiZone[]> {
-    return this.makeRequest<QualiZone[]>(`/projects/${projectId}/zones`, token, { method: 'GET' });
+    const zones = await this.makeRequest<QualiZone[]>(`/projects/${projectId}/zones`, token, { method: 'GET' });
+    return zones.map(zone => ({
+      ...zone,
+      logo: this.toAbsoluteUrl(zone.logo),
+    }));
   }
 
   async checkIfExists(projectId: string, zoneId: string, token: string): Promise<{ exists: boolean }> {
@@ -155,7 +179,7 @@ class QualiPhotoService {
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data?.error || 'Failed to create QualiPhoto');
-    return data;
+    return this.normalizeQualiPhotoItem(data);
   }
 }
 
