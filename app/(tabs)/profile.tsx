@@ -3,11 +3,11 @@ import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import React, { useEffect } from 'react';
 import {
-    Alert,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  Alert,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AppHeader from '../../components/AppHeader';
@@ -25,15 +25,15 @@ export default function ProfileScreen() {
 
   const handleLogout = async () => {
     Alert.alert(
-      'Confirm Logout',
-      'Are you sure you want to log out?',
+      'Confirmer la déconnexion',
+      'Êtes-vous sûr de vouloir vous déconnecter ?',
       [
         {
-          text: 'Cancel',
+          text: 'Annuler',
           style: 'cancel',
         },
         {
-          text: 'Logout',
+          text: 'Déconnexion',
           style: 'destructive',
           onPress: async () => {
             console.log('Logging out...');
@@ -49,18 +49,18 @@ export default function ProfileScreen() {
   return (
     <SafeAreaView style={styles.container}>
       {/* App Header */}
-      <AppHeader showNotifications={false} user={user || undefined} />
+      <AppHeader user={user || undefined} />
       
       <View style={styles.content}>
         {/* Header Card */}
         <View style={styles.headerCard}>
           <View style={styles.headerTopRow}>
             <View style={styles.avatarLarge}>
-              <Ionicons name="person" size={44} color="#11224e" />
+              <Ionicons name="person" size={44} color="#f87b1b" />
             </View>
             <View style={{ flex: 1 }}>
               <Text style={styles.nameText} numberOfLines={1}>
-                {user ? `${user.firstname} ${user.lastname}` : 'Loading...'}
+                {user ? `${user.firstname} ${user.lastname}` : 'Chargement...'}
               </Text>
               <Text style={styles.emailText} numberOfLines={1}>{user?.email || '—'}</Text>
               <View style={styles.roleBadge}><Text style={styles.roleText}>{user?.role || 'user'}</Text></View>
@@ -71,15 +71,15 @@ export default function ProfileScreen() {
           <View style={styles.quickRow}>
             <TouchableOpacity style={styles.quickItem}>
               <Ionicons name="person-outline" size={20} color="#11224e" />
-              <Text style={styles.quickText}>Edit</Text>
+              <Text style={styles.quickText}>Modifier</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.quickItem}>
               <Ionicons name="notifications-outline" size={20} color="#11224e" />
-              <Text style={styles.quickText}>Alerts</Text>
+              <Text style={styles.quickText}>Alertes</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.quickItem}>
               <Ionicons name="settings-outline" size={20} color="#11224e" />
-              <Text style={styles.quickText}>Settings</Text>
+              <Text style={styles.quickText}>Paramètres</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -88,7 +88,7 @@ export default function ProfileScreen() {
         <View style={styles.menuSection}>
           <TouchableOpacity style={styles.menuItem}>
             <Ionicons name="person-outline" size={20} color="#1C1C1E" />
-            <Text style={styles.menuText}>Personal information</Text>
+            <Text style={styles.menuText}>Informations personnelles</Text>
             <Ionicons name="chevron-forward" size={20} color="#8E8E93" />
           </TouchableOpacity>
           <TouchableOpacity style={styles.menuItem}>
@@ -96,21 +96,21 @@ export default function ProfileScreen() {
             <Text style={styles.menuText}>Notifications</Text>
             <Ionicons name="chevron-forward" size={20} color="#8E8E93" />
           </TouchableOpacity>
-          <TouchableOpacity style={styles.menuItem}>
+          <TouchableOpacity style={styles.menuItem} onPress={() => router.push('/(tabs)/change-password')}>
             <Ionicons name="shield-checkmark-outline" size={20} color="#1C1C1E" />
-            <Text style={styles.menuText}>Privacy & Security</Text>
+            <Text style={styles.menuText}>Changer de mot de passe</Text>
             <Ionicons name="chevron-forward" size={20} color="#8E8E93" />
           </TouchableOpacity>
           <TouchableOpacity style={styles.menuItem}>
             <Ionicons name="help-circle-outline" size={20} color="#1C1C1E" />
-            <Text style={styles.menuText}>Help & Support</Text>
+            <Text style={styles.menuText}>Aide & Support</Text>
             <Ionicons name="chevron-forward" size={20} color="#8E8E93" />
           </TouchableOpacity>
         </View>
 
         <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
           <Ionicons name="log-out-outline" size={20} color="#FF3B30" />
-          <Text style={styles.logoutText}>Log Out</Text>
+          <Text style={styles.logoutText}>Se déconnecter</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
@@ -131,7 +131,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     padding: 16,
     borderWidth: 1,
-    borderColor: '#E5E5EA',
+    borderColor: '#f87b1b',
     marginBottom: 20,
   },
   headerTopRow: {
@@ -190,6 +190,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderRadius: 12,
     marginBottom: 20,
+    borderWidth: 1,
+    borderColor: '#f87b1b',
   },
   menuItem: {
     flexDirection: 'row',
