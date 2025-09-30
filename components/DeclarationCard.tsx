@@ -60,7 +60,7 @@ export default function DeclarationCard({ declaration, onChatPress, onPress, onV
         </View>
       </View>
 
-      {/* Zone and Date */}
+      {/* Zone, Date, and Severity */}
       <View style={styles.metaContainer}>
         <View style={styles.metaItem}>
           <Ionicons name="location" size={14} color="#8E8E93" />
@@ -70,27 +70,10 @@ export default function DeclarationCard({ declaration, onChatPress, onPress, onV
           <Ionicons name="time" size={14} color="#8E8E93" />
           <Text style={styles.metaText}>{formatDate(declaration.date_declaration)}</Text>
         </View>
-      </View>
-
-      {/* Description */}
-      <Text style={styles.description} numberOfLines={3}>
-        {truncateDescription(declaration.description)}
-      </Text>
-
-      {/* Stats Row */}
-      <View style={styles.statsContainer}>
-        <View style={styles.statItem}>
-          <Ionicons name="images" size={16} color="#8E8E93" />
-          <Text style={styles.statText}>{declaration.photo_count} photos</Text>
-        </View>
-        <View style={styles.statItem}>
-          <Ionicons name="chatbubbles" size={16} color="#8E8E93" />
-          <Text style={styles.statText}>{declaration.chat_count} messages</Text>
-        </View>
-        <View style={styles.statItem}>
-          <Ionicons name="alert-circle" size={16} color={getSeverityColor(declaration.severite)} />
-          <Text style={[styles.statText, { color: getSeverityColor(declaration.severite) }]}>
-            Severity {declaration.severite}/10
+        <View style={styles.metaItem}>
+          <Ionicons name="alert-circle" size={14} color={getSeverityColor(declaration.severite)} />
+          <Text style={[styles.metaText, { color: getSeverityColor(declaration.severite) }]}>
+            Sévérité {declaration.severite}/10
           </Text>
         </View>
       </View>
@@ -108,15 +91,15 @@ export default function DeclarationCard({ declaration, onChatPress, onPress, onV
           activeOpacity={0.8}
         >
           <Ionicons name="list-outline" size={18} color="#1C1C1E" />
-          <Text style={styles.secondaryButtonText}>View Actions</Text>
+          <Text style={styles.secondaryButtonText}>Voir les Actions</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={styles.chatButton}
           onPress={() => onChatPress(declaration)}
           activeOpacity={0.8}
         >
-          <Ionicons name="chatbubbles-outline" size={18} color="#007AFF" />
-          <Text style={styles.chatButtonText}>Open Chat</Text>
+          <Ionicons name="chatbubbles-outline" size={18} color="#f87b1b" />
+          <Text style={styles.chatButtonText}>Ouvrir Chat</Text>
         </TouchableOpacity>
       </View>
     </TouchableOpacity>
@@ -138,6 +121,8 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 8,
     elevation: 4,
+    borderWidth: 1,
+    borderColor: '#f87b1b',
   },
   header: {
     flexDirection: 'row',
@@ -179,7 +164,7 @@ const styles = StyleSheet.create({
   },
   metaContainer: {
     flexDirection: 'row',
-    gap: 20,
+    justifyContent: 'space-between',
     marginBottom: 16,
   },
   metaItem: {
@@ -197,37 +182,22 @@ const styles = StyleSheet.create({
     color: '#1C1C1E',
     marginBottom: 16,
   },
-  statsContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 16,
-  },
-  statItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  statText: {
-    fontSize: 13,
-    color: '#8E8E93',
-  },
-
   chatButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#F2F2F7',
+    backgroundColor: '#FFFFFF',
     paddingVertical: 12,
     paddingHorizontal: 20,
     borderRadius: 12,
     gap: 8,
     borderWidth: 1,
-    borderColor: '#E5E5EA',
+    borderColor: '#f87b1b',
   },
   chatButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#007AFF',
+    color: '#f87b1b',
   },
   actionsRow: {
     flexDirection: 'row',
@@ -244,7 +214,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     gap: 8,
     borderWidth: 1,
-    borderColor: '#E5E5EA',
+    borderColor: '#f87b1b',
     flex: 1,
   },
   secondaryButtonText: {
