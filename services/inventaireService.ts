@@ -66,6 +66,14 @@ export interface InventaireByZoneItem {
 class InventaireService {
   private baseUrl = API_CONFIG.BASE_URL;
 
+  private toAbsoluteUrl(path: string | null | undefined): string | null {
+    if (!path) return null;
+    if (path.startsWith('http://') || path.startsWith('https://')) {
+      return path;
+    }
+    return `${this.baseUrl.replace(/\/$/, '')}/${path.replace(/^\//, '')}`;
+  }
+
   private async makeRequest(endpoint: string, token: string, options: RequestInit = {}) {
     if (!token) {
       throw new Error('Authentication token required');
@@ -95,7 +103,11 @@ class InventaireService {
 
   // Get zones linked to current user
   async getUserZones(token: string): Promise<UserZone[]> {
-    return this.makeRequest('/api/inventaire/zones', token);
+    const zones = await this.makeRequest('/api/inventaire/zones', token);
+    return zones.map((zone: UserZone) => ({
+      ...zone,
+      zone_logo: this.toAbsoluteUrl(zone.zone_logo),
+    }));
   }
 
   // Get inventaire-type declarations
