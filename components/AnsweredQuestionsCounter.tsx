@@ -29,11 +29,11 @@ export default function AnsweredQuestionsCounter({
   return (
     <View style={styles.container}>
       <Text style={[styles.counterText, { color: counterColor }]}>
-        Answered: {answeredCount} / {totalCount}
+        Répondues: {answeredCount} / {totalCount}
       </Text>
       {answeredCount === totalCount && totalCount > 0 && (
         <Text style={[styles.completionText, { color: counterColor }]}>
-          ✓ Complete
+          ✓ Terminé
         </Text>
       )}
     </View>

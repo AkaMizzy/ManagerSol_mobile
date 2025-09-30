@@ -7,16 +7,18 @@ import { ManifolderAnswer, ManifolderQuestion, Zone } from '@/types/manifolder';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import React, { useEffect, useState } from 'react';
 import {
-  ActivityIndicator,
-  Alert,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
+    ActivityIndicator,
+    Alert,
+    Pressable,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AnsweredQuestionsCounter from './AnsweredQuestionsCounter';
+import AnswersPreviewModal from './AnswersPreviewModal';
 import CreateDeclarationModal from './CreateDeclarationModal';
 import QuestionAccordion from './QuestionAccordion';
 
@@ -57,6 +59,8 @@ export default function ManifolderQuestions({
   const [submittedQuestions, setSubmittedQuestions] = useState<Set<string>>(new Set());
   const [hasBeenSubmittedQuestions, setHasBeenSubmittedQuestions] = useState<Set<string>>(new Set());
   
+  const [isPreviewModalVisible, setIsPreviewModalVisible] = useState(false);
+
   // Signature completion state
   const [signatureStatus, setSignatureStatus] = useState<{
     signatureCount: number;
@@ -811,6 +815,9 @@ export default function ManifolderQuestions({
               answeredCount={getAnsweredCount()} 
               totalCount={supportedQuestions.length} 
             />
+            <TouchableOpacity onPress={() => setIsPreviewModalVisible(true)} style={styles.previewButton}>
+              <Ionicons name="eye-outline" size={24} color="#11224e" />
+            </TouchableOpacity>
           </View>
         </View>
         
@@ -911,6 +918,12 @@ export default function ManifolderQuestions({
         isLoading={isLoadingManifolderDetails}
         manifolderDetails={manifolderDetailsForDeclaration || undefined}
       />
+       <AnswersPreviewModal
+        visible={isPreviewModalVisible}
+        onClose={() => setIsPreviewModalVisible(false)}
+        questions={supportedQuestions}
+        answers={{...answers, ...imageAnswers, ...vocalAnswers}}
+      />
     </SafeAreaView>
   );
 }
@@ -992,7 +1005,12 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   counterContainer: {
-    marginTop: 16,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  previewButton: {
+    padding: 8,
   },
   // Signature Status Banner Styles
   signatureStatusBanner: {

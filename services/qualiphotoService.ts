@@ -145,6 +145,30 @@ class QualiPhotoService {
     });
   }
 
+  async transcribeVoiceNote(voiceNote: { uri: string; name: string; type: string }, token: string): Promise<{ transcription: string }> {
+    const formData = new FormData();
+    formData.append('voice_note', {
+      uri: voiceNote.uri,
+      name: voiceNote.name,
+      type: voiceNote.type,
+    } as any);
+
+    const res = await fetch(`${API_CONFIG.BASE_URL}/qualiphoto/transcribe`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        // 'Content-Type': 'multipart/form-data' is automatically set by fetch with FormData
+      },
+      body: formData,
+    });
+
+    const data = await res.json();
+    if (!res.ok) {
+      throw new Error(data?.error || 'Failed to transcribe voice note');
+    }
+    return data;
+  }
+
   async create(payload: CreateQualiPhotoPayload, token: string): Promise<Partial<QualiPhotoItem>> {
     const formData = new FormData();
     if (payload.id_project) formData.append('id_project', payload.id_project);

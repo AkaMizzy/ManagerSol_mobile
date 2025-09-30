@@ -43,6 +43,7 @@ export default function CreateQualiPhotoModal({ visible, onClose, onSuccess, ini
   const [projectOpen, setProjectOpen] = useState(false);
   const [zoneOpen, setZoneOpen] = useState(false);
   const [isDatePickerVisible, setDatePickerVisible] = useState(false);
+  const [isTranscribing, setIsTranscribing] = useState(false);
 
   const scrollViewRef = useRef<ScrollView>(null);
   const durationIntervalRef = useRef<number | null>(null);
@@ -270,6 +271,24 @@ export default function CreateQualiPhotoModal({ visible, onClose, onSuccess, ini
     setIsPlaying(false);
   };
 
+  const handleTranscribe = async () => {
+    if (!voiceNote || !token) {
+      Alert.alert('Erreur', 'Aucune note vocale à transcrire.');
+      return;
+    }
+    setIsTranscribing(true);
+    setError(null);
+    try {
+      const result = await qualiphotoService.transcribeVoiceNote(voiceNote, token);
+      setComment(prev => prev ? `${prev}\n${result.transcription}` : result.transcription);
+    } catch (e: any) {
+      setError(e?.message || 'Échec de la transcription');
+      Alert.alert('Erreur de Transcription', e?.message || 'Une erreur est survenue lors de la transcription.');
+    } finally {
+      setIsTranscribing(false);
+    }
+  };
+
   useEffect(() => {
     return sound ? () => { sound.unloadAsync(); } : undefined;
   }, [sound]);
@@ -431,31 +450,52 @@ export default function CreateQualiPhotoModal({ visible, onClose, onSuccess, ini
                       <Ionicons name="stop-circle" size={24} color="#dc2626" />
                     </TouchableOpacity>
                   </View>
-                ) : voiceNote ? (
-                  <View style={styles.audioPlayerWrap}>
-                    <TouchableOpacity style={styles.playButton} onPress={playSound}>
-                      <Ionicons name={isPlaying ? 'pause-circle' : 'play-circle'} size={32} color="#11224e" />
-                    </TouchableOpacity>
-                    <Text style={styles.audioMeta}>Note vocale enregistrée.</Text>
-                    <TouchableOpacity style={styles.deleteButton} onPress={resetVoiceNote}>
-                      <Ionicons name="trash-outline" size={20} color="#dc2626" />
-                    </TouchableOpacity>
-                  </View>
                 ) : (
-                  <View style={styles.voiceActionsContainer}>
-                    <TouchableOpacity style={styles.voiceRecordButton} onPress={startRecording}>
-                      <Ionicons name="mic-outline" size={18} color="#11224e" />
-                      <Text style={styles.voiceRecordButtonText}>Ajouter une note vocale</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity 
-                      style={[styles.voiceRecordButton, styles.transcribeButton]} 
-                      onPress={() => Alert.alert('Bientôt disponible', 'La fonctionnalité de transcription sera bientôt disponible.')}
-                    >
-                      <Ionicons name="document-text-outline" size={18} color="#11224e" />
-                      <Text style={styles.voiceRecordButtonText}>Transcrire</Text>
-                    </TouchableOpacity>
-                  </View>
-                )}  
+                  <>
+                    {voiceNote && (
+                      <View style={styles.audioPlayerWrap}>
+                        <TouchableOpacity style={styles.playButton} onPress={playSound}>
+                          <Ionicons name={isPlaying ? 'pause-circle' : 'play-circle'} size={32} color="#11224e" />
+                        </TouchableOpacity>
+                        <Text style={styles.audioMeta}>Note vocale enregistrée.</Text>
+                        <TouchableOpacity style={styles.deleteButton} onPress={resetVoiceNote}>
+                          <Ionicons name="trash-outline" size={20} color="#dc2626" />
+                        </TouchableOpacity>
+                      </View>
+                    )}
+
+                    <View style={[styles.voiceActionsContainer, voiceNote && { marginTop: 8 }]}>
+                      {!voiceNote && (
+                        <TouchableOpacity style={styles.voiceRecordButton} onPress={startRecording}>
+                          <Ionicons name="mic-outline" size={18} color="#11224e" />
+                          <Text style={styles.voiceRecordButtonText}>Ajouter une note vocale</Text>
+                        </TouchableOpacity>
+                      )}
+                      <TouchableOpacity
+                        style={[
+                          styles.voiceRecordButton,
+                          styles.transcribeButton,
+                          (!voiceNote || isTranscribing) && styles.buttonDisabled,
+                          voiceNote && { flex: 1 },
+                        ]}
+                        onPress={handleTranscribe}
+                        disabled={!voiceNote || isTranscribing}
+                      >
+                        {isTranscribing ? (
+                          <>
+                            <ActivityIndicator size="small" color="#11224e" />
+                            <Text style={styles.voiceRecordButtonText}>Transcription...</Text>
+                          </>
+                        ) : (
+                          <>
+                            <Ionicons name="document-text-outline" size={18} color="#11224e" />
+                            <Text style={styles.voiceRecordButtonText}>Transcrire</Text>
+                          </>
+                        )}
+                      </TouchableOpacity>
+                    </View>
+                  </>
+                )}
               </View>
             </View>
 
@@ -561,6 +601,7 @@ const styles = StyleSheet.create({
   cardHint: { fontSize: 12, color: '#64748b', marginTop: 2 },
   pill: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#ecfdf5', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 999 },
   pillText: { fontSize: 12, color: '#065f46', fontWeight: '600' },
+  buttonDisabled: { opacity: 0.5, backgroundColor: '#e5e7eb' },
   contextDisplay: {
     backgroundColor: '#f9fafb',
     borderRadius: 12,
