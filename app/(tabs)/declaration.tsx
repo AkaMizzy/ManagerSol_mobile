@@ -3,6 +3,7 @@ import { Image } from 'expo-image';
 import React, { useCallback, useEffect, useState } from 'react';
 import {
   Alert,
+  Modal,
   RefreshControl,
   ScrollView,
   StyleSheet,
@@ -49,6 +50,7 @@ export default function DeclarationScreen() {
   const [selectedSeverity, setSelectedSeverity] = useState<number | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [showDatePicker, setShowDatePicker] = useState(false);
+  const [severityPickerVisible, setSeverityPickerVisible] = useState(false);
 
   // Load declarations and required data on component mount
   useEffect(() => {
@@ -78,7 +80,7 @@ export default function DeclarationScreen() {
       setCompanyUsers(usersData);
     } catch (error) {
       console.error('Failed to load initial data:', error);
-      Alert.alert('Error', 'Failed to load data. Please try again.');
+      Alert.alert('Erreur', 'Échec du chargement des données. Veuillez réessayer.');
     } finally {
       setLoading(false);
     }
@@ -95,7 +97,7 @@ export default function DeclarationScreen() {
       setDeclarations(data);
     } catch (error) {
       console.error('Failed to load declarations:', error);
-      Alert.alert('Error', 'Failed to load declarations. Please try again.');
+      Alert.alert('Erreur', 'Échec du chargement des déclarations. Veuillez réessayer.');
     } finally {
       setLoading(false);
     }
@@ -138,7 +140,7 @@ export default function DeclarationScreen() {
       setActionsForDeclaration(actions);
     } catch (e) {
       console.error('Failed to load actions:', e);
-      Alert.alert('Error', 'Failed to load actions. Please try again.');
+      Alert.alert('Erreur', 'Échec du chargement des actions. Veuillez réessayer.');
     }
   };
 
@@ -168,11 +170,11 @@ export default function DeclarationScreen() {
       
       // Show success message and redirect to Action Modal
       Alert.alert(
-        'Success', 
-        'Declaration created successfully!',
+        'Succès', 
+        'Déclaration créée avec succès !',
         [
           {
-            text: 'Okay',
+            text: 'Ok',
             onPress: () => {
               // Find the newly created declaration from the refreshed list
               // We'll use the first declaration since it should be the newest
@@ -288,7 +290,7 @@ export default function DeclarationScreen() {
   };
 
   if (loading) {
-    return <LoadingScreen message="Loading declarations..." />;
+    return <LoadingScreen message="Chargement des déclarations..." />;
   }
 
   const sortedDeclarations = getSortedDeclarations();
@@ -301,14 +303,14 @@ export default function DeclarationScreen() {
   };
 
   const getSeverityText = (severity: number) => {
-    if (severity >= 7) return 'High';
-    if (severity >= 5) return 'Medium';
-    return 'Low';
+    if (severity >= 7) return 'Haute';
+    if (severity >= 5) return 'Moyenne';
+    return 'Faible';
   };
 
   // Date helper functions
   const formatDisplayDate = (date: Date) => {
-    return date.toLocaleDateString('en-US', { 
+    return date.toLocaleDateString('fr-FR', { 
       year: 'numeric', 
       month: 'short', 
       day: 'numeric' 
@@ -348,10 +350,10 @@ export default function DeclarationScreen() {
             <Text
               accessibilityRole="text"
               style={{ display: 'none' }}
-            >Search by title</Text>
+            >Rechercher par titre</Text>
             <View style={{ flex: 1 }}>
               <TextInput
-                placeholder="Search by title"
+                placeholder="Rechercher par titre"
                 placeholderTextColor="#8E8E93"
                 value={searchQuery}
                 onChangeText={setSearchQuery}
@@ -364,18 +366,17 @@ export default function DeclarationScreen() {
               </TouchableOpacity>
             ) : null}
           </View>
-
-          {/* Date Filter */}
-          <View style={styles.dateFilterContainer}>
-            <View style={styles.dateFilterRow}>
-              <Text style={styles.dateFilterLabel}>Date:</Text>
+          <View style={styles.filterRow}>
+            {/* Date Filter */}
+            <View style={styles.dateFilterContainer}>
+              <Text style={styles.dateFilterLabel}>Date :</Text>
               <TouchableOpacity
                 style={styles.datePickerButton}
                 onPress={() => setShowDatePicker(true)}
               >
                 <Ionicons name="calendar-outline" size={16} color="#8E8E93" />
                 <Text style={styles.datePickerText}>
-                  {selectedDate ? formatDisplayDate(selectedDate) : 'Select date'}
+                  {selectedDate ? formatDisplayDate(selectedDate) : 'Sélectionner'}
                 </Text>
               </TouchableOpacity>
               {selectedDate && (
@@ -387,41 +388,28 @@ export default function DeclarationScreen() {
                 </TouchableOpacity>
               )}
             </View>
-          </View>
 
-          {/* Compact Severity Filter */}
-          <View style={styles.compactSeverityFilter}>
-            <View style={styles.severityFilterRow}>
-              <Text style={styles.severityFilterLabel}>Severity:</Text>
-              <View style={styles.severityDots}>
-                {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((value) => (
-                  <TouchableOpacity
-                    key={value}
-                    style={[
-                      styles.compactSeverityDot,
-                      selectedSeverity === value && [styles.compactSeverityDotActive, { backgroundColor: getSeverityColor(value) }],
-                    ]}
-                    onPress={() => setSelectedSeverity(selectedSeverity === value ? null : value)}
-                    activeOpacity={0.7}
-                  />
-                ))}
-              </View>
+            {/* Severity Filter Dropdown */}
+            <View style={styles.severityFilterContainer}>
+              <Text style={styles.severityFilterLabel}>Sévérité :</Text>
+              <TouchableOpacity
+                style={styles.datePickerButton}
+                onPress={() => setSeverityPickerVisible(true)}
+              >
+                <Text style={styles.datePickerText}>
+                  {selectedSeverity !== null ? `${selectedSeverity}` : 'Toute'}
+                </Text>
+                <Ionicons name="chevron-down" size={16} color="#8E8E93" />
+              </TouchableOpacity>
               {selectedSeverity !== null && (
                 <TouchableOpacity
-                  style={styles.clearSeverityButton}
+                  style={styles.clearDateButton}
                   onPress={() => setSelectedSeverity(null)}
                 >
                   <Ionicons name="close-circle" size={14} color="#8E8E93" />
                 </TouchableOpacity>
               )}
             </View>
-            {selectedSeverity !== null && (
-              <View style={styles.severityIndicator}>
-                <View style={[styles.severityIndicatorBadge, { backgroundColor: getSeverityColor(selectedSeverity) }]}>
-                  <Text style={styles.severityIndicatorText}>{selectedSeverity} - {getSeverityText(selectedSeverity)}</Text>
-                </View>
-              </View>
-            )}
           </View>
         </View>
       </View>
@@ -443,14 +431,14 @@ export default function DeclarationScreen() {
         {sortedDeclarations.length === 0 ? (
           <View style={styles.emptyState}>
             <Ionicons name="document-text-outline" size={64} color="#C7C7CC" />
-            <Text style={styles.emptyStateTitle}>{searchQuery ? 'No matches found' : 'No Declarations Yet'}</Text>
+            <Text style={styles.emptyStateTitle}>{searchQuery ? 'Aucun résultat' : 'Aucune déclaration'}</Text>
             <Text style={styles.emptyStateSubtitle}>
-              {searchQuery ? 'Try a different title keyword' : 'Create your first declaration to get started'}
+              {searchQuery ? 'Essayez un autre mot-clé' : 'Créez votre première déclaration pour commencer'}
             </Text>
-            <View style={styles.emptyStateButton}>
+            <TouchableOpacity style={styles.emptyStateButton} onPress={handleCreateDeclaration}>
               <Ionicons name="add-circle" size={20} color="#007AFF" />
-              <Text style={styles.emptyStateButtonText}>Create Declaration</Text>
-            </View>
+              <Text style={styles.emptyStateButtonText}>Créer une déclaration</Text>
+            </TouchableOpacity>
           </View>
         ) : (
           sortedDeclarations.map((declaration) => (
@@ -512,6 +500,38 @@ export default function DeclarationScreen() {
         onCancel={() => setShowDatePicker(false)}
       />
 
+      {/* Severity Picker Modal */}
+      <Modal
+        animationType="fade"
+        transparent={true}
+        visible={severityPickerVisible}
+        onRequestClose={() => setSeverityPickerVisible(false)}
+      >
+        <TouchableOpacity style={styles.modalBackdrop} onPress={() => setSeverityPickerVisible(false)} activeOpacity={1}>
+          <View style={styles.modalView}>
+            <Text style={styles.modalTitle}>Sélectionner la sévérité</Text>
+            <ScrollView style={styles.modalScrollView}>
+              {[-1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((value) => (
+                <TouchableOpacity
+                  key={value}
+                  style={styles.modalOption}
+                  onPress={() => {
+                    setSelectedSeverity(value === -1 ? null : value);
+                    setSeverityPickerVisible(false);
+                  }}
+                >
+                  <Text style={styles.modalOptionText}>
+                    {value === -1
+                      ? 'Toutes les sévérités'
+                      : `${value} - ${getSeverityText(value)}`}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        </TouchableOpacity>
+      </Modal>
+
       {/* Create Declaration Modal */}
       {user && (
         <CreateDeclarationModal
@@ -557,7 +577,7 @@ const styles = StyleSheet.create({
     gap: 8,
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: '#E5E5EA',
+    borderColor: '#f87b1b',
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 8,
@@ -655,11 +675,22 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#007AFF',
   },
-  // Date filter styles
-  dateFilterContainer: {
+  // Date and Severity filter styles
+  filterRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: 16,
     marginTop: 8,
   },
-  dateFilterRow: {
+  dateFilterContainer: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  severityFilterContainer: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
@@ -668,15 +699,20 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     color: '#1C1C1E',
-    minWidth: 40,
+  },
+  severityFilterLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#1C1C1E',
   },
   datePickerButton: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
     gap: 8,
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: '#E5E5EA',
+    borderColor: '#f87b1b',
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 8,
@@ -689,53 +725,47 @@ const styles = StyleSheet.create({
   clearDateButton: {
     padding: 2,
   },
-  // Compact severity filter styles
-  compactSeverityFilter: {
-    marginTop: 8,
-  },
-  severityFilterRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  severityFilterLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#1C1C1E',
-    minWidth: 60,
-  },
-  severityDots: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
+
+  // Severity Modal Styles
+  modalBackdrop: {
     flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.4)',
   },
-  compactSeverityDot: {
-    width: 16,
-    height: 16,
-    borderRadius: 8,
-    backgroundColor: '#E5E5EA',
-    borderWidth: 1,
-    borderColor: '#E5E5EA',
-  },
-  compactSeverityDotActive: {
-    borderColor: '#007AFF',
-  },
-  clearSeverityButton: {
-    padding: 2,
-  },
-  severityIndicator: {
-    marginTop: 6,
-  },
-  severityIndicatorBadge: {
-    alignSelf: 'flex-start',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
+  modalView: {
+    margin: 20,
+    backgroundColor: 'white',
     borderRadius: 12,
+    padding: 20,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+    width: '80%',
+    maxHeight: '60%',
   },
-  severityIndicatorText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#FFFFFF',
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 15,
+  },
+  modalScrollView: {
+    width: '100%',
+  },
+  modalOption: {
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E5EA',
+  },
+  modalOptionText: {
+    textAlign: 'center',
+    fontSize: 16,
+    color: '#007AFF',
   },
 });
