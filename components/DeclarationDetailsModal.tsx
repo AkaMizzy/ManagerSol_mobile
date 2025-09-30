@@ -1,14 +1,14 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import React, { useEffect, useMemo, useState } from 'react';
-import { Alert, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, Dimensions } from 'react-native';
+import { Alert, Dimensions, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import DateTimePickerModal from 'react-native-modal-datetime-picker';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { WebView } from 'react-native-webview';
 import API_CONFIG from '../app/config/api';
 import { useAuth } from '../contexts/AuthContext';
 import declarationService from '../services/declarationService';
-import { CompanyUser, Declaration, DeclarationType, Project, Zone, DeclarationPhoto } from '../types/declaration';
+import { CompanyUser, Declaration, DeclarationPhoto, DeclarationType } from '../types/declaration';
 
 interface Props {
   visible: boolean;
@@ -28,44 +28,24 @@ export default function DeclarationDetailsModal({ visible, onClose, declaration 
   const [form, setForm] = useState({
     id_declaration_type: '',
     severite: 5,
-    id_zone: '',
     description: '',
     date_declaration: '',
-    code_declaration: '',
     id_declarent: '' as string | undefined,
-    id_project: '' as string | undefined,
-    latitude: '' as string | undefined,
-    longitude: '' as string | undefined,
   });
 
   // Options
   const [types, setTypes] = useState<DeclarationType[]>([]);
-  const [zones, setZones] = useState<Zone[]>([]);
-  const [projects, setProjects] = useState<Project[]>([]);
   const [users, setUsers] = useState<CompanyUser[]>([]);
   const [isLoadingOptions, setIsLoadingOptions] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showTypeDropdown, setShowTypeDropdown] = useState(false);
-  const [showZoneDropdown, setShowZoneDropdown] = useState(false);
-  const [showProjectDropdown, setShowProjectDropdown] = useState(false);
   const [showDeclarantDropdown, setShowDeclarantDropdown] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
-  const [isMapModalVisible, setIsMapModalVisible] = useState(false);
 
   const selectedTypeTitle = useMemo(() => {
     const t = types.find(x => x.id === form.id_declaration_type);
     return t ? t.title : 'Select type';
   }, [types, form.id_declaration_type]);
-
-  const selectedZoneTitle = useMemo(() => {
-    const z = zones.find(x => x.id === form.id_zone);
-    return z ? z.title : 'Select zone';
-  }, [zones, form.id_zone]);
-
-  const selectedProjectTitle = useMemo(() => {
-    const p = projects.find(x => x.id === form.id_project);
-    return p ? p.title : '—';
-  }, [projects, form.id_project]);
 
   const selectedDeclarantName = useMemo(() => {
     const u = users.find(x => x.id === form.id_declarent);
@@ -77,14 +57,9 @@ export default function DeclarationDetailsModal({ visible, onClose, declaration 
     setForm({
       id_declaration_type: declaration.id_declaration_type,
       severite: declaration.severite,
-      id_zone: declaration.id_zone,
       description: declaration.description,
       date_declaration: declaration.date_declaration,
-      code_declaration: declaration.code_declaration,
       id_declarent: declaration.id_declarent || undefined,
-      id_project: declaration.id_project || undefined,
-      latitude: declaration.latitude != null ? String(declaration.latitude) : undefined,
-      longitude: declaration.longitude != null ? String(declaration.longitude) : undefined,
     });
   }, [declaration]);
 
@@ -94,15 +69,11 @@ export default function DeclarationDetailsModal({ visible, onClose, declaration 
     setIsLoadingOptions(true);
     Promise.all([
       declarationService.getDeclarationTypes(token),
-      declarationService.getZones(token),
-      declarationService.getCompanyProjects(token),
       declarationService.getCompanyUsers(token),
     ])
-      .then(([t, z, p, u]) => {
+      .then(([t, u]) => {
         if (!isMounted) return;
         setTypes(t);
-        setZones(z);
-        setProjects(p);
         setUsers(u);
       })
       .catch((err) => {
@@ -134,18 +105,8 @@ export default function DeclarationDetailsModal({ visible, onClose, declaration 
     endOfToday.setHours(23, 59, 59, 999);
     if (date > endOfToday) return 'La date ne peut pas être dans le futur';
     if (form.severite < 0 || form.severite > 10) return 'La sévérité doit être entre 0 et 10';
-    if (form.latitude !== undefined && form.latitude !== '') {
-      const lat = Number(form.latitude);
-      if (Number.isNaN(lat) || lat < -90 || lat > 90) return 'La latitude doit être entre -90 et 90';
-    }
-    if (form.longitude !== undefined && form.longitude !== '') {
-      const lng = Number(form.longitude);
-      if (Number.isNaN(lng) || lng < -180 || lng > 180) return 'La longitude doit être entre -180 et 180';
-    }
     if (!form.id_declaration_type) return 'Le type de déclaration est requis';
-    if (!form.id_zone) return 'La zone est requise';
     if (!form.description) return 'La description est requise';
-    if (!form.code_declaration) return 'Le code est requis';
     return null;
   }
 
@@ -161,15 +122,10 @@ export default function DeclarationDetailsModal({ visible, onClose, declaration 
       const payload: any = {
         id_declaration_type: form.id_declaration_type,
         severite: form.severite,
-        id_zone: form.id_zone,
         description: form.description,
         date_declaration: form.date_declaration,
-        code_declaration: form.code_declaration,
       };
       if (form.id_declarent !== undefined && form.id_declarent !== '') payload.id_declarent = form.id_declarent;
-      if (form.id_project !== undefined && form.id_project !== '') payload.id_project = form.id_project;
-      if (form.latitude !== undefined && form.latitude !== '') payload.latitude = Number(form.latitude);
-      if (form.longitude !== undefined && form.longitude !== '') payload.longitude = Number(form.longitude);
 
       await declarationService.updateDeclaration(declaration.id, payload, token);
       Alert.alert('Succès', 'Déclaration mise à jour avec succès');
@@ -186,23 +142,6 @@ export default function DeclarationDetailsModal({ visible, onClose, declaration 
   function getDeclarationTypeTitle(id: string) {
     const type = types.find(t => t.id === id);
     return type ? type.title : 'Sélectionner le type de déclaration';
-  }
-
-  function getZoneTitle(id: string) {
-    const zone = zones.find(z => z.id === id);
-    return zone ? zone.title : 'Sélectionner la zone';
-  }
-
-  function getZoneLogo(id: string) {
-    const zone = zones.find(z => z.id === id);
-    if (!zone || !zone.logo) return null;
-    return `${API_CONFIG.BASE_URL}${zone.logo}`;
-  }
-
-  function getProjectTitle(id?: string) {
-    if (!id) return 'Sélectionner le projet';
-    const project = projects.find(p => p.id === id);
-    return project ? project.title : 'Sélectionner le projet';
   }
 
   function getDeclarantName(id?: string) {
@@ -235,74 +174,9 @@ export default function DeclarationDetailsModal({ visible, onClose, declaration 
   }
 
   // Map integration (Leaflet in WebView)
-  const mapHtml = `
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-      <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-      <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-      <style>
-        body { margin: 0; padding: 0; }
-        #map { width: 100%; height: 100vh; }
-        .location-info {
-          position: absolute; top: 10px; left: 10px; background: white; padding: 10px; border-radius: 5px;
-          box-shadow: 0 2px 10px rgba(0,0,0,0.1); z-index: 1000; font-family: Arial, sans-serif; font-size: 14px;
-        }
-        .select-button {
-          position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
-          background: #007AFF; color: white; border: none; padding: 12px 24px; border-radius: 25px; font-size: 16px; font-weight: bold; z-index: 1000; cursor: pointer;
-        }
-      </style>
-    </head>
-    <body>
-      <div id="map"></div>
-      <div class="location-info"><strong>Selected Location:</strong><br><span id="coordinates">Tap on map to select</span></div>
-      <button class="select-button" onclick="selectLocation()">Select This Location</button>
-      <script>
-        let map, marker, selectedLat, selectedLng;
-        map = L.map('map').setView([33.5731, -7.5898], 13);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap contributors' }).addTo(map);
-        map.on('click', function(e) {
-          const lat = e.latlng.lat; const lng = e.latlng.lng;
-          if (marker) { map.removeLayer(marker); }
-          marker = L.marker([lat, lng]).addTo(map);
-          selectedLat = lat; selectedLng = lng;
-          document.getElementById('coordinates').innerHTML = lat.toFixed(6) + ', ' + lng.toFixed(6);
-        });
-        function selectLocation() {
-          if (selectedLat !== undefined && selectedLng !== undefined) {
-            window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'locationSelected', latitude: selectedLat, longitude: selectedLng }));
-          }
-        }
-        if (navigator.geolocation) {
-          navigator.geolocation.getCurrentPosition(function(position) {
-            const lat = position.coords.latitude; const lng = position.coords.longitude;
-            map.setView([lat, lng], 15);
-            L.marker([lat, lng]).addTo(map).bindPopup('Your current location').openPopup();
-          });
-        }
-      </script>
-    </body>
-    </html>
-  `;
-
-  function handleMapMessage(event: any) {
-    try {
-      const data = JSON.parse(event.nativeEvent.data);
-      if (data.type === 'locationSelected') {
-        setField('latitude', String(data.latitude));
-        setField('longitude', String(data.longitude));
-        setIsMapModalVisible(false);
-      }
-    } catch (error) {
-      console.error('Error parsing map message:', error);
-    }
-  }
-
   function getMiniMapHtml() {
-    const lat = form.latitude ? Number(form.latitude) : 33.5731;
-    const lng = form.longitude ? Number(form.longitude) : -7.5898;
+    const lat = declaration?.latitude ? Number(declaration.latitude) : 33.5731;
+    const lng = declaration?.longitude ? Number(declaration.longitude) : -7.5898;
     return `
       <!DOCTYPE html>
       <html>
@@ -323,17 +197,6 @@ export default function DeclarationDetailsModal({ visible, onClose, declaration 
       </body>
       </html>
     `;
-  }
-
-  function getCoordinateDisplay() {
-    if (form.latitude && form.longitude) {
-      const lat = Number(form.latitude);
-      const lng = Number(form.longitude);
-      if (!Number.isNaN(lat) && !Number.isNaN(lng)) {
-        return `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
-      }
-    }
-    return 'Appuyer pour sélectionner la localisation';
   }
   
   function getFullViewMapHtml() {
@@ -416,8 +279,8 @@ export default function DeclarationDetailsModal({ visible, onClose, declaration 
                 <Text style={styles.metaText}>#{declaration.code_declaration}</Text>
               </View>
             </View>
-            <View style={styles.severityContainer}>
-              <View style={[styles.severityBar, { width: `${declaration.severite * 10}%`, backgroundColor: getSeverityColor(declaration.severite) }]} />
+            <View style={styles.severityBarContainer}>
+              <View style={[styles.severityBarFill, { width: `${declaration.severite * 10}%`, backgroundColor: getSeverityColor(declaration.severite) }]} />
               <Text style={styles.severityText}>{declaration.severite}/10 - {getSeverityText(declaration.severite)}</Text>
             </View>
           </View>
@@ -468,7 +331,7 @@ export default function DeclarationDetailsModal({ visible, onClose, declaration 
           
           <View style={styles.actionsContainer}>
             <TouchableOpacity onPress={openUpdateModal} style={styles.primaryButton}>
-              <Ionicons name="create-outline" size={20} color="#FFFFFF" />
+              <Ionicons name="create-outline" size={20} color="#f87b1b" />
               <Text style={styles.primaryButtonText}>Modifier la Déclaration</Text>
             </TouchableOpacity>
           </View>
@@ -538,41 +401,6 @@ export default function DeclarationDetailsModal({ visible, onClose, declaration 
                     </View>
                   </View>
 
-                  <Text style={styles.label}>Zone</Text>
-                  <TouchableOpacity disabled={isLoadingOptions} onPress={() => setShowZoneDropdown(!showZoneDropdown)} style={styles.dropdown}>
-                    {form.id_zone ? (
-                      <View style={styles.zoneSelectedRow}>
-                        {getZoneLogo(form.id_zone) && (
-                          <Image source={{ uri: getZoneLogo(form.id_zone)! }} style={styles.zoneLogo} />
-                        )}
-                        <Text style={styles.dropdownText}>{getZoneTitle(form.id_zone)}</Text>
-                      </View>
-                    ) : (
-                      <Text style={[styles.dropdownText, styles.placeholderText]}>Sélectionner la zone</Text>
-                    )}
-                    <Ionicons name={showZoneDropdown ? 'chevron-up' : 'chevron-down'} size={20} color="#8E8E93" />
-                  </TouchableOpacity>
-                  {showZoneDropdown && (
-                    <View style={styles.dropdownList}>
-                      <ScrollView showsVerticalScrollIndicator={false} nestedScrollEnabled>
-                        {zones.map((zone, index) => (
-                          <TouchableOpacity
-                            key={zone.id}
-                            style={[styles.dropdownItem, index === zones.length - 1 && styles.dropdownItemLast]}
-                            onPress={() => { setField('id_zone', zone.id); setShowZoneDropdown(false); }}
-                          >
-                            <View style={styles.zoneItemRow}>
-                              {zone.logo ? (
-                                <Image source={{ uri: `${API_CONFIG.BASE_URL}${zone.logo}` }} style={styles.zoneLogo} />
-                              ) : null}
-                              <Text style={styles.dropdownItemText}>{zone.title}</Text>
-                            </View>
-                          </TouchableOpacity>
-                        ))}
-                      </ScrollView>
-                    </View>
-                  )}
-
                   <Text style={styles.label}>Description</Text>
                   <TextInput
                     value={form.description}
@@ -597,9 +425,6 @@ export default function DeclarationDetailsModal({ visible, onClose, declaration 
                     onCancel={() => setShowDatePicker(false)}
                   />
 
-                  <Text style={styles.label}>Code</Text>
-                  <TextInput value={form.code_declaration} onChangeText={(v) => setField('code_declaration', v)} style={styles.input} />
-
                   <Text style={styles.label}>Déclarant (optionnel)</Text>
                   <TouchableOpacity disabled={isLoadingOptions} onPress={() => setShowDeclarantDropdown(!showDeclarantDropdown)} style={styles.dropdown}>
                     <Text style={[styles.dropdownText, !form.id_declarent && styles.placeholderText]}>{getDeclarantName(form.id_declarent)}</Text>
@@ -623,39 +448,6 @@ export default function DeclarationDetailsModal({ visible, onClose, declaration 
                       </ScrollView>
                     </View>
                   )}
-
-                  <Text style={styles.label}>Projet (optionnel)</Text>
-                  <TouchableOpacity disabled={isLoadingOptions} onPress={() => setShowProjectDropdown(!showProjectDropdown)} style={styles.dropdown}>
-                    <Text style={[styles.dropdownText, !form.id_project && styles.placeholderText]}>{getProjectTitle(form.id_project)}</Text>
-                    <Ionicons name={showProjectDropdown ? 'chevron-up' : 'chevron-down'} size={20} color="#8E8E93" />
-                  </TouchableOpacity>
-                  {showProjectDropdown && (
-                    <View style={styles.dropdownList}>
-                      <ScrollView showsVerticalScrollIndicator={false} nestedScrollEnabled>
-                        <TouchableOpacity style={styles.dropdownItem} onPress={() => { setField('id_project', undefined); setShowProjectDropdown(false); }}>
-                          <Text style={styles.dropdownItemText}>Aucun projet</Text>
-                        </TouchableOpacity>
-                        {projects.map((p, index) => (
-                          <TouchableOpacity
-                            key={p.id}
-                            style={[styles.dropdownItem, index === projects.length - 1 && styles.dropdownItemLast]}
-                            onPress={() => { setField('id_project', p.id); setShowProjectDropdown(false); }}
-                          >
-                            <Text style={styles.dropdownItemText}>{p.title}</Text>
-                          </TouchableOpacity>
-                        ))}
-                      </ScrollView>
-                    </View>
-                  )}
-
-                  <Text style={styles.label}>Localisation</Text>
-                  <TouchableOpacity style={styles.dropdown} onPress={() => setIsMapModalVisible(true)}>
-                    <Ionicons name="map-outline" size={18} color="#8E8E93" />
-                    <Text style={[styles.dropdownText, !(form.latitude && form.longitude) && styles.placeholderText]}>
-                      {getCoordinateDisplay()}
-                    </Text>
-                    <Ionicons name={'chevron-forward'} size={20} color="#8E8E93" />
-                  </TouchableOpacity>
 
                   <View style={{ height: 12 }} />
                   <TouchableOpacity disabled={isSubmitting} onPress={submitUpdate} style={[styles.primaryButton, isSubmitting && { opacity: 0.6 }]}>
@@ -685,28 +477,6 @@ export default function DeclarationDetailsModal({ visible, onClose, declaration 
             />
           </View>
         </Modal>
-        {isMapModalVisible && (
-            <Modal visible={isMapModalVisible} animationType="slide" presentationStyle="fullScreen" onRequestClose={() => setIsMapModalVisible(false)}>
-                <View style={{ flex: 1, backgroundColor: '#FFFFFF', paddingTop: insets.top }}>
-                    <View style={styles.header}>
-                        <TouchableOpacity onPress={() => setIsMapModalVisible(false)} style={styles.closeButton}>
-                            <Ionicons name="close" size={24} color="#1C1C1E" />
-                        </TouchableOpacity>
-                        <Text style={styles.headerTitle}>Sélectionner la Localisation</Text>
-                        <View style={{ width: 24 }} />
-                    </View>
-                    <WebView
-                        source={{ html: mapHtml }}
-                        style={{ flex: 1 }}
-                        onMessage={handleMapMessage}
-                        javaScriptEnabled
-                        domStorageEnabled
-                        startInLoadingState
-                    />
-                </View>
-            </Modal>
-        )}
-
         {/* Image Preview Modal */}
         {declaration?.photos && declaration.photos.length > 0 && (
           <Modal visible={isImagePreviewVisible} transparent animationType="fade" onRequestClose={() => setImagePreviewVisible(false)}>
@@ -806,25 +576,25 @@ const styles = StyleSheet.create({
     padding: 16,
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: '#E5E5EA',
+    borderColor: '#f87b1b',
   },
   sectionTitle: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#8E8E93',
+    color: '#11224e',
     textTransform: 'uppercase',
     letterSpacing: 0.8,
     marginBottom: 12,
   },
 
   // Header section
-  title: { fontSize: 22, fontWeight: '700', color: '#1C1C1E', marginBottom: 8 },
+  title: { fontSize: 22, fontWeight: '700', color: '#11224e', marginBottom: 8 },
   metaRow: { flexDirection: 'row', gap: 16, alignItems: 'center' },
   metaItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   metaText: { color: '#8E8E93', fontSize: 13 },
 
   // Severity Section
-  severityContainer: {
+  severityBarContainer: {
     backgroundColor: '#F2F2F7',
     borderRadius: 8,
     overflow: 'hidden',
@@ -832,7 +602,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginTop: 16,
   },
-  severityBar: {
+  severityBarFill: {
     height: '100%',
     position: 'absolute',
   },
@@ -869,7 +639,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
   },
   detailValue: {
-    color: '#1C1C1E',
+    color: '#11224e',
     fontSize: 14,
     fontWeight: '500',
   },
@@ -919,9 +689,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#11224e',
+    backgroundColor: '#FFFFFF',
     paddingVertical: 14,
     borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#f87b1b',
     gap: 8,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
@@ -930,12 +702,19 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   primaryButtonText: { 
-    color: '#FFFFFF',
+    color: '#f87b1b',
     fontWeight: '600',
     fontSize: 16
   },
   
   // Styles for the Update Modal (mostly unchanged but kept for completeness)
+  severityContainer: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E5E5EA',
+    borderRadius: 10,
+    padding: 12,
+  },
   severityHeader: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -960,7 +739,7 @@ const styles = StyleSheet.create({
   severityBadge: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16 },
   severityBadgeText: { fontSize: 12, fontWeight: '600', color: '#FFFFFF' },
   severitySlider: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 4 },
-  severityDot: { width: 22, height: 22, borderRadius: 11, backgroundColor: '#E5E5EA', borderWidth: 2, borderColor: 'transparent' },
+  severityDot: { width: 24, height: 24, borderRadius: 11, backgroundColor: '#E5E5EA', borderWidth: 2, borderColor: 'transparent'},
   severityDotActive: {},
   severityDotSelected: { borderColor: '#007AFF' },
   miniMap: { width: '100%', height: '100%' },
