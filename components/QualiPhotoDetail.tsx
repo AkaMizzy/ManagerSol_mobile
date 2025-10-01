@@ -21,9 +21,10 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
 type ChildPhotoCardProps = {
   child: QualiPhotoItem;
   onPress: () => void;
+  mode: 'grid' | 'list';
 };
 
-const ChildPhotoCard: React.FC<ChildPhotoCardProps> = ({ child, onPress }) => {
+const ChildPhotoCard: React.FC<ChildPhotoCardProps> = ({ child, onPress, mode }) => {
   const [isVisible, setIsVisible] = useState(true);
 
   const toggleVisibility = () => {
@@ -32,7 +33,7 @@ const ChildPhotoCard: React.FC<ChildPhotoCardProps> = ({ child, onPress }) => {
   };
 
   return (
-    <View style={styles.childGridItem}>
+    <View style={[styles.childGridItem, mode === 'list' && { width: '100%' }]}>
       <TouchableOpacity onPress={isVisible ? onPress : toggleVisibility}>
         {isVisible ? (
           <>
@@ -85,11 +86,13 @@ type QualiPhotoItemWithComment2 = QualiPhotoItem & {
   const [comments, setComments] = useState<Comment[]>([]);
   const [isLoadingComments, setIsLoadingComments] = useState(false);
   const [isActionsVisible, setActionsVisible] = useState(false);
+  const [layoutMode, setLayoutMode] = useState<'grid' | 'list'>('grid');
 
   useEffect(() => {
     setItem(initialItem || null);
     setSortOrder('desc'); // Reset sort order when item changes
     setActionsVisible(false);
+    setLayoutMode('grid');
   }, [initialItem]);
 
   useEffect(() => {
@@ -256,42 +259,177 @@ type QualiPhotoItemWithComment2 = QualiPhotoItem & {
     </>
    );
 
-   const renderDetailView = () => (
-    <>
-        <View style={styles.header}>
-          {item?.id_qualiphoto_parent ? (
-            <Pressable onPress={() => setItem(initialItem || null)} style={styles.closeBtn}>
-              <Ionicons name="arrow-back" size={24} color="#11224e" />
-            </Pressable>
-          ) : (
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Fermer les détails"
-              onPress={onClose}
-              style={styles.closeBtn}
-            >
-              <Ionicons name="arrow-back" size={24} color="#11224e" />
-            </Pressable>
-          )}
-          <View style={styles.headerTitles}>
-          {!!item && <Text numberOfLines={1} style={styles.subtitle}>{subtitle}</Text>}
-          {!!item?.title && <Text style={styles.title}>{item.title}</Text>}
-            
-          </View>
-          {item?.before === 1 ? (
-            <TouchableOpacity style={styles.headerAction} onPress={() => setChildModalVisible(true)}>
-              <Image source={cameraIcon} style={styles.headerActionIcon} />
-            </TouchableOpacity>
-          ) : (
-            <View style={{ width: 40 }} />
-          )}
-        </View>
+   const renderDetailView = () => {
+    if (!item) return null;
 
-         <ScrollView contentContainerStyle={styles.scrollContent} bounces>
-          {!!item && (
+    const header = (
+      <View style={styles.header}>
+        {item?.id_qualiphoto_parent ? (
+          <Pressable onPress={() => setItem(initialItem || null)} style={styles.closeBtn}>
+            <Ionicons name="arrow-back" size={28} color="#f87b1b" />
+          </Pressable>
+        ) : (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Fermer les détails"
+            onPress={onClose}
+            style={styles.closeBtn}
+          >
+            <Ionicons name="arrow-back" size={28} color="#f87b1b" />
+          </Pressable>
+        )}
+        <View style={styles.headerTitles}>
+        {!!item && <Text numberOfLines={1} style={styles.subtitle}>{subtitle}</Text>}
+        {!!item?.title && <Text style={styles.title}>{item.title}</Text>}
+          
+        </View>
+        {item?.before === 1 ? (
+          <TouchableOpacity style={styles.headerAction} onPress={() => setChildModalVisible(true)}>
+            <Image source={cameraIcon} style={styles.headerActionIcon} />
+          </TouchableOpacity>
+        ) : (
+          <View style={{ width: 40 }} />
+        )}
+      </View>
+    );
+
+    if (item?.id === initialItem?.id) {
+      // Original Item View: Fixed top, scrollable bottom
+      return (
+        <>
+          {header}
+          <View style={{ paddingHorizontal: 12, paddingTop: 12, paddingBottom: 12 }}>
+            <TouchableOpacity onPress={() => setImagePreviewVisible(true)} activeOpacity={0.9}>
+              <View style={styles.imageWrap}>
+                <Image source={{ uri: item.photo }} style={styles.image} />
+              </View>
+            </TouchableOpacity>
+            {hasActionsOrDescription && (
+              <TouchableOpacity
+                style={styles.toggleActionsButton}
+                onPress={() => setActionsVisible(v => !v)}
+                accessibilityLabel={isActionsVisible ? 'Masquer les actions' : 'Afficher les actions'}
+              >
+                <Ionicons name={isActionsVisible ? 'close' : 'ellipsis-horizontal'} size={24} color="#FFFFFF" />
+              </TouchableOpacity>
+            )}
+          </View>
+          <ScrollView bounces>
+            <View style={[styles.content, { paddingTop: 0 }]}>
+              <View style={styles.metaCard}>
+                {(item.user_name || item.date_taken) && (
+                  <View style={styles.inlineMetaRow}>
+                    <View style={styles.inlineMetaItem}>
+                      {item.user_name && (
+                        <>
+                          <Text style={styles.metaLabel}>Prise par</Text>
+                          <Text style={styles.metaValue} numberOfLines={1}>{`${item.user_name} ${item.user_lastname || ''}`.trim()}</Text>
+                        </>
+                      )}
+                    </View>
+                    <View style={styles.inlineMetaItem}>
+                      {item.date_taken && (
+                        <>
+                          <Text style={styles.metaLabel}>Date de prise</Text>
+                          <Text style={styles.metaValue} numberOfLines={1}>{formatDate(item.date_taken)}</Text>
+                        </>
+                      )}
+                    </View>
+                  </View>
+                )}
+              </View>
+              {isActionsVisible && (
+                <>
+                  {(item.voice_note || (item.latitude && item.longitude) || item.after === 1) && (
+                    <View style={styles.actionsContainer}>
+                      {item.voice_note && (
+                        <TouchableOpacity style={styles.actionButton} onPress={playSound}>
+                          <Ionicons name={isPlaying ? 'pause-circle' : 'play-circle'} size={32} color="#11224e" />
+                        </TouchableOpacity>
+                      )}
+                      {item.latitude && item.longitude && (
+                        <TouchableOpacity style={styles.actionButton} onPress={handleMapPress}>
+                          <Image source={mapIcon} style={styles.actionIcon} />
+                        </TouchableOpacity>
+                      )}
+                      {item.after === 1 && (
+                        <TouchableOpacity style={styles.actionButton} onPress={() => setCommentModalVisible(true)}>
+                          <Ionicons name="add-circle-outline" size={32} color="#11224e" />
+                        </TouchableOpacity>
+                      )}
+                    </View>
+                  )}
+                  {typeof item.commentaire === 'string' && item.commentaire.trim().length > 0 ? (
+                    <View style={styles.metaCard}>
+                      <MetaRow label="Description" value={item.commentaire} multiline />
+                    </View>
+                  ) : null}
+                </>
+              )}
+              {item.after === 1 && (comments.length > 0 || isLoadingComments) && (
+                <View style={styles.metaCard}>
+                  <Text style={styles.sectionTitle}>Commentaires</Text>
+                  {isLoadingComments && <ActivityIndicator style={{ marginVertical: 16 }} />}
+                  {comments.map((comment) => (
+                    <MetaRow
+                      key={comment.id}
+                      label={`De ${comment.user_name || 'Utilisateur'} le ${formatDate(comment.created_at)}`}
+                      value={comment.commentaire_text}
+                      multiline
+                    />
+                  ))}
+                </View>
+              )}
+              {item.before === 1 && (
+                <View style={styles.metaCard}>
+                  <View style={styles.childListHeader}>
+                    {children.length > 0 ? (
+                      <TouchableOpacity 
+                        style={styles.pageButton} 
+                        onPress={() => setLayoutMode(prev => prev === 'grid' ? 'list' : 'grid')}
+                      >
+                        <Text style={styles.pageButtonText}>{layoutMode === 'grid' ? '2' : '1'}</Text>
+                      </TouchableOpacity>
+                    ) : null}
+                    <Text style={styles.sectionTitle}>Évolution Travaux Prévus</Text>
+                    {children.length > 0 && (
+                      <TouchableOpacity
+                        style={styles.sortButton}
+                        onPress={() => setSortOrder(current => current === 'asc' ? 'desc' : 'asc')}
+                        accessibilityLabel={sortOrder === 'desc' ? 'Trier par ordre croissant' : 'Trier par ordre décroissant'}
+                      >
+                        <Ionicons name={sortOrder === 'desc' ? 'arrow-down' : 'arrow-up'} size={24} color="#f87b1b" />
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                  {isLoadingChildren && <Text>Chargement...</Text>}
+                  {!isLoadingChildren && children.length === 0 && item.before === 1 && (
+                    <Text style={styles.noChildrenText}>Aucune photo suivie n&apos;a encore été ajoutée.</Text>
+                  )}
+                  <View style={styles.childGridContainer}>
+                    {children.map((child) => (
+                      <ChildPhotoCard
+                        key={child.id}
+                        child={child}
+                        onPress={() => setItem(child)}
+                        mode={layoutMode}
+                      />
+                    ))}
+                  </View>
+                </View>
+              )}
+            </View>
+          </ScrollView>
+        </>
+      );
+    } else {
+      // Child Item View: Fully scrollable
+      return (
+        <>
+          {header}
+          <ScrollView bounces>
             <View style={styles.content}>
               <View style={styles.metaCard}>
-                
                 {(item.user_name || item.date_taken) && (
                   <View style={styles.inlineMetaRow}>
                     <View style={styles.inlineMetaItem}>
@@ -321,8 +459,8 @@ type QualiPhotoItemWithComment2 = QualiPhotoItem & {
                   </View>
                 </TouchableOpacity>
                 {hasActionsOrDescription && (
-                  <TouchableOpacity 
-                    style={styles.toggleActionsButton} 
+                  <TouchableOpacity
+                    style={styles.toggleActionsButton}
                     onPress={() => setActionsVisible(v => !v)}
                     accessibilityLabel={isActionsVisible ? 'Masquer les actions' : 'Afficher les actions'}
                   >
@@ -352,7 +490,6 @@ type QualiPhotoItemWithComment2 = QualiPhotoItem & {
                       )}
                     </View>
                   )}
-
                   {typeof item.commentaire === 'string' && item.commentaire.trim().length > 0 ? (
                     <View style={styles.metaCard}>
                       <MetaRow label="Description" value={item.commentaire} multiline />
@@ -361,63 +498,33 @@ type QualiPhotoItemWithComment2 = QualiPhotoItem & {
                 </>
               )}
 
-              {/* Comments Section */}
               {item.after === 1 && (comments.length > 0 || isLoadingComments) && (
                 <View style={styles.metaCard}>
                   <Text style={styles.sectionTitle}>Commentaires</Text>
                   {isLoadingComments && <ActivityIndicator style={{ marginVertical: 16 }} />}
                   {comments.map((comment) => (
-                    <MetaRow 
-                      key={comment.id} 
-                      label={`De ${comment.user_name || 'Utilisateur'} le ${formatDate(comment.created_at)}`} 
-                      value={comment.commentaire_text} 
-                      multiline 
+                    <MetaRow
+                      key={comment.id}
+                      label={`De ${comment.user_name || 'Utilisateur'} le ${formatDate(comment.created_at)}`}
+                      value={comment.commentaire_text}
+                      multiline
                     />
                   ))}
                 </View>
               )}
-              
-              {item.before === 1 && (
-                <View style={styles.metaCard}>
-                  <View style={styles.childListHeader}>
-                    <Text style={styles.sectionTitle}>Photos d&apos;évolution</Text>
-                    {children.length > 0 && (
-                      <TouchableOpacity 
-                        style={styles.sortButton} 
-                        onPress={() => setSortOrder(current => current === 'asc' ? 'desc' : 'asc')}
-                        accessibilityLabel={sortOrder === 'desc' ? 'Trier par ordre croissant' : 'Trier par ordre décroissant'}
-                      >
-                        <Ionicons name={sortOrder === 'desc' ? 'arrow-down' : 'arrow-up'} size={24} color="#11224e" />
-                      </TouchableOpacity>
-                    )}
-                  </View>
-                  {isLoadingChildren && <Text>Chargement...</Text>}
-                  {!isLoadingChildren && children.length === 0 && item.before === 1 && (
-                      <Text style={styles.noChildrenText}>Aucune photo suivie n&apos;a encore été ajoutée.</Text>
-                  )}
-                  <View style={styles.childGridContainer}>
-                    {children.map((child) => (
-                      <ChildPhotoCard
-                        key={child.id}
-                        child={child}
-                        onPress={() => setItem(child)}
-                      />
-                    ))}
-                  </View>
-                </View>
-              )}
+
               {item.id_qualiphoto_parent && (
-                  <TouchableOpacity style={styles.backToParentButton} onPress={() => setItem(initialItem || null)}>
-                      <Ionicons name="arrow-back" size={16} color="#11224e" />
-                      <Text style={styles.backToParentButtonText}>Retour à la photo originale</Text>
-                  </TouchableOpacity>
+                <TouchableOpacity style={styles.backToParentButton} onPress={() => setItem(initialItem || null)}>
+                  <Ionicons name="arrow-back" size={16} color="#f87b1b" />
+                  <Text style={styles.backToParentButtonText}>Retour à la photo originale</Text>
+                </TouchableOpacity>
               )}
             </View>
-          )}
-          
-        </ScrollView>
-    </>
-   );
+          </ScrollView>
+        </>
+      );
+    }
+   };
 
    const handleAddComment = async () => {
     if (!item || !token || !newComment.trim()) {
@@ -589,13 +696,14 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#8E8E93',
   },
-  scrollContent: {
-    paddingTop: 8,
-    paddingBottom: Platform.OS === 'ios' ? 24 : 16,
-  },
+  scrollContent: {},
   content: {
     paddingHorizontal: 12,
     paddingTop: 12,
+    paddingBottom: 24,
+    gap: 12,
+  },
+  staticContent: {
     gap: 12,
   },
   imageWrap: {
@@ -720,8 +828,9 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#1e293b',
+    color: '#f87b1b',
     marginBottom: 8,
+
   },
   childListContainer: {
     marginTop: 8,
@@ -757,12 +866,6 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: '#6b7280',
     marginRight: 8,
-  },
-  childGridContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-    marginTop: 8,
   },
   childGridItem: {
     width: '49%',
@@ -832,7 +935,7 @@ const styles = StyleSheet.create({
       marginTop: 8,
   },
   backToParentButtonText: {
-      color: '#11224e',
+      color: '#f87b1b',
       fontWeight: '600',
   },
   inlineMetaRow: {
@@ -941,7 +1044,35 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   sortButton: {
-    padding: 4,
+    width: 32,
+    height: 32,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  pageButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#f87b1b',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  pageButtonText: {
+    color: 'white',
+    fontWeight: 'bold',
+    fontSize: 14,
+  },
+  childList: {
+    marginTop: 8,
+  },
+  childListColumnWrapper: {
+    justifyContent: 'space-between',
+  },
+  childGridContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    marginTop: 8,
   },
 });
 
