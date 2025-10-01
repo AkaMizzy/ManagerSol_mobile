@@ -10,7 +10,7 @@ import { CreateChildQualiPhotoForm } from './CreateChildQualiPhotoModal';
 import { useAuth } from '@/contexts/AuthContext';
 import AppHeader from './AppHeader';
 
-const cameraIcon = require('@/assets/icons/camera.png');
+const cameraIcon = require('@/assets/icons/camera.gif');
 const mapIcon = require('@/assets/icons/map.png');
 
 
@@ -84,10 +84,12 @@ type QualiPhotoItemWithComment2 = QualiPhotoItem & {
   const [isSubmittingComment, setIsSubmittingComment] = useState(false);
   const [comments, setComments] = useState<Comment[]>([]);
   const [isLoadingComments, setIsLoadingComments] = useState(false);
+  const [isActionsVisible, setActionsVisible] = useState(false);
 
   useEffect(() => {
     setItem(initialItem || null);
     setSortOrder('desc'); // Reset sort order when item changes
+    setActionsVisible(false);
   }, [initialItem]);
 
   useEffect(() => {
@@ -169,6 +171,7 @@ type QualiPhotoItemWithComment2 = QualiPhotoItem & {
       setSound(null);
       setIsPlaying(false);
       setImagePreviewVisible(false);
+      setActionsVisible(false);
     }
   }, [visible, sound]);
 
@@ -190,6 +193,16 @@ type QualiPhotoItemWithComment2 = QualiPhotoItem & {
             .finally(() => setIsLoadingChildren(false));
     }
   };
+
+  const hasActionsOrDescription = useMemo(() => {
+    if (!item) return false;
+    const hasActions = item.voice_note || 
+                       (item.latitude && item.longitude) || 
+                       (item.before === 1 && children.length > 0) || 
+                       item.after === 1;
+    const hasDescription = typeof item.commentaire === 'string' && item.commentaire.trim().length > 0;
+    return hasActions || hasDescription;
+  }, [item, children]);
 
   const handleMapPress = () => {
     if (!item?.latitude || !item.longitude) return;
@@ -261,10 +274,17 @@ type QualiPhotoItemWithComment2 = QualiPhotoItem & {
             </Pressable>
           )}
           <View style={styles.headerTitles}>
-            {!!item?.title && <Text style={styles.title}>{item.title}</Text>}
-            {!!item && <Text numberOfLines={1} style={styles.subtitle}>{subtitle}</Text>}
+          {!!item && <Text numberOfLines={1} style={styles.subtitle}>{subtitle}</Text>}
+          {!!item?.title && <Text style={styles.title}>{item.title}</Text>}
+            
           </View>
-          <View style={{ width: 40 }} />
+          {item?.before === 1 ? (
+            <TouchableOpacity style={styles.headerAction} onPress={() => setChildModalVisible(true)}>
+              <Image source={cameraIcon} style={styles.headerActionIcon} />
+            </TouchableOpacity>
+          ) : (
+            <View style={{ width: 40 }} />
+          )}
         </View>
 
          <ScrollView contentContainerStyle={styles.scrollContent} bounces>
@@ -292,49 +312,53 @@ type QualiPhotoItemWithComment2 = QualiPhotoItem & {
                     </View>
                   </View>
                 )}
-
-                {typeof item.commentaire === 'string' && item.commentaire.trim().length > 0 ? (
-                  <MetaRow label="Description" value={item.commentaire} multiline />
-                ) : null}
               </View>
-              <TouchableOpacity onPress={() => setImagePreviewVisible(true)} activeOpacity={0.9}>
-                <View style={styles.imageWrap}>
-                  <Image source={{ uri: item.photo }} style={styles.image} />
-                </View>
-              </TouchableOpacity>
 
-              {(item.voice_note || item.before === 1 || (item.latitude && item.longitude)) && (
-                <View style={styles.actionsContainer}>
-                  {item.voice_note && (
-                    <TouchableOpacity style={styles.actionButton} onPress={playSound}>
-                      <Ionicons name={isPlaying ? 'pause-circle' : 'play-circle'} size={32} color="#11224e" />
-                    </TouchableOpacity>
+              <View>
+                <TouchableOpacity onPress={() => setImagePreviewVisible(true)} activeOpacity={0.9}>
+                  <View style={styles.imageWrap}>
+                    <Image source={{ uri: item.photo }} style={styles.image} />
+                  </View>
+                </TouchableOpacity>
+                {hasActionsOrDescription && (
+                  <TouchableOpacity 
+                    style={styles.toggleActionsButton} 
+                    onPress={() => setActionsVisible(v => !v)}
+                    accessibilityLabel={isActionsVisible ? 'Masquer les actions' : 'Afficher les actions'}
+                  >
+                    <Ionicons name={isActionsVisible ? 'close' : 'ellipsis-horizontal'} size={24} color="#FFFFFF" />
+                  </TouchableOpacity>
+                )}
+              </View>
+
+              {isActionsVisible && (
+                <>
+                  {(item.voice_note || (item.latitude && item.longitude) || item.after === 1) && (
+                    <View style={styles.actionsContainer}>
+                      {item.voice_note && (
+                        <TouchableOpacity style={styles.actionButton} onPress={playSound}>
+                          <Ionicons name={isPlaying ? 'pause-circle' : 'play-circle'} size={32} color="#11224e" />
+                        </TouchableOpacity>
+                      )}
+                      {item.latitude && item.longitude && (
+                        <TouchableOpacity style={styles.actionButton} onPress={handleMapPress}>
+                          <Image source={mapIcon} style={styles.actionIcon} />
+                        </TouchableOpacity>
+                      )}
+                      {item.after === 1 && (
+                        <TouchableOpacity style={styles.actionButton} onPress={() => setCommentModalVisible(true)}>
+                          <Ionicons name="add-circle-outline" size={32} color="#11224e" />
+                        </TouchableOpacity>
+                      )}
+                    </View>
                   )}
-                  {item.before === 1 && (
-                    <TouchableOpacity style={styles.actionButton} onPress={() => setChildModalVisible(true)}>
-                      <Image source={cameraIcon} style={styles.actionIcon} />
-                    </TouchableOpacity>
-                  )}
-                  {item.latitude && item.longitude && (
-                    <TouchableOpacity style={styles.actionButton} onPress={handleMapPress}>
-                      <Image source={mapIcon} style={styles.actionIcon} />
-                    </TouchableOpacity>
-                  )}
-                  {item.before === 1 && children.length > 0 && (
-                    <TouchableOpacity 
-                      style={styles.actionButton} 
-                      onPress={() => setSortOrder(current => current === 'asc' ? 'desc' : 'asc')}
-                      accessibilityLabel={sortOrder === 'desc' ? 'Trier par ordre croissant' : 'Trier par ordre décroissant'}
-                    >
-                      <Ionicons name={sortOrder === 'desc' ? 'arrow-down' : 'arrow-up'} size={32} color="#11224e" />
-                    </TouchableOpacity>
-                  )}
-                  {item.after === 1 && (
-                    <TouchableOpacity style={styles.actionButton} onPress={() => setCommentModalVisible(true)}>
-                      <Ionicons name="add-circle-outline" size={32} color="#11224e" />
-                    </TouchableOpacity>
-                  )}
-                </View>
+
+                  {typeof item.commentaire === 'string' && item.commentaire.trim().length > 0 ? (
+                    <View style={styles.metaCard}>
+                      <MetaRow label="Description" value={item.commentaire} multiline />
+                    </View>
+                  ) : null}
+                </>
               )}
 
               {/* Comments Section */}
@@ -355,6 +379,18 @@ type QualiPhotoItemWithComment2 = QualiPhotoItem & {
               
               {item.before === 1 && (
                 <View style={styles.metaCard}>
+                  <View style={styles.childListHeader}>
+                    <Text style={styles.sectionTitle}>Photos d&apos;évolution</Text>
+                    {children.length > 0 && (
+                      <TouchableOpacity 
+                        style={styles.sortButton} 
+                        onPress={() => setSortOrder(current => current === 'asc' ? 'desc' : 'asc')}
+                        accessibilityLabel={sortOrder === 'desc' ? 'Trier par ordre croissant' : 'Trier par ordre décroissant'}
+                      >
+                        <Ionicons name={sortOrder === 'desc' ? 'arrow-down' : 'arrow-up'} size={24} color="#11224e" />
+                      </TouchableOpacity>
+                    )}
+                  </View>
                   {isLoadingChildren && <Text>Chargement...</Text>}
                   {!isLoadingChildren && children.length === 0 && item.before === 1 && (
                       <Text style={styles.noChildrenText}>Aucune photo suivie n&apos;a encore été ajoutée.</Text>
@@ -533,6 +569,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  headerAction: {
+    width: 40,
+    height: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  headerActionIcon: {
+    width: 50,
+    height: 50,
+  },
   title: {
     fontSize: 16,
     fontWeight: '700',
@@ -558,6 +604,18 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#f87b1b',
     overflow: 'hidden',
+  },
+  toggleActionsButton: {
+    position: 'absolute',
+    bottom: 12,
+    right: 12,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1,
   },
   image: {
     width: '100%',
@@ -829,7 +887,7 @@ const styles = StyleSheet.create({
   commentInput: {
     width: '100%',
     height: 100,
-    borderColor: '#ccc',
+    borderColor: '#f87b1b',
     borderWidth: 1,
     borderRadius: 5,
     padding: 10,
@@ -849,7 +907,7 @@ const styles = StyleSheet.create({
     marginHorizontal: 5,
   },
   commentModalSaveButton: {
-    backgroundColor: '#11224e',
+    backgroundColor: '#f87b1b',
   },
   commentModalButtonText: {
     fontSize: 16,
@@ -875,6 +933,15 @@ const styles = StyleSheet.create({
     marginTop: 4,
     color: '#9ca3af',
     fontSize: 12,
+  },
+  childListHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  sortButton: {
+    padding: 4,
   },
 });
 

@@ -5,7 +5,6 @@ import { useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useState } from 'react';
 import {
   Alert,
-  Image,
   LayoutAnimation,
   Pressable,
   ScrollView,
@@ -18,7 +17,6 @@ import AppHeader from '../../components/AppHeader';
 import CalendarComp from '../../components/CalendarComp';
 import CreateCalendarEventModal from '../../components/CreateCalendarEventModal';
 import DayEventsModal from '../../components/DayEventsModal';
-import RecentQualiphotos from '../../components/RecentQualiphotos';
 import API_CONFIG from '../config/api';
 
 export default function DashboardScreen() {
@@ -33,7 +31,7 @@ export default function DashboardScreen() {
   const [todayActivities, setTodayActivities] = useState<any[]>([]);
   const [overdueActivities, setOverdueActivities] = useState<any[]>([]);
   const [upcomingActivities, setUpcomingActivities] = useState<any[]>([]);
-  const [expandedSection, setExpandedSection] = useState<string | null>(null);
+  const [expandedSection, setExpandedSection] = useState<string | null>('overdue');
 
   useEffect(() => {
     (async () => {
@@ -244,29 +242,8 @@ export default function DashboardScreen() {
           }}
         />
 
-        {/* Recent Qualiphotos */}
-        <RecentQualiphotos />
-
         {/* Recent Activity */}
         <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <View style={styles.sectionTitleContainer}>
-              <Image
-                source={require('../../assets/icons/action_corrective.png')}
-                style={styles.sectionTitleIcon}
-                resizeMode="contain"
-              />
-              <Pressable
-                style={styles.tasksButton}
-                onPress={() => router.push('/(tabs)/tasks')}
-                accessibilityRole="button"
-                accessibilityLabel="Accéder aux tâches"
-              >
-                <Text style={styles.tasksButtonText}>Activités</Text>
-              </Pressable>
-            </View>
-          </View>
-
           {/* Activity Tabs */}
           <View style={styles.activityTabsContainer}>
             <Pressable
@@ -274,7 +251,7 @@ export default function DashboardScreen() {
               style={[styles.activityTab, expandedSection === 'overdue' && styles.activeTab]}
             >
               <Text style={[styles.activityTabText, { color: '#FF3B30' }]}>
-                En retard ({overdueActivities.length})
+                En Retard ({overdueActivities.length})
               </Text>
             </Pressable>
             <Pressable
@@ -290,7 +267,7 @@ export default function DashboardScreen() {
               style={[styles.activityTab, expandedSection === 'upcoming' && styles.activeTab]}
             >
               <Text style={[styles.activityTabText, { color: '#007AFF' }]}>
-                À venir ({upcomingActivities.length})
+                À Venir ({upcomingActivities.length})
               </Text>
             </Pressable>
           </View>
@@ -301,22 +278,26 @@ export default function DashboardScreen() {
               <View style={styles.activityContainer}>
                 {overdueActivities.length > 0 ? (
                   overdueActivities.map((activity) => (
-                    <View key={activity.id} style={styles.activityItem}>
+                    <Pressable
+                      key={activity.id}
+                      style={styles.activityItem}
+                      onPress={() => router.push('/(tabs)/tasks')}
+                    >
                       <View style={styles.activityIcon}>
                         <Ionicons name="warning" size={16} color="#FF3B30" />
                       </View>
                       <View style={styles.activityContent}>
                         <Text style={[styles.activityText, { color: '#FF3B30' }]}>{activity.title || 'Activité sans titre'}</Text>
-                        <Text style={styles.activityTime}>
+                        <Text style={[styles.activityTime, { color: '#FF3B30' }]}>
                           {formatTime(activity.date_planification)} • En retard
                           {activity.declaration_title && ` • ${activity.declaration_title}`}
                         </Text>
                       </View>
-                    </View>
+                    </Pressable>
                   ))
                 ) : (
                   <View style={styles.activityItem}>
-                    <Text style={styles.activityText}>Aucune activité en retard</Text>
+                    <Text style={[styles.activityText, { color: '#FF3B30' }]}>Aucune activité en retard</Text>
                   </View>
                 )}
               </View>
@@ -325,22 +306,26 @@ export default function DashboardScreen() {
               <View style={styles.activityContainer}>
                 {todayActivities.length > 0 ? (
                   todayActivities.map((activity) => (
-                    <View key={activity.id} style={styles.activityItem}>
+                    <Pressable
+                      key={activity.id}
+                      style={styles.activityItem}
+                      onPress={() => router.push('/(tabs)/tasks')}
+                    >
                       <View style={styles.activityIcon}>
                         <Ionicons name="time" size={16} color="#f87b1b" />
                       </View>
                       <View style={styles.activityContent}>
                         <Text style={[styles.activityText, { color: '#f87b1b' }]}>{activity.title || 'Activité sans titre'}</Text>
-                        <Text style={styles.activityTime}>
+                        <Text style={[styles.activityTime, { color: '#f87b1b' }]}>
                           {formatTime(activity.date_planification)} • Aujourd&apos;hui
                           {activity.declaration_title && ` • ${activity.declaration_title}`}
                         </Text>
                       </View>
-                    </View>
+                    </Pressable>
                   ))
                 ) : (
                   <View style={styles.activityItem}>
-                    <Text style={styles.activityText}>Aucune activité prévue aujourd&apos;hui</Text>
+                    <Text style={[styles.activityText, { color: '#f87b1b' }]}>Aucune activité prévue aujourd&apos;hui</Text>
                   </View>
                 )}
               </View>
@@ -349,22 +334,26 @@ export default function DashboardScreen() {
               <View style={styles.activityContainer}>
                 {upcomingActivities.length > 0 ? (
                   upcomingActivities.map((activity) => (
-                    <View key={activity.id} style={styles.activityItem}>
+                    <Pressable
+                      key={activity.id}
+                      style={styles.activityItem}
+                      onPress={() => router.push('/(tabs)/tasks')}
+                    >
                       <View style={styles.activityIcon}>
                         <Ionicons name="calendar" size={16} color="#007AFF" />
                       </View>
                       <View style={styles.activityContent}>
                         <Text style={[styles.activityText, { color: '#007AFF' }]}>{activity.title || 'Activité sans titre'}</Text>
-                        <Text style={styles.activityTime}>
+                        <Text style={[styles.activityTime, { color: '#007AFF' }]}>
                           {formatTime(activity.date_planification)} • À venir
                           {activity.declaration_title && ` • ${activity.declaration_title}`}
                         </Text>
                       </View>
-                    </View>
+                    </Pressable>
                   ))
                 ) : (
                   <View style={styles.activityItem}>
-                    <Text style={styles.activityText}>Aucune activité à venir</Text>
+                    <Text style={[styles.activityText, { color: '#007AFF' }]}>Aucune activité à venir</Text>
                   </View>
                 )}
               </View>
@@ -500,8 +489,9 @@ const styles = StyleSheet.create({
   sectionTitleContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    justifyContent: 'flex-start',
     width: '100%',
+    gap: 12,
   },
   sectionTitleIcon: {
     width: 30,

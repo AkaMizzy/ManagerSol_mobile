@@ -305,8 +305,7 @@ export default function CreateQualiPhotoModal({ visible, onClose, onSuccess, ini
               <Ionicons name="close" size={24} color="#6b7280" />
             </TouchableOpacity>
             <View style={styles.headerCenter}>
-              <Text style={styles.headerTitle}>Ajouter une photo Qualité</Text>
-              <Text style={styles.headerSubtitle}>Sélectionnez le projet, la zone et ajoutez une photo</Text>
+              <Text style={styles.headerTitle}>Qualiphotos</Text>
             </View>
             <View style={styles.placeholder} />
           </View>
@@ -413,14 +412,21 @@ export default function CreateQualiPhotoModal({ visible, onClose, onSuccess, ini
             
             {/* Media Card */}
             <View style={styles.card}>
-              <View style={styles.cardHeader}>
-                <View style={styles.cardIconWrap}><Ionicons name="camera" size={18} color="#11224e" /></View>
-                <View style={styles.cardHeaderText}>
-                  <Text style={styles.cardTitle}>Média</Text>
-                  <Text style={styles.cardHint}>Ajouter une photo et une note vocale optionnelle</Text>
-                </View>
+              <View style={[styles.inputWrap, { marginBottom: 16 }]}>
+                <Ionicons name="text-outline" size={16} color="#6b7280" />
+                <TextInput
+                  placeholder="Titre"
+                  placeholderTextColor="#9ca3af"
+                  value={title}
+                  onChangeText={setTitle}
+                  style={styles.input}
+                  onFocus={() => {
+                    setTimeout(() => {
+                      scrollViewRef.current?.scrollToEnd({ animated: true });
+                    }, 100);
+                  }}
+                />
               </View>
-
               {/* Photo Input Area */}
               {photo ? (
                 <View style={styles.imagePreviewContainer}>
@@ -451,92 +457,61 @@ export default function CreateQualiPhotoModal({ visible, onClose, onSuccess, ini
                     </TouchableOpacity>
                   </View>
                 ) : (
-                  <>
-                    {voiceNote && (
+                  <View style={styles.voiceActionsContainer}>
+                    {voiceNote ? (
                       <View style={styles.audioPlayerWrap}>
                         <TouchableOpacity style={styles.playButton} onPress={playSound}>
-                          <Ionicons name={isPlaying ? 'pause-circle' : 'play-circle'} size={32} color="#11224e" />
+                          <Ionicons name={isPlaying ? 'pause-circle' : 'play-circle'} size={28} color="#11224e" />
                         </TouchableOpacity>
-                        <Text style={styles.audioMeta}>Note vocale enregistrée.</Text>
                         <TouchableOpacity style={styles.deleteButton} onPress={resetVoiceNote}>
                           <Ionicons name="trash-outline" size={20} color="#dc2626" />
                         </TouchableOpacity>
                       </View>
-                    )}
-
-                    <View style={[styles.voiceActionsContainer, voiceNote && { marginTop: 8 }]}>
-                      {!voiceNote && (
-                        <TouchableOpacity style={styles.voiceRecordButton} onPress={startRecording}>
-                          <Ionicons name="mic-outline" size={18} color="#11224e" />
-                          <Text style={styles.voiceRecordButtonText}>Ajouter une note vocale</Text>
-                        </TouchableOpacity>
-                      )}
-                      <TouchableOpacity
-                        style={[
-                          styles.voiceRecordButton,
-                          styles.transcribeButton,
-                          (!voiceNote || isTranscribing) && styles.buttonDisabled,
-                          voiceNote && { flex: 1 },
-                        ]}
-                        onPress={handleTranscribe}
-                        disabled={!voiceNote || isTranscribing}
-                      >
-                        {isTranscribing ? (
-                          <>
-                            <ActivityIndicator size="small" color="#11224e" />
-                            <Text style={styles.voiceRecordButtonText}>Transcription...</Text>
-                          </>
-                        ) : (
-                          <>
-                            <Ionicons name="document-text-outline" size={18} color="#11224e" />
-                            <Text style={styles.voiceRecordButtonText}>Transcrire</Text>
-                          </>
-                        )}
+                    ) : (
+                      <TouchableOpacity style={styles.voiceRecordButton} onPress={startRecording}>
+                        <View style={styles.buttonContentWrapper}>
+                          <Ionicons name="mic-outline" size={24} color="#11224e" />
+                        </View>
                       </TouchableOpacity>
-                    </View>
-                  </>
+                    )}
+                    <TouchableOpacity
+                      style={[
+                        styles.voiceRecordButton,
+                        styles.transcribeButton,
+                        (!voiceNote || isTranscribing) && styles.buttonDisabled,
+                      ]}
+                      onPress={handleTranscribe}
+                      disabled={!voiceNote || isTranscribing}
+                    >
+                      {isTranscribing ? (
+                        <ActivityIndicator size="small" color="#11224e" />
+                      ) : (
+                        <View style={styles.buttonContentWrapper}>
+                          <Ionicons name="volume-high-outline" size={25} color="#11224e" />
+                          <Ionicons name="arrow-forward-circle-outline" size={20} color="#11224e" />
+                          <Ionicons name="document-text-outline" size={20} color="#11224e" />
+                        </View>
+                      )}
+                    </TouchableOpacity>
+                  </View>
                 )}
-              </View>
-            </View>
-
-            {/* Optional Details */}
-            <View style={styles.card}>
-              <View style={styles.cardHeader}>
-                <View style={styles.cardIconWrap}><Ionicons name="calendar" size={18} color="#11224e" /></View>
-                <View style={styles.cardHeaderText}><Text style={styles.cardTitle}>Détails</Text><Text style={styles.cardHint}>Vous pouvez ajouter un titre et une description</Text></View>
-              </View>
-              <View style={{ gap: 10 }}>
-                <View style={styles.inputWrap}>
-                  <Ionicons name="text-outline" size={16} color="#6b7280" />
-                  <TextInput
-                    placeholder="Titre"
-                    placeholderTextColor="#9ca3af"
-                    value={title}
-                    onChangeText={setTitle}
-                    style={styles.input}
-                    onFocus={() => {
-                      setTimeout(() => {
-                        scrollViewRef.current?.scrollToEnd({ animated: true });
-                      }, 100);
-                    }}
-                  />
-                </View>
-                
-                <View style={[styles.inputWrap, { alignItems: 'flex-start' }]}>
-                  <Ionicons name="chatbubble-ellipses-outline" size={16} color="#6b7280" style={{ marginTop: 4 }} />
-                  <TextInput
-                    placeholder="Description"
-                    placeholderTextColor="#9ca3af"
-                    value={comment}
-                    onChangeText={setComment}
-                    style={[styles.input, { height: 80 }]}
-                    multiline
-                    onFocus={() => {
-                      setTimeout(() => {
-                        scrollViewRef.current?.scrollToEnd({ animated: true });
-                      }, 100);
-                    }}
-                  />
+                <View style={{ marginTop: 16 }}>
+                  <View style={[styles.inputWrap, { alignItems: 'flex-start' }]}>
+                    <Ionicons name="chatbubble-ellipses-outline" size={16} color="#6b7280" style={{ marginTop: 4 }} />
+                    <TextInput
+                      placeholder="Description"
+                      placeholderTextColor="#9ca3af"
+                      value={comment}
+                      onChangeText={setComment}
+                      style={[styles.input, { height: 80 }]}
+                      multiline
+                      onFocus={() => {
+                        setTimeout(() => {
+                          scrollViewRef.current?.scrollToEnd({ animated: true });
+                        }, 100);
+                      }}
+                    />
+                  </View>
                 </View>
               </View>
             </View>
@@ -580,7 +555,6 @@ export default function CreateQualiPhotoModal({ visible, onClose, onSuccess, ini
     </Modal>
   );
 }
-
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F8FAFC' },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12, backgroundColor: '#FFFFFF', borderBottomWidth: 1, borderBottomColor: '#e5e7eb' },
@@ -602,6 +576,13 @@ const styles = StyleSheet.create({
   pill: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#ecfdf5', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 999 },
   pillText: { fontSize: 12, color: '#065f46', fontWeight: '600' },
   buttonDisabled: { opacity: 0.5, backgroundColor: '#e5e7eb' },
+  buttonContentWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    flex: 1,
+  },
   contextDisplay: {
     backgroundColor: '#f9fafb',
     borderRadius: 12,
@@ -624,6 +605,7 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     color: '#374151',
   },
+  
   separator: {
     width: 1,
     height: '60%',
@@ -708,15 +690,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    paddingVertical: 12,
+    height: 50,
     backgroundColor: '#f1f5f9',
     borderRadius: 10,
-    gap: 8,
+    borderWidth: 1,
+    borderColor: '#f87b1b'
   },
-  transcribeButton: {
-    flex: 0,
-    paddingHorizontal: 16,
-  },
+  transcribeButton: {},
   voiceRecordButtonText: {
     color: '#11224e',
     fontWeight: '600',
@@ -733,9 +713,8 @@ const styles = StyleSheet.create({
   recordingWrap: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#fef2f2', padding: 12, borderRadius: 10 },
   recordingText: { color: '#dc2626', fontWeight: '600' },
   stopButton: { padding: 4 },
-  audioPlayerWrap: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: '#f1f5f9', padding: 12, borderRadius: 10 },
+  audioPlayerWrap: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#f1f5f9', paddingHorizontal: 12, height: 50, borderRadius: 10, flex: 1, borderWidth: 1, borderColor: '#f87b1b' },
   playButton: {},
-  audioMeta: { flex: 1, color: '#1e293b' },
   deleteButton: {},
   coordText: { fontSize: 14, color: '#4b5563', textAlign: 'center', marginBottom: 8 },
 });

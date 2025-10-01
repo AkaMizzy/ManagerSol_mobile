@@ -29,7 +29,6 @@ export default function QualiPhotoGalleryScreen() {
   const { user, token } = useAuth();
   const [photos, setPhotos] = useState<QualiPhotoItem[]>([]);
   const [limit] = useState(10);
-   const [total, setTotal] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [projects, setProjects] = useState<QualiProject[]>([]);
@@ -62,14 +61,13 @@ export default function QualiPhotoGalleryScreen() {
     setErrorMessage(null);
     const requestId = ++requestIdRef.current;
     try {
-      const { items, total: t } = await qualiphotoService.list({
+      const { items } = await qualiphotoService.list({
         id_project: selectedZone ? undefined : selectedProject,
         id_zone: selectedZone || undefined,
         page: 1,
         limit,
       }, token);
       if (requestId !== requestIdRef.current) return;
-      setTotal(t);
       setPhotos(items);
     } catch (e) {
       if (requestId === requestIdRef.current) {
@@ -161,7 +159,16 @@ export default function QualiPhotoGalleryScreen() {
           <Text style={styles.metaText} numberOfLines={1}>{item.project_title || ''}</Text>
           {item.zone_title ? <Text style={styles.metaSubText} numberOfLines={1}>{item.zone_title}</Text> : null}
         </View>
-        {item.date_taken ? <Text style={styles.metaDate}>{formatDateForGrid(item.date_taken)}</Text> : null}
+        {item.title ? (
+          <Text style={styles.metaTitle} numberOfLines={1}>
+            {item.title}
+          </Text>
+        ) : null}
+        {item.date_taken ? (
+          <Text style={styles.metaDate}>
+            {formatDateForGrid(item.date_taken)}
+          </Text>
+        ) : null}
       </View>
     </View>
   ), []);
@@ -526,11 +533,18 @@ const styles = StyleSheet.create({
     fontSize: 12,
     flexShrink: 1,
   },
+  metaTitle: {
+    color: '#374151',
+    fontSize: 12,
+    fontWeight: '600',
+    marginTop: 4,
+  },
   metaDate: {
     color: '#9ca3af',
     fontSize: 11,
     fontWeight: '500',
-    marginTop: 4,
+    textAlign: 'center',
+    marginTop: 2,
   },
 });
 

@@ -34,7 +34,6 @@ export default function TaskScreen() {
   const [selectedAction, setSelectedAction] = useState<DeclarationAction | null>(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   
-  // Edit form states
   const [showEditForm, setShowEditForm] = useState(false);
   const [editForm, setEditForm] = useState<CreateActionData>({});
   const [editPhoto, setEditPhoto] = useState<CreateActionData['photo']>();
@@ -43,12 +42,10 @@ export default function TaskScreen() {
   const [showEditZoneDropdown, setShowEditZoneDropdown] = useState(false);
   const [showEditUserDropdown, setShowEditUserDropdown] = useState(false);
   
-  // Company users and zones
   const [companyUsers, setCompanyUsers] = useState<CompanyUser[]>([]);
   const [zones, setZones] = useState<Zone[]>([]);
   const [loadingUsers, setLoadingUsers] = useState(false);
   
-  // Sub-actions state
   const [expandedActions, setExpandedActions] = useState<Set<string>>(new Set());
   const [subActionsMap, setSubActionsMap] = useState<Record<string, DeclarationAction[]>>({});
   const [loadingSubActions, setLoadingSubActions] = useState<Set<string>>(new Set());
