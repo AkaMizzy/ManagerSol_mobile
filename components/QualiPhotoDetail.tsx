@@ -378,6 +378,7 @@ type QualiPhotoItemWithComment2 = QualiPhotoItem & {
               )}
             </View>
           )}
+          
         </ScrollView>
     </>
    );
@@ -810,6 +811,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    borderWidth: 2,
+    borderColor: '#f87b1b',
   },
   commentModalContent: {
     width: '80%',

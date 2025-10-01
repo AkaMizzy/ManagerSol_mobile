@@ -6,6 +6,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import {
   Alert,
   Image,
+  LayoutAnimation,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -32,6 +33,7 @@ export default function DashboardScreen() {
   const [todayActivities, setTodayActivities] = useState<any[]>([]);
   const [overdueActivities, setOverdueActivities] = useState<any[]>([]);
   const [upcomingActivities, setUpcomingActivities] = useState<any[]>([]);
+  const [expandedSection, setExpandedSection] = useState<string | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -81,6 +83,11 @@ export default function DashboardScreen() {
     })();
   }, [token]);
 
+  const toggleSection = (section: string) => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    setExpandedSection(expandedSection === section ? null : section);
+  };
+
   // Helper function to format time
   const formatTime = (dateString: string) => {
     if (!dateString) return '';
@@ -116,10 +123,9 @@ export default function DashboardScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
+      {/* Header */}
+      <AppHeader user={user || undefined} />
       <ScrollView style={styles.scrollView}>
-        {/* Header */}
-        <AppHeader user={user || undefined} />
-
         {/* Quick Stats (framed single row)
         <View style={styles.kpiContainer}>
           <View style={styles.kpiRow}>
@@ -167,15 +173,14 @@ export default function DashboardScreen() {
 
         {/* Create Event CTA */}
         <View style={{ paddingHorizontal: 20, marginTop: 12 }}>
-          <View style={[styles.quickActionsFrame, { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }]}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-around' }}>
             <Pressable
               onPress={() => router.push('/(tabs)/qualiphoto')}
               style={styles.quickAction}
               accessibilityRole="button"
               accessibilityLabel="Ouvrir QualiPhoto"
             >
-              <Ionicons name="camera" size={20} color="#f87b1b" />
-              <Text style={styles.linkButton}>QualiPhotos</Text>
+              <Ionicons name="camera" size={24} color="#f87b1b" />
             </Pressable>
 
             <Pressable
@@ -184,16 +189,16 @@ export default function DashboardScreen() {
               accessibilityRole="button"
               accessibilityLabel="Ouvrir Planning"
             >
-              <Ionicons name="calendar" size={20} color="#f87b1b" />
-              <Text style={styles.linkButton}>Planning</Text>
+              <Ionicons name="calendar" size={24} color="#f87b1b" />
             </Pressable>
 
             <Pressable
               onPress={() => setEventModalVisible(true)}
+              style={styles.quickAction}
               accessibilityRole="button"
               accessibilityLabel="Ajouter activité"
             >
-              <Text style={styles.linkButton}>Ajouter activité</Text>
+              <Ionicons name="add-circle" size={24} color="#f87b1b" />
             </Pressable>
           </View>
         </View>
@@ -261,113 +266,107 @@ export default function DashboardScreen() {
               </Pressable>
             </View>
           </View>
-          <Text style={styles.sectionTitle1}>Activités de la journée en retard ({overdueActivities.length})</Text>
-          <View style={styles.activityContainer1}>
-            {overdueActivities.length > 0 ? (
-              overdueActivities.map((activity, index) => {
-                const statusInfo = getStatusInfo(activity.status, 'overdue');
-                return (
-                  <View key={activity.id || index} style={styles.activityItem}>
-                    <View style={styles.activityIcon}>
-                      <Ionicons name={statusInfo.icon as any} size={16} color={statusInfo.color} />
-                    </View>
-                    <View style={styles.activityContent}>
-                      <Text style={styles.activityText}>
-                        {activity.title || 'Activité sans titre'}
-                      </Text>
-                      <Text style={styles.activityTime}>
-                        {formatTime(activity.date_planification)} • {statusInfo.text}
-                        {activity.declaration_title && ` • ${activity.declaration_title}`}
-                      </Text>
-                    </View>
-                  </View>
-                );
-              })
-            ) : (
-              <View style={styles.activityItem}>
-                <View style={styles.activityIcon}>
-                  <Ionicons name="calendar-outline" size={16} color="#8E8E93" />
-                </View>
-                <View style={styles.activityContent}>
-                  <Text style={styles.activityText}>Aucune activité planifiée pour aujourd&apos;hui</Text>
-                  <Text style={styles.activityTime}>Vérifiez vos tâches ou créez de nouvelles activités</Text>
-                </View>
-              </View>
-            )}
-          </View>
-        </View>
 
-        {/* Duplicate Activities Section */}
-        <View style={styles.section}>
-          
-          <Text style={styles.sectionTitle}>Activités de la journée ({todayActivities.length})</Text>
-          <View style={styles.activityContainer}>
-            {todayActivities.length > 0 ? (
-              todayActivities.map((activity, index) => {
-                const statusInfo = getStatusInfo(activity.status, 'today');
-                return (
-                  <View key={`duplicate-${activity.id || index}`} style={styles.activityItem}>
-                    <View style={styles.activityIcon}>
-                      <Ionicons name={statusInfo.icon as any} size={16} color={statusInfo.color} />
+          {/* Activity Tabs */}
+          <View style={styles.activityTabsContainer}>
+            <Pressable
+              onPress={() => toggleSection('overdue')}
+              style={[styles.activityTab, expandedSection === 'overdue' && styles.activeTab]}
+            >
+              <Text style={[styles.activityTabText, { color: '#FF3B30' }]}>
+                En retard ({overdueActivities.length})
+              </Text>
+            </Pressable>
+            <Pressable
+              onPress={() => toggleSection('today')}
+              style={[styles.activityTab, expandedSection === 'today' && styles.activeTab]}
+            >
+              <Text style={[styles.activityTabText, { color: '#f87b1b' }]}>
+                Aujourd&apos;hui ({todayActivities.length})
+              </Text>
+            </Pressable>
+            <Pressable
+              onPress={() => toggleSection('upcoming')}
+              style={[styles.activityTab, expandedSection === 'upcoming' && styles.activeTab]}
+            >
+              <Text style={[styles.activityTabText, { color: '#007AFF' }]}>
+                À venir ({upcomingActivities.length})
+              </Text>
+            </Pressable>
+          </View>
+
+          {/* Expanded Content */}
+          <View style={styles.activityContentPlaceholder}>
+            {expandedSection === 'overdue' && (
+              <View style={styles.activityContainer}>
+                {overdueActivities.length > 0 ? (
+                  overdueActivities.map((activity) => (
+                    <View key={activity.id} style={styles.activityItem}>
+                      <View style={styles.activityIcon}>
+                        <Ionicons name="warning" size={16} color="#FF3B30" />
+                      </View>
+                      <View style={styles.activityContent}>
+                        <Text style={[styles.activityText, { color: '#FF3B30' }]}>{activity.title || 'Activité sans titre'}</Text>
+                        <Text style={styles.activityTime}>
+                          {formatTime(activity.date_planification)} • En retard
+                          {activity.declaration_title && ` • ${activity.declaration_title}`}
+                        </Text>
+                      </View>
                     </View>
-                    <View style={styles.activityContent}>
-                      <Text style={styles.activityText}>
-                        {activity.title || 'Activité sans titre'}
-                      </Text>
-                      <Text style={styles.activityTime}>
-                        {formatTime(activity.date_planification)} • {statusInfo.text}
-                        {activity.declaration_title && ` • ${activity.declaration_title}`}
-                      </Text>
-                    </View>
+                  ))
+                ) : (
+                  <View style={styles.activityItem}>
+                    <Text style={styles.activityText}>Aucune activité en retard</Text>
                   </View>
-                );
-              })
-            ) : (
-              <View style={styles.activityItem}>
-                <View style={styles.activityIcon}>
-                  <Ionicons name="calendar-outline" size={16} color="#8E8E93" />
-                </View>
-                <View style={styles.activityContent}>
-                  <Text style={styles.activityText}>Aucune activité planifiée pour aujourd&apos;hui</Text>
-                  <Text style={styles.activityTime}>Vérifiez vos tâches ou créez de nouvelles activités</Text>
-                </View>
+                )}
               </View>
             )}
-          </View>
-        </View>
-        <View style={styles.section}>
-          
-          <Text style={styles.sectionTitle2}>Activités de la journée à venir ({upcomingActivities.length})</Text>
-          <View style={styles.activityContainer2}>
-            {upcomingActivities.length > 0 ? (
-              upcomingActivities.map((activity, index) => {
-                const statusInfo = getStatusInfo(activity.status, 'upcoming');
-                return (
-                  <View key={`duplicate-${activity.id || index}`} style={styles.activityItem}>
-                    <View style={styles.activityIcon}>
-                      <Ionicons name={statusInfo.icon as any} size={16} color={statusInfo.color} />
+            {expandedSection === 'today' && (
+              <View style={styles.activityContainer}>
+                {todayActivities.length > 0 ? (
+                  todayActivities.map((activity) => (
+                    <View key={activity.id} style={styles.activityItem}>
+                      <View style={styles.activityIcon}>
+                        <Ionicons name="time" size={16} color="#f87b1b" />
+                      </View>
+                      <View style={styles.activityContent}>
+                        <Text style={[styles.activityText, { color: '#f87b1b' }]}>{activity.title || 'Activité sans titre'}</Text>
+                        <Text style={styles.activityTime}>
+                          {formatTime(activity.date_planification)} • Aujourd&apos;hui
+                          {activity.declaration_title && ` • ${activity.declaration_title}`}
+                        </Text>
+                      </View>
                     </View>
-                    <View style={styles.activityContent}>
-                      <Text style={styles.activityText}>
-                        {activity.title || 'Activité sans titre'}
-                      </Text>
-                      <Text style={styles.activityTime}>
-                        {formatTime(activity.date_planification)} • {statusInfo.text}
-                        {activity.declaration_title && ` • ${activity.declaration_title}`}
-                      </Text>
-                    </View>
+                  ))
+                ) : (
+                  <View style={styles.activityItem}>
+                    <Text style={styles.activityText}>Aucune activité prévue aujourd&apos;hui</Text>
                   </View>
-                );
-              })
-            ) : (
-              <View style={styles.activityItem}>
-                <View style={styles.activityIcon}>
-                  <Ionicons name="calendar-outline" size={16} color="#8E8E93" />
-                </View>
-                <View style={styles.activityContent}>
-                  <Text style={styles.activityText}>Aucune activité planifiée pour aujourd&apos;hui</Text>
-                  <Text style={styles.activityTime}>Vérifiez vos tâches ou créez de nouvelles activités</Text>
-                </View>
+                )}
+              </View>
+            )}
+            {expandedSection === 'upcoming' && (
+              <View style={styles.activityContainer}>
+                {upcomingActivities.length > 0 ? (
+                  upcomingActivities.map((activity) => (
+                    <View key={activity.id} style={styles.activityItem}>
+                      <View style={styles.activityIcon}>
+                        <Ionicons name="calendar" size={16} color="#007AFF" />
+                      </View>
+                      <View style={styles.activityContent}>
+                        <Text style={[styles.activityText, { color: '#007AFF' }]}>{activity.title || 'Activité sans titre'}</Text>
+                        <Text style={styles.activityTime}>
+                          {formatTime(activity.date_planification)} • À venir
+                          {activity.declaration_title && ` • ${activity.declaration_title}`}
+                        </Text>
+                      </View>
+                    </View>
+                  ))
+                ) : (
+                  <View style={styles.activityItem}>
+                    <Text style={styles.activityText}>Aucune activité à venir</Text>
+                  </View>
+                )}
               </View>
             )}
           </View>
@@ -561,9 +560,13 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   quickAction: {
-    flexDirection: 'row',
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    borderWidth: 1,
+    borderColor: '#f87b1b',
+    justifyContent: 'center',
     alignItems: 'center',
-    gap: 8,
   },
   quickActionsFrame: {
     backgroundColor: '#FFFFFF',
@@ -608,9 +611,8 @@ const styles = StyleSheet.create({
   activityContainer: {
     backgroundColor: '#FFFFFF',
     borderRadius: 12,
-    borderWidth: 2,
-    borderColor: '#f87b1b',
     overflow: 'hidden',
+    marginTop: 8,
   },
   activityContainer1: {
     backgroundColor: '#FFFFFF',
@@ -647,6 +649,40 @@ const styles = StyleSheet.create({
   activityTime: {
     fontSize: 12,
     color: '#8E8E93',
+  },
+  activityTable: {
+    marginTop: 16,
+  },
+  activityRowHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E5EA',
+  },
+  activityTabsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E5EA',
+    marginTop: 16,
+  },
+  activityTab: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: 12,
+  },
+  activeTab: {
+    borderBottomWidth: 3,
+    borderBottomColor: '#f87b1b',
+  },
+  activityTabText: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  activityContentPlaceholder: {
+    minHeight: 10, // Ensures LayoutAnimation has a container to animate
   },
   kpiContainer: {
     marginHorizontal: 20,

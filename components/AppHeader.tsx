@@ -1,3 +1,4 @@
+import API_CONFIG from '@/app/config/api';
 import { Ionicons } from '@expo/vector-icons';
 import { Link, useRouter } from 'expo-router';
 import React from 'react';
@@ -18,6 +19,7 @@ interface AppHeaderProps {
   user?: {
     firstname?: string;
     lastname?: string;
+    photo?: string | null;
   };
 }
 
@@ -55,7 +57,6 @@ export default function AppHeader({
   return (
     <View style={styles.header}>
       <View style={styles.headerRow}>
-        {/* Left side - App Icon */}
         <TouchableOpacity 
           style={styles.headerLeft}
           onPress={() => handleNavigate('/(tabs)')}
@@ -81,7 +82,7 @@ export default function AppHeader({
         
         {/* Right side - Action Icons */}
         <View style={styles.headerRight}>
-          {showNotifications && (
+          {/* {showNotifications && (
             <TouchableOpacity
               accessibilityRole="button"
               style={styles.iconButton}
@@ -90,21 +91,27 @@ export default function AppHeader({
               <Ionicons name="notifications-outline" size={20} color="#FF6B35" />
             </TouchableOpacity>
           )}
-          {/* Chatbox Icon */}
           <TouchableOpacity
             accessibilityRole="button"
             style={styles.iconButton}
           
           >
             <Ionicons name="chatbox-outline" size={20} color="#FF6B35" />
-          </TouchableOpacity>
+          </TouchableOpacity> */}
           {showProfile && (
             <TouchableOpacity
               accessibilityRole="button"
               style={styles.iconButton}
               onPress={handleProfilePress}
             >
-              <Ionicons name="person-circle-outline" size={20} color="#FF6B35" />
+              {user?.photo ? (
+                <Image
+                  source={{ uri: `${API_CONFIG.BASE_URL}${user.photo}` }}
+                  style={styles.avatar}
+                />
+              ) : (
+                <Ionicons name="person-circle-outline" size={28} color="#FF6B35" />
+              )}
             </TouchableOpacity>
           )}
         </View>
@@ -126,9 +133,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
   },
-  headerLeft: { 
-    width: 45,
-    alignItems: 'flex-start'
+  headerLeft: {
+    width: 50,
+    height: 50,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   headerCenter: {
     flex: 1,
@@ -148,12 +157,19 @@ const styles = StyleSheet.create({
     color: '#11224e',
     textAlign: 'center'
   },
-  logo: { 
-    width: 50, 
-    height: 50 
+  logo: {
+    width: 50,
+    height: 50,
   },
-  iconButton: { 
-    paddingHorizontal: 6, 
-    paddingVertical: 4 
+  iconButton: {
+    width: 50,
+    height: 50,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  avatar: {
+    width: 45,
+    height: 45,
+    borderRadius: 22.5,
   },
 });
