@@ -7,14 +7,14 @@ import { ManifolderAnswer, ManifolderQuestion, Zone } from '@/types/manifolder';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import React, { useEffect, useState } from 'react';
 import {
-    ActivityIndicator,
-    Alert,
-    Pressable,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Alert,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AnsweredQuestionsCounter from './AnsweredQuestionsCounter';
@@ -348,8 +348,6 @@ export default function ManifolderQuestions({
       // Reload questions to ensure we have the latest data from backend
       await loadQuestions();
 
-      // Show success message
-      Alert.alert('Success', 'Question duplicated successfully!');
     } catch (error: any) {
       Alert.alert('Error', error.message || 'Failed to duplicate question');
     }
@@ -451,7 +449,6 @@ export default function ManifolderQuestions({
                   return newSet;
                 });
                 
-                Alert.alert('Success', 'Answer deleted successfully!');
               } catch (error: any) {
                 Alert.alert('Error', error.message || 'Failed to delete answer');
               }
@@ -815,8 +812,12 @@ export default function ManifolderQuestions({
               answeredCount={getAnsweredCount()} 
               totalCount={supportedQuestions.length} 
             />
-            <TouchableOpacity onPress={() => setIsPreviewModalVisible(true)} style={styles.previewButton}>
-              <Ionicons name="eye-outline" size={24} color="#11224e" />
+            <TouchableOpacity 
+              onPress={() => setIsPreviewModalVisible(true)} 
+              style={[styles.previewButton, getAnsweredCount() === 0 && styles.previewButtonDisabled]}
+              disabled={getAnsweredCount() === 0}
+            >
+              <Ionicons name="eye-outline" size={24} color={getAnsweredCount() === 0 ? '#94A3B8' : '#f87b1b'} />
             </TouchableOpacity>
           </View>
         </View>
@@ -1011,6 +1012,9 @@ const styles = StyleSheet.create({
   },
   previewButton: {
     padding: 8,
+  },
+  previewButtonDisabled: {
+    opacity: 0.5,
   },
   // Signature Status Banner Styles
   signatureStatusBanner: {

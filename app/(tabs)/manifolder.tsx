@@ -1,4 +1,3 @@
-import API_CONFIG from '@/app/config/api';
 import AppHeader from '@/components/AppHeader';
 import CreateManifolderModal from '@/components/CreateManifolderModal';
 import ManifoldDetails from '@/components/ManifoldDetails';
@@ -9,23 +8,10 @@ import { Project, Zone } from '@/types/declaration';
 import { ManifolderListItem, ManifolderType } from '@/types/manifolder';
 import Ionicons from '@expo/vector-icons/build/Ionicons';
 import { Image } from 'expo-image';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-
-function formatDate(d: Date) {
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  return `${y}-${m}-${day}`;
-}
-
-function formatTime(d: Date) {
-  const hh = String(d.getHours()).padStart(2, '0');
-  const mm = String(d.getMinutes()).padStart(2, '0');
-  return `${hh}:${mm}`;
-}
 
 export default function ManifolderTab() {
   const { token, user } = useAuth();
@@ -42,39 +28,6 @@ export default function ManifolderTab() {
   const [selectedManifolderData, setSelectedManifolderData] = useState<ManifolderListItem | undefined>(undefined);
 
   const [isCreateModalVisible, setIsCreateModalVisible] = useState(false);
-
-  const [projectId, setProjectId] = useState<string>('');
-  const [zoneId, setZoneId] = useState<string>('');
-  const [typeId, setTypeId] = useState<string>('');
-  const [date, setDate] = useState<Date>(new Date());
-  const [heurD, setHeurD] = useState<Date | null>(null);
-  const [heurF, setHeurF] = useState<Date | null>(null);
-  const [title, setTitle] = useState<string>('');
-  const [description, setDescription] = useState<string>('');
-
-  const [showDatePicker, setShowDatePicker] = useState(false);
-  const [showTimeD, setShowTimeD] = useState(false);
-  const [showTimeF, setShowTimeF] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
-  const [isModalVisible, setIsModalVisible] = useState(false);
-  const [showProjectDropdown, setShowProjectDropdown] = useState(false);
-  const [showZoneDropdown, setShowZoneDropdown] = useState(false);
-  const [showTypeDropdown, setShowTypeDropdown] = useState(false);
-
-
-  const getZoneLogo = (zoneId: string) => {
-    const zone = zones.find(z => z.id === zoneId);
-    if (zone?.logo) {
-      return `${API_CONFIG.BASE_URL}${zone.logo}`;
-    }
-    return null;
-  };
-
-
-  const filteredZones = useMemo(() => {
-    if (!projectId) return [];
-    return zones.filter(z => (z as any).id_project ? (z as any).id_project === projectId : true);
-  }, [zones, projectId]);
 
   useEffect(() => {
     let mounted = true;
@@ -254,27 +207,33 @@ export default function ManifolderTab() {
             <View style={styles.headerTitleContainer}>
               <Text style={styles.headerTitle} numberOfLines={1}>{selectedManifolderData?.title || 'Questions'}</Text>
               <View style={styles.headerDetails}>
-                <View style={styles.headerDetailItem}>
-                  <Ionicons name="briefcase-outline" size={16} color="#6B7280" />
-                  <Text style={styles.headerDetailText} numberOfLines={1}>{selectedManifolderData?.project_title || 'No project'}</Text>
-                </View>
-                <View style={styles.headerDetailItem}>
-                  <Ionicons name="location-outline" size={16} color="#6B7280" />
-                  <Text style={styles.headerDetailText} numberOfLines={1}>{selectedManifolderData?.zone_title || 'No zone'}</Text>
-                </View>
-                <View style={styles.headerDetailItem}>
-                  <Ionicons name="document-text-outline" size={16} color="#6B7280" />
-                  <Text style={styles.headerDetailText} numberOfLines={1}>{selectedManifolderData?.type_title || 'No type'}</Text>
-                </View>
-                {selectedManifolderData?.date && (
-                  <View style={styles.headerDetailItem}>
-                    <Ionicons name="calendar-outline" size={16} color="#6B7280" />
-                    <Text style={styles.headerDetailText} numberOfLines={1}>{selectedManifolderData.date}</Text>
+                <View style={styles.headerDetailsGrid}>
+                  <View style={styles.headerDetailsColumn}>
+                    <View style={styles.headerDetailItem}>
+                      <Ionicons name="briefcase-outline" size={16} color="#f87b1b" />
+                      <Text style={styles.headerDetailText} numberOfLines={1}>{selectedManifolderData?.project_title || 'No project'}</Text>
+                    </View>
+                    <View style={styles.headerDetailItem}>
+                      <Ionicons name="document-text-outline" size={16} color="#f87b1b" />
+                      <Text style={styles.headerDetailText} numberOfLines={1}>{selectedManifolderData?.type_title || 'No type'}</Text>
+                    </View>
                   </View>
-                )}
+                  <View style={styles.headerDetailsColumn}>
+                    <View style={styles.headerDetailItem}>
+                      <Ionicons name="location-outline" size={16} color="#f87b1b" />
+                      <Text style={styles.headerDetailText} numberOfLines={1}>{selectedManifolderData?.zone_title || 'No zone'}</Text>
+                    </View>
+                    {selectedManifolderData?.date && (
+                      <View style={styles.headerDetailItem}>
+                        <Ionicons name="calendar-outline" size={16} color="#f87b1b" />
+                        <Text style={styles.headerDetailText} numberOfLines={1}>{selectedManifolderData.date}</Text>
+                      </View>
+                    )}
+                  </View>
+                </View>
                 {(selectedManifolderData?.heur_d || selectedManifolderData?.heur_f) && (
-                  <View style={styles.headerDetailItem}>
-                    <Ionicons name="time-outline" size={16} color="#6B7280" />
+                  <View style={styles.headerDetailItemFullWidth}>
+                    <Ionicons name="time-outline" size={16} color="#f87b1b" />
                     <Text style={styles.headerDetailText} numberOfLines={1}>
                       {[selectedManifolderData.heur_d, selectedManifolderData.heur_f].filter(Boolean).join(' - ')}
                     </Text>
@@ -372,7 +331,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   headerDetails: {
-    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#F8FAFC',
@@ -380,15 +338,37 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 12,
     marginTop: 8,
-    flexWrap: 'wrap',
-    gap: 12,
+    width: '100%',
+    borderWidth: 1,
+    borderColor: '#f87b1b',
+  },
+  headerDetailsGrid: {
+    flexDirection: 'row',
+    width: '100%',
+  },
+  headerDetailsColumn: {
+    flex: 1,
+    justifyContent: 'center',
+  },
+  headerDetailsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    width: '100%',
+    marginBottom: 4,
   },
   headerDetailItem: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    flexShrink: 1,
+    paddingVertical: 4,
+  },
+  headerDetailItemFullWidth: {
+    flexDirection: 'row',
+    alignItems: 'center',
     justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 4,
+    marginTop: 4,
   },
   headerDetailIcon: {
     fontSize: 16,
