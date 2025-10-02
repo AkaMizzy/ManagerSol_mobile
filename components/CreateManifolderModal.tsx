@@ -145,15 +145,13 @@ export default function CreateManifolderModal({
           </View>
 
           <ScrollView style={styles.form} showsVerticalScrollIndicator={false}>
-            {/* Context Card */}
-            <View style={styles.card}>
-              <View style={styles.cardHeader}>                
-              </View>
+            {/* All Inputs in a single bloc */}
+            <View style={styles.formContainer}>
               <TouchableOpacity style={styles.inputContainer} onPress={() => setShowProjectDropdown(!showProjectDropdown)}>
                 <Text style={[styles.inputText, !projectId && styles.placeholderText]}>
                   {projectId ? (projects.find(p => p.id === projectId)?.title || 'Projet') : 'Sélectionner le projet *'}
                 </Text>
-                <Ionicons name={showProjectDropdown ? 'chevron-up' : 'chevron-down'} size={20} color="#9ca3af" />
+                <Ionicons name={showProjectDropdown ? 'chevron-up' : 'chevron-down'} size={20} color="#f87b1b" />
               </TouchableOpacity>
               {showProjectDropdown && (
                 <View style={styles.dropdownList}>
@@ -165,11 +163,11 @@ export default function CreateManifolderModal({
                 </View>
               )}
 
-              <TouchableOpacity style={[styles.inputContainer, { marginTop: 12 }, !projectId && styles.disabled]} disabled={!projectId} onPress={() => setShowZoneDropdown(!showZoneDropdown)}>
+              <TouchableOpacity style={[styles.inputContainer, !projectId && styles.disabled]} disabled={!projectId} onPress={() => setShowZoneDropdown(!showZoneDropdown)}>
                 <Text style={[styles.inputText, !zoneId && styles.placeholderText]}>
                   {zoneId ? (zones.find(z => z.id === zoneId)?.title || 'Zone') : 'Sélectionner la zone *'}
                 </Text>
-                <Ionicons name={showZoneDropdown ? 'chevron-up' : 'chevron-down'} size={20} color="#9ca3af" />
+                <Ionicons name={showZoneDropdown ? 'chevron-up' : 'chevron-down'} size={20} color="#f87b1b" />
               </TouchableOpacity>
               {showZoneDropdown && (
                 <View style={styles.dropdownList}>
@@ -181,15 +179,12 @@ export default function CreateManifolderModal({
                   ))}
                 </View>
               )}
-            </View>
-            {/* Main Info Card */}
-            <View style={styles.card}>
-             
-               <TouchableOpacity style={[styles.inputContainer, { marginTop: 12 }]} onPress={() => setShowTypeDropdown(!showTypeDropdown)}>
+              
+               <TouchableOpacity style={styles.inputContainer} onPress={() => setShowTypeDropdown(!showTypeDropdown)}>
                  <Text style={[styles.inputText, !typeId && styles.placeholderText]}>
                    {typeId ? (types.find(t => t.id === typeId)?.title || 'Type') : 'Sélectionner le type *'}
                  </Text>
-                 <Ionicons name={showTypeDropdown ? 'chevron-up' : 'chevron-down'} size={20} color="#9ca3af" />
+                 <Ionicons name={showTypeDropdown ? 'chevron-up' : 'chevron-down'} size={20} color="#f87b1b" />
                </TouchableOpacity>
                {showTypeDropdown && (
                  <View style={styles.dropdownList}>
@@ -200,7 +195,7 @@ export default function CreateManifolderModal({
                    ))}
                  </View>
                )}
-               <View style={styles.cardHeader}></View>
+               
                 <TextInput
                 style={[styles.inputContainer, styles.textInput]}
                 placeholder="Titre *"
@@ -208,31 +203,24 @@ export default function CreateManifolderModal({
                 value={title}
                 onChangeText={setTitle}
               />
-            </View>
-
-            
-
-            {/* Details Card */}
-            <View style={styles.card}>
-
               <TouchableOpacity style={styles.inputContainer} onPress={() => setShowDatePicker(true)}>
-                <Ionicons name="calendar-outline" size={18} color="#6b7280" />
+                <Ionicons name="calendar-outline" size={18} color="#f87b1b" />
                 <Text style={styles.inputText}>{formatDate(date)}</Text>
               </TouchableOpacity>
 
               <View style={styles.timeRow}>
                 <TouchableOpacity style={styles.timeInput} onPress={() => setShowTimeD(true)}>
-                  <Ionicons name="time-outline" size={18} color="#6b7280" />
+                  <Ionicons name="time-outline" size={18} color="#f87b1b" />
                   <Text style={[styles.inputText, !heurD && styles.placeholderText]}>{heurD ? formatTime(heurD) : 'Heure Début'}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.timeInput} onPress={() => setShowTimeF(true)}>
-                   <Ionicons name="time-outline" size={18} color="#6b7280" />
+                   <Ionicons name="time-outline" size={18} color="#f87b1b" />
                   <Text style={[styles.inputText, !heurF && styles.placeholderText]}>{heurF ? formatTime(heurF) : 'Heure Fin'}</Text>
                 </TouchableOpacity>
               </View>
               
               <TextInput
-                style={[styles.inputContainer, styles.textArea, { marginTop: 12 }]}
+                style={[styles.inputContainer, styles.textArea]}
                 placeholder="Description (optionnel)"
                 placeholderTextColor="#9ca3af"
                 value={description}
@@ -272,13 +260,27 @@ const styles = StyleSheet.create({
   headerSubtitle: { fontSize: 12, color: '#64748b', marginTop: 2 },
   placeholder: { width: 40 },
   form: { flex: 1, paddingHorizontal: 16 },
+  formContainer: { 
+    backgroundColor: '#FFFFFF', 
+    borderRadius: 16, 
+    padding: 16, 
+    marginTop: 16, 
+    shadowColor: '#000', 
+    shadowOffset: { width: 0, height: 2 }, 
+    shadowOpacity: 0.06, 
+    shadowRadius: 8, 
+    elevation: 2, 
+    borderWidth: 1, 
+    borderColor: '#f87b1b',
+    gap: 12,
+  },
   card: { backgroundColor: '#FFFFFF', borderRadius: 16, padding: 16, marginTop: 16, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8, elevation: 2, borderWidth: 1, borderColor: '#f1f5f9' },
   cardHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 16 },
   cardIconWrap: { width: 28, height: 28, borderRadius: 14, backgroundColor: '#eef2ff', justifyContent: 'center', alignItems: 'center', marginRight: 10 },
   cardHeaderText: { flex: 1 },
   cardTitle: { fontSize: 16, fontWeight: '700', color: '#11224e' },
   cardHint: { fontSize: 12, color: '#64748b', marginTop: 2 },
-  inputContainer: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#d1d5db', borderRadius: 12, paddingHorizontal: 16, paddingVertical: 14, gap: 8 },
+  inputContainer: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#f87b1b', borderRadius: 12, paddingHorizontal: 16, paddingVertical: 14, gap: 8 },
   textInput: { paddingVertical: 14 },
   inputText: { fontSize: 16, color: '#11224e', flex: 1 },
   placeholderText: { color: '#9ca3af' },
@@ -288,8 +290,8 @@ const styles = StyleSheet.create({
   dropdownItemText: { fontSize: 16, color: '#11224e' },
   zoneLogo: { width: 24, height: 24, borderRadius: 4 },
   textArea: { minHeight: 100, alignItems: 'flex-start' },
-  timeRow: { flexDirection: 'row', gap: 12, marginTop: 12 },
-  timeInput: { flex: 1, flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#d1d5db', borderRadius: 12, paddingHorizontal: 16, paddingVertical: 14, gap: 8 },
+  timeRow: { flexDirection: 'row', gap: 12 },
+  timeInput: { flex: 1, flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#f87b1b', borderRadius: 12, paddingHorizontal: 16, paddingVertical: 14, gap: 8 },
   actions: { padding: 16, backgroundColor: '#FFFFFF', borderTopWidth: 1, borderTopColor: '#e5e7eb' },
   submitButton: { backgroundColor: '#f87b1b', borderRadius: 12, paddingVertical: 16, alignItems: 'center', justifyContent: 'center' },
   submitButtonText: { fontSize: 16, fontWeight: '600', color: '#FFFFFF' },

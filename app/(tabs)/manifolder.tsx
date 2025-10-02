@@ -249,7 +249,7 @@ export default function ManifolderTab() {
         <View style={styles.header}>
           <View style={styles.headerContent}>
             <Pressable onPress={handleBackToList} style={styles.backButton}>
-              <Ionicons name="arrow-back" size={24} color="#11224e" />
+              <Ionicons name="arrow-back" size={26} color="#f87b1b" />
             </Pressable>
             <View style={styles.headerTitleContainer}>
               <Text style={styles.headerTitle} numberOfLines={1}>{selectedManifolderData?.title || 'Questions'}</Text>
