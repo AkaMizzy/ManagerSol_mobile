@@ -505,41 +505,44 @@ export default function ManifoldDetails({
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {/* Header with Back Button and Title */}
         <View style={styles.headerContainer}>
-          <Pressable style={styles.headerBackButton} onPress={onBack}>
-            <Ionicons name="arrow-back" size={24} color="#11224e" />
-          </Pressable>
-          <View style={styles.headerCenterContent}>
-            <Text style={styles.headerTitle}>{manifolder.code_formatted}</Text>
-            <View style={styles.headerSubtitleContainer}>
-              <View style={styles.headerSubtitleItem}>
-                <Ionicons name="business-outline" size={14} color="#8E8E93" />
-                <Text style={styles.headerSubtitleText} numberOfLines={1}>
-                  {manifolder.project_title || 'N/A'}
-                </Text>
-              </View>
-              <View style={styles.headerSubtitleItem}>
-                {manifolder.zone_logo ? (
-                  <Image 
-                    source={{ uri: `${API_CONFIG.BASE_URL}${manifolder.zone_logo}` }} 
-                    style={styles.headerZoneLogo}
-                    contentFit="contain"
-                  />
-                ) : (
-                  <Ionicons name="location-outline" size={14} color="#8E8E93" />
-                )}
-                <Text style={styles.headerSubtitleText} numberOfLines={1}>
-                  {manifolder.zone_title || 'N/A'}
-                </Text>
-              </View>
-              <View style={styles.headerSubtitleItem}>
-                <Ionicons name="pricetag-outline" size={14} color="#8E8E93" />
-                <Text style={styles.headerSubtitleText} numberOfLines={1}>
-                  {manifolder.type_title || 'N/A'}
-                </Text>
-              </View>
+          <View style={styles.headerTopRow}>
+            <Pressable style={styles.headerBackButton} onPress={onBack}>
+              <Ionicons name="arrow-back" size={24} color="#11224e" />
+            </Pressable>
+            <View style={styles.headerCenterContent}>
+              <Text style={styles.headerTitle}>{manifolder.code_formatted}</Text>
+            </View>
+            <View style={styles.headerSpacer} />
+          </View>
+
+          <View style={styles.headerSubtitleContainer}>
+            <View style={styles.headerSubtitleItem}>
+              <Ionicons name="business-outline" size={16} color="#8E8E93" />
+              <Text style={styles.headerSubtitleText} numberOfLines={1}>
+                {manifolder.project_title || 'N/A'}
+              </Text>
+            </View>
+            <View style={styles.headerSubtitleItem}>
+              {manifolder.zone_logo ? (
+                <Image 
+                  source={{ uri: `${API_CONFIG.BASE_URL}${manifolder.zone_logo}` }} 
+                  style={styles.headerZoneLogo}
+                  contentFit="contain"
+                />
+              ) : (
+                <Ionicons name="location-outline" size={16} color="#8E8E93" />
+              )}
+              <Text style={styles.headerSubtitleText} numberOfLines={1}>
+                {manifolder.zone_title || 'N/A'}
+              </Text>
+            </View>
+            <View style={styles.headerSubtitleItem}>
+              <Ionicons name="pricetag-outline" size={16} color="#8E8E93" />
+              <Text style={styles.headerSubtitleText} numberOfLines={1}>
+                {manifolder.type_title || 'N/A'}
+              </Text>
             </View>
           </View>
-          <View style={styles.headerSpacer} />
         </View>
 
         {/* Primary Actions */}
@@ -577,11 +580,11 @@ export default function ManifoldDetails({
           {/* Section 1: Informations de base */}
           
           <View style={styles.infoRow}>
-            <Text style={styles.infoValue}>{formatDate(manifolder.date)}</Text>
+            <Text style={styles.infoValue}>{manifolder.title}</Text>
           </View>
           
           <View style={styles.infoRow}>
-            <Text style={styles.infoValue}>{manifolder.title}</Text>
+            <Text style={styles.infoValue}>{formatDate(manifolder.date)}</Text>
           </View>
           
           {manifolder.description && (
@@ -602,17 +605,6 @@ export default function ManifoldDetails({
 
         {/* Digital Signatures Card */}
         <View style={styles.card}>
-          <View style={styles.cardHeader}>
-            <Ionicons name="create-outline" size={24} color="#11224e" />
-            <Text style={styles.cardTitle}>Signatures</Text>
-            {signatureStatus && (
-              <View style={styles.signatureStatusBadge}>
-                <Text style={styles.signatureStatusText}>
-                  {signatureStatus.signatureCount}/3
-                </Text>
-              </View>
-            )}
-          </View>
           
           {isLoadingSignatures ? (
             <View style={styles.signatureLoadingContainer}>
@@ -621,17 +613,6 @@ export default function ManifoldDetails({
             </View>
           ) : (
             <>
-              {signatureStatus && (
-                <View style={styles.signatureStatusContainer}>
-                  <Text style={styles.signatureStatusLabel}>
-                    {signatureStatus.isComplete 
-                      ? '✅ Toutes les signatures sont complétées' 
-                      : `📝 ${signatureStatus.remainingSignatures} signature(s) restantes`
-                    }
-                  </Text>
-                </View>
-              )}
-              
               <View style={styles.signatureFieldsContainer}>
                 <SignatureField
                   role="technicien"
@@ -658,6 +639,17 @@ export default function ManifoldDetails({
                   signerEmail={signatures.admin?.email}
                 />
               </View>
+              
+              {signatureStatus && (
+                <View style={styles.signatureStatusContainer}>
+                  <Text style={styles.signatureStatusLabel}>
+                    {signatureStatus.isComplete 
+                      ? '✅ Toutes les signatures sont complétées' 
+                      : `📝 ${signatureStatus.remainingSignatures} signature(s) restantes`
+                    }
+                  </Text>
+                </View>
+              )}
               
               {signatures.technicien || signatures.control || signatures.admin ? (
                 <View style={styles.signatureInfoContainer}>
@@ -815,8 +807,6 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   headerContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 12,
     marginBottom: 16,
@@ -830,6 +820,13 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
+    borderWidth: 1,
+    borderColor: '#f87b1b',
+  },
+  headerTopRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
   },
   headerBackButton: {
     width: 40,
@@ -853,21 +850,24 @@ const styles = StyleSheet.create({
   },
   headerSubtitleContainer: {
     flexDirection: 'row',
-    marginTop: 6,
-    gap: 16,
+    gap: 8,
     alignItems: 'center',
     justifyContent: 'center',
   },
   headerSubtitleItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
-    maxWidth: '50%',
+    gap: 6,
+    backgroundColor: '#F2F2F7',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 16,
   },
   headerSubtitleText: {
-    fontSize: 13,
-    color: '#8E8E93',
+    fontSize: 14,
+    color: '#3C3C43',
     fontWeight: '500',
+    flexShrink: 1,
   },
   headerZoneLogo: {
     width: 20,
@@ -889,6 +889,8 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
+    borderWidth: 1,
+    borderColor: '#f87b1b',
   },
   primaryActionsContainer: {
     flexDirection: 'row',
@@ -932,6 +934,8 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
+    borderWidth: 1,
+    borderColor: '#f87b1b',
   },
   infoGroupCard: {
     backgroundColor: '#FFFFFF',
