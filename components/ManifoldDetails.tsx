@@ -508,7 +508,37 @@ export default function ManifoldDetails({
           <Pressable style={styles.headerBackButton} onPress={onBack}>
             <Ionicons name="arrow-back" size={24} color="#11224e" />
           </Pressable>
-          <Text style={styles.headerTitle}>{manifolder.code_formatted}</Text>
+          <View style={styles.headerCenterContent}>
+            <Text style={styles.headerTitle}>{manifolder.code_formatted}</Text>
+            <View style={styles.headerSubtitleContainer}>
+              <View style={styles.headerSubtitleItem}>
+                <Ionicons name="business-outline" size={14} color="#8E8E93" />
+                <Text style={styles.headerSubtitleText} numberOfLines={1}>
+                  {manifolder.project_title || 'N/A'}
+                </Text>
+              </View>
+              <View style={styles.headerSubtitleItem}>
+                {manifolder.zone_logo ? (
+                  <Image 
+                    source={{ uri: `${API_CONFIG.BASE_URL}${manifolder.zone_logo}` }} 
+                    style={styles.headerZoneLogo}
+                    contentFit="contain"
+                  />
+                ) : (
+                  <Ionicons name="location-outline" size={14} color="#8E8E93" />
+                )}
+                <Text style={styles.headerSubtitleText} numberOfLines={1}>
+                  {manifolder.zone_title || 'N/A'}
+                </Text>
+              </View>
+              <View style={styles.headerSubtitleItem}>
+                <Ionicons name="pricetag-outline" size={14} color="#8E8E93" />
+                <Text style={styles.headerSubtitleText} numberOfLines={1}>
+                  {manifolder.type_title || 'N/A'}
+                </Text>
+              </View>
+            </View>
+          </View>
           <View style={styles.headerSpacer} />
         </View>
 
@@ -543,141 +573,31 @@ export default function ManifoldDetails({
         </View>
 
         {/* Main Info Card */}
-        <View style={styles.card}>
-          <View style={styles.cardHeader}>
-            <Ionicons name="document-text-outline" size={24} color="#11224e" />
-            <Text style={styles.cardTitle}>Informations de base</Text>
+        <View style={styles.infoGroupCard}>
+          {/* Section 1: Informations de base */}
+          
+          <View style={styles.infoRow}>
+            <Text style={styles.infoValue}>{formatDate(manifolder.date)}</Text>
           </View>
           
           <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Titre</Text>
             <Text style={styles.infoValue}>{manifolder.title}</Text>
           </View>
           
           {manifolder.description && (
             <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>Description</Text>
               <Text style={styles.infoValue}>{manifolder.description}</Text>
             </View>
           )}
           
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Date</Text>
-            <Text style={styles.infoValue}>{formatDate(manifolder.date)}</Text>
-          </View>
-          
           <View style={styles.timeRow}>
             <View style={styles.timeItem}>
-              <Text style={styles.infoLabel}>Heure de début</Text>
               <Text style={styles.infoValue}>{formatTime(manifolder.heur_d || null)}</Text>
             </View>
             <View style={styles.timeItem}>
-              <Text style={styles.infoLabel}>Heure de fin</Text>
               <Text style={styles.infoValue}>{formatTime(manifolder.heur_f || null)}</Text>
             </View>
           </View>
-        </View>
-
-        {/* Project & Zone Card */}
-        <View style={styles.card}>
-          <View style={styles.cardHeader}>
-            <Ionicons name="business-outline" size={24} color="#11224e" />
-            <Text style={styles.cardTitle}>Project & Zone</Text>
-          </View>
-          
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Project</Text>
-            <Text style={styles.infoValue}>{manifolder.project_title || 'Not specified'}</Text>
-          </View>
-          
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Zone</Text>
-            <View style={styles.zoneRow}>
-              {manifolder.zone_logo && (
-                <Image 
-                  source={{ uri: `${API_CONFIG.BASE_URL}${manifolder.zone_logo}` }} 
-                  style={styles.zoneLogo}
-                  contentFit="cover"
-                />
-              )}
-              <Text style={styles.infoValue}>{manifolder.zone_title || 'Not specified'}</Text>
-            </View>
-          </View>
-        </View>
-
-        {/* Type Information Card */}
-        <View style={styles.card}>
-          <View style={styles.cardHeader}>
-            <Ionicons name="pricetag-outline" size={24} color="#11224e" />
-            <Text style={styles.cardTitle}>Type Information</Text>
-          </View>
-          
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Type</Text>
-            <Text style={styles.infoValue}>{manifolder.type_title || 'Not specified'}</Text>
-          </View>
-          
-          {manifolder.type_description && (
-            <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>Description de type</Text>
-              <Text style={styles.infoValue}>{manifolder.type_description}</Text>
-            </View>
-          )}
-        </View>
-
-        {/* Document Upload Card */}
-        <View style={styles.card}>
-          <View style={styles.cardHeader}>
-            <Ionicons name="document-outline" size={24} color="#11224e" />
-            <Text style={styles.cardTitle}>Uploader un document</Text>
-          </View>
-          
-          {manifolder.upload_doc ? (
-            <View style={styles.documentContainer}>
-              <View style={styles.documentInfo}>
-                <Ionicons name="document-text-outline" size={32} color="#007AFF" />
-                <View style={styles.documentDetails}>
-                  <Text style={styles.documentName}>Document attaché</Text>
-                  <Text style={styles.documentPath}>{manifolder.upload_doc.split('/').pop()}</Text>
-                </View>
-              </View>
-              
-              <View style={styles.documentActions}>
-                <Pressable style={styles.documentActionButton} onPress={viewDocument}>
-                  <Ionicons name="eye-outline" size={20} color="#007AFF" />
-                  <Text style={styles.documentActionText}>Voir</Text>
-                </Pressable>
-                
-                <Pressable 
-                  style={[styles.documentActionButton, styles.dangerButton]} 
-                  onPress={removeDocument}
-                  disabled={isUploadingDocument}
-                >
-                  <Ionicons name="trash-outline" size={20} color="#FF3B30" />
-                  <Text style={[styles.documentActionText, styles.dangerText]}>
-                    {isUploadingDocument ? 'Suppression...' : 'Supprimer'}
-                  </Text>
-                </Pressable>
-              </View>
-            </View>
-          ) : (
-            <View style={styles.uploadContainer}>
-              <FileUploader
-                value={null}
-                onFileSelect={uploadDocument}
-                onFileRemove={() => {}}
-                placeholder="Upload a document"
-                acceptedTypes={['document']}
-                maxSize={10}
-              />
-              {isUploadingDocument && (
-                <View style={styles.uploadingIndicator}>
-                  <ActivityIndicator size="small" color="#f87b1b" />
-                  <Text style={styles.uploadingText}>Uploading...</Text>
-                </View>
-              )}
-            </View>
-          )}
         </View>
 
         {/* Digital Signatures Card */}
@@ -763,6 +683,61 @@ export default function ManifoldDetails({
           )}
         </View>
 
+        {/* Document Upload Card */}
+        <View style={styles.card}>
+          <View style={styles.cardHeader}>
+            <Ionicons name="document-outline" size={24} color="#11224e" />
+            <Text style={styles.cardTitle}>Uploader un document</Text>
+          </View>
+          
+          {manifolder.upload_doc ? (
+            <View style={styles.documentContainer}>
+              <View style={styles.documentInfo}>
+                <Ionicons name="document-text-outline" size={32} color="#007AFF" />
+                <View style={styles.documentDetails}>
+                  <Text style={styles.documentName}>Document attaché</Text>
+                  <Text style={styles.documentPath}>{manifolder.upload_doc.split('/').pop()}</Text>
+                </View>
+              </View>
+              
+              <View style={styles.documentActions}>
+                <Pressable style={styles.documentActionButton} onPress={viewDocument}>
+                  <Ionicons name="eye-outline" size={20} color="#007AFF" />
+                  <Text style={styles.documentActionText}>Voir</Text>
+                </Pressable>
+                
+                <Pressable 
+                  style={[styles.documentActionButton, styles.dangerButton]} 
+                  onPress={removeDocument}
+                  disabled={isUploadingDocument}
+                >
+                  <Ionicons name="trash-outline" size={20} color="#FF3B30" />
+                  <Text style={[styles.documentActionText, styles.dangerText]}>
+                    {isUploadingDocument ? 'Suppression...' : 'Supprimer'}
+                  </Text>
+                </Pressable>
+              </View>
+            </View>
+          ) : (
+            <View style={styles.uploadContainer}>
+              <FileUploader
+                value={null}
+                onFileSelect={uploadDocument}
+                onFileRemove={() => {}}
+                placeholder="Upload a document"
+                acceptedTypes={['document']}
+                maxSize={10}
+              />
+              {isUploadingDocument && (
+                <View style={styles.uploadingIndicator}>
+                  <ActivityIndicator size="small" color="#f87b1b" />
+                  <Text style={styles.uploadingText}>Uploading...</Text>
+                </View>
+              )}
+            </View>
+          )}
+        </View>
+
         {/* Secondary Actions Card */}
         <View style={styles.card}>
           <View style={styles.cardHeader}>
@@ -843,16 +818,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
-    paddingVertical: 8,
-    marginBottom: 8,
-  },
-  headerBackButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
-    justifyContent: 'center',
-    alignItems: 'center',
+    paddingVertical: 12,
+    marginBottom: 16,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
@@ -862,14 +831,47 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 3,
   },
-  headerTitle: {
+  headerBackButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#F2F2F7',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  headerCenterContent: {
     flex: 1,
+    alignItems: 'center',
+    marginHorizontal: 12,
+  },
+  headerTitle: {
     fontSize: 18,
     fontWeight: '700',
     color: '#11224e',
     fontFamily: 'monospace',
     textAlign: 'center',
-    marginHorizontal: 16,
+  },
+  headerSubtitleContainer: {
+    flexDirection: 'row',
+    marginTop: 6,
+    gap: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  headerSubtitleItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    maxWidth: '50%',
+  },
+  headerSubtitleText: {
+    fontSize: 13,
+    color: '#8E8E93',
+    fontWeight: '500',
+  },
+  headerZoneLogo: {
+    width: 20,
+    height: 20,
   },
   headerSpacer: {
     width: 40,
@@ -930,6 +932,27 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
+  },
+  infoGroupCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 20,
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+    borderWidth: 1,
+    borderColor: '#f87b1b',
+  },
+  divider: {
+    height: 1,
+    backgroundColor: '#E5E5EA',
+    marginVertical: 16,
   },
   cardHeader: {
     flexDirection: 'row',
