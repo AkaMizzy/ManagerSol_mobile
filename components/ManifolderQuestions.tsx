@@ -29,6 +29,7 @@ interface ManifolderQuestionsProps {
     title: string;
     project_title?: string;
     zone_title?: string;
+    type_title?: string;
   };
   onComplete?: () => void;
 }
@@ -924,6 +925,10 @@ export default function ManifolderQuestions({
         onClose={() => setIsPreviewModalVisible(false)}
         questions={supportedQuestions}
         answers={{...answers, ...imageAnswers, ...vocalAnswers}}
+        quantities={quantities}
+        project={manifolderData?.project_title}
+        zone={manifolderData?.zone_title}
+        type={manifolderData?.type_title}
       />
     </SafeAreaView>
   );
