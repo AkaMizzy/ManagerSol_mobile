@@ -73,17 +73,24 @@ const AnswersPreviewModal: React.FC<AnswersPreviewModalProps> = ({
     );
   };
 
-  const renderItem = ({ item: questionGroup }: { item: ManifolderQuestion[] }) => (
-    <View style={styles.qaContainer}>
-      <Text style={styles.questionText}>{questionGroup[0].title}</Text>
-      {questionGroup.map((question, index) => (
-        <View key={question.id} style={index > 0 ? styles.clonedAnswer : null}>
-          {renderAnswer(question)}
-          {index < questionGroup.length - 1 && <View style={styles.answerSeparator} />}
+  const renderItem = ({ item: questionGroup }: { item: ManifolderQuestion[] }) => {
+    const hasQuantity = questionGroup.some(q => quantities[q.id] !== undefined && quantities[q.id] !== null);
+
+    return (
+      <View style={styles.qaContainer}>
+        <View style={styles.questionHeader}>
+          <Text style={styles.questionText}>{questionGroup[0].title}</Text>
+          {hasQuantity && <Text style={styles.quantityHeaderText}>Qté</Text>}
         </View>
-      ))}
-    </View>
-  );
+        {questionGroup.map((question, index) => (
+          <View key={question.id} style={index > 0 ? styles.clonedAnswer : null}>
+            {renderAnswer(question)}
+            {index < questionGroup.length - 1 && <View style={styles.answerSeparator} />}
+          </View>
+        ))}
+      </View>
+    );
+  };
 
   return (
     <Modal visible={visible} animationType="slide" transparent>
@@ -190,11 +197,23 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#f87b1b',
   },
+  questionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
   questionText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#1E293B',
-    marginBottom: 6,
+    color: '#f87b1b',
+    flex: 1,
+  },
+  quantityHeaderText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#f87b1b',
+    marginLeft: 8,
   },
   clonedAnswer: {
     marginTop: 8,
@@ -218,7 +237,7 @@ const styles = StyleSheet.create({
   quantityText: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#11224e',
+    color: '#f87b1b',
     marginLeft: 8,
   },
   noAnswerText: {
