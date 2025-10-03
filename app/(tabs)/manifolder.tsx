@@ -206,41 +206,42 @@ export default function ManifolderTab() {
             </Pressable>
             <View style={styles.headerTitleContainer}>
               <Text style={styles.headerTitle} numberOfLines={1}>{selectedManifolderData?.title || 'Questions'}</Text>
-              <View style={styles.headerDetails}>
-                <View style={styles.headerDetailsGrid}>
-                  <View style={styles.headerDetailsColumn}>
-                    <View style={styles.headerDetailItem}>
-                      <Ionicons name="briefcase-outline" size={16} color="#f87b1b" />
-                      <Text style={styles.headerDetailText} numberOfLines={1}>{selectedManifolderData?.project_title || 'No project'}</Text>
-                    </View>
-                    <View style={styles.headerDetailItem}>
-                      <Ionicons name="document-text-outline" size={16} color="#f87b1b" />
-                      <Text style={styles.headerDetailText} numberOfLines={1}>{selectedManifolderData?.type_title || 'No type'}</Text>
-                    </View>
-                  </View>
-                  <View style={styles.headerDetailsColumn}>
-                    <View style={styles.headerDetailItem}>
-                      <Ionicons name="location-outline" size={16} color="#f87b1b" />
-                      <Text style={styles.headerDetailText} numberOfLines={1}>{selectedManifolderData?.zone_title || 'No zone'}</Text>
-                    </View>
-                    {selectedManifolderData?.date && (
-                      <View style={styles.headerDetailItem}>
-                        <Ionicons name="calendar-outline" size={16} color="#f87b1b" />
-                        <Text style={styles.headerDetailText} numberOfLines={1}>{selectedManifolderData.date}</Text>
-                      </View>
-                    )}
-                  </View>
+            </View>
+            <View style={{ width: 40, height: 40 }} />
+          </View>
+          <View style={styles.headerDetails}>
+            <View style={styles.headerDetailsGrid}>
+              <View style={styles.headerDetailsColumn}>
+                <View style={styles.headerDetailItem}>
+                  <Ionicons name="briefcase-outline" size={16} color="#f87b1b" />
+                  <Text style={styles.headerDetailText} numberOfLines={1}>{selectedManifolderData?.project_title || 'No project'}</Text>
                 </View>
-                {(selectedManifolderData?.heur_d || selectedManifolderData?.heur_f) && (
-                  <View style={styles.headerDetailItemFullWidth}>
-                    <Ionicons name="time-outline" size={16} color="#f87b1b" />
-                    <Text style={styles.headerDetailText} numberOfLines={1}>
-                      {[selectedManifolderData.heur_d, selectedManifolderData.heur_f].filter(Boolean).join(' - ')}
-                    </Text>
+                <View style={styles.headerDetailItem}>
+                  <Ionicons name="document-text-outline" size={16} color="#f87b1b" />
+                  <Text style={styles.headerDetailText} numberOfLines={1}>{selectedManifolderData?.type_title || 'No type'}</Text>
+                </View>
+              </View>
+              <View style={styles.headerDetailsColumn}>
+                <View style={styles.headerDetailItem}>
+                  <Ionicons name="location-outline" size={16} color="#f87b1b" />
+                  <Text style={styles.headerDetailText} numberOfLines={1}>{selectedManifolderData?.zone_title || 'No zone'}</Text>
+                </View>
+                {selectedManifolderData?.date && (
+                  <View style={styles.headerDetailItem}>
+                    <Ionicons name="calendar-outline" size={16} color="#f87b1b" />
+                    <Text style={styles.headerDetailText} numberOfLines={1}>{selectedManifolderData.date}</Text>
                   </View>
                 )}
               </View>
             </View>
+            {(selectedManifolderData?.heur_d || selectedManifolderData?.heur_f) && (
+              <View style={styles.headerDetailItemFullWidth}>
+                <Ionicons name="time-outline" size={16} color="#f87b1b" />
+                <Text style={styles.headerDetailText} numberOfLines={1}>
+                  {[selectedManifolderData.heur_d, selectedManifolderData.heur_f].filter(Boolean).join(' - ')}
+                </Text>
+              </View>
+            )}
           </View>
         </View>
       )}
@@ -299,6 +300,7 @@ const styles = StyleSheet.create({
   headerContent: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
   },
   headerContentDetails: {
     justifyContent: 'flex-start',
@@ -306,8 +308,10 @@ const styles = StyleSheet.create({
   backButton: {
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
-    padding: 8,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#f1f5f9',
   },
   backButtonText: {
     fontSize: 28,
@@ -323,6 +327,7 @@ const styles = StyleSheet.create({
   headerTitleContainer: {
     flex: 1,
     alignItems: 'center',
+    justifyContent: 'center',
   },
   headerSubtitle: {
     fontSize: 14,
@@ -338,7 +343,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 12,
     marginTop: 8,
-    width: '100%',
+    alignSelf: 'stretch',
     borderWidth: 1,
     borderColor: '#f87b1b',
   },

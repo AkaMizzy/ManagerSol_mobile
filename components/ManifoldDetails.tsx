@@ -2,7 +2,7 @@ import API_CONFIG from '@/app/config/api';
 import SignatureField from '@/components/SignatureField';
 import { useAuth } from '@/contexts/AuthContext';
 import manifolderService from '@/services/manifolderService';
-import { ManifolderListItem } from '@/types/manifolder';
+import { ManifolderListItem, ManifolderQuestion } from '@/types/manifolder';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import React, { useCallback, useEffect, useState } from 'react';
@@ -18,6 +18,7 @@ import {
   Text,
   View,
 } from 'react-native';
+import AnswersPreviewModal from './AnswersPreviewModal';
 import FileUploader from './FileUploader';
 
 interface ManifoldDetailsProps {
@@ -50,6 +51,13 @@ export default function ManifoldDetails({
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [isCheckingPdf, setIsCheckingPdf] = useState(false);
   const [isUploadingDocument, setIsUploadingDocument] = useState(false);
+
+  // Preview Modal states
+  const [isPreviewModalVisible, setIsPreviewModalVisible] = useState(false);
+  const [isLoadingPreview, setIsLoadingPreview] = useState(false);
+  const [questions, setQuestions] = useState<ManifolderQuestion[]>([]);
+  const [answers, setAnswers] = useState<Record<string, any>>({});
+  const [quantities, setQuantities] = useState<Record<string, number>>({});
 
   // Signature states
   const [signatures, setSignatures] = useState<{
@@ -196,6 +204,83 @@ export default function ManifoldDetails({
     }
   }, [manifolder, checkPDFStatus]);
 
+  const handlePreviewAnswers = async () => {
+    if (isLoadingPreview) return;
+    
+    try {
+      setIsLoadingPreview(true);
+      
+      // Use the correct endpoint from manifolderService
+      const data = await manifolderService.getManifolderAnswers(manifolderId, token!);
+      
+      // The service now returns { answers: ManifolderAnswerWithDetails[] }
+      // We need to transform this data to fit the modal's expected props.
+      
+      const transformedAnswers: Record<string, any> = {};
+      const transformedQuantities: Record<string, number> = {};
+      const questionMap: Record<string, ManifolderQuestion> = {};
+
+      data.answers.forEach(answer => {
+        // Handle text, file, and GPS answers from `value`
+        if (answer.value) {
+          if (answer.questionType === 'GPS' && typeof answer.value === 'object' && answer.value.latitude && answer.value.longitude) {
+            transformedAnswers[answer.questionId] = {
+              latitude: parseFloat(answer.value.latitude),
+              longitude: parseFloat(answer.value.longitude)
+            };
+          } else {
+            transformedAnswers[answer.questionId] = answer.value;
+          }
+        }
+        
+        // Handle image answers
+        if (answer.imageAnswer) {
+          transformedAnswers[answer.questionId] = {
+            originalName: answer.imageAnswer.split('/').pop() || 'Image Answer',
+            path: `${API_CONFIG.BASE_URL}${answer.imageAnswer}`,
+          };
+        }
+        
+        // Handle vocal answers
+        if (answer.vocalAnswer) {
+          transformedAnswers[answer.questionId] = {
+            originalName: answer.vocalAnswer.split('/').pop() || 'Vocal Answer',
+            path: `${API_CONFIG.BASE_URL}${answer.vocalAnswer}`,
+          };
+        }
+        
+        // Store quantity if available
+        if (answer.quantity !== undefined && answer.quantity !== null) {
+          transformedQuantities[answer.questionId] = answer.quantity;
+        }
+
+        // Build question map to avoid duplicates
+        if (!questionMap[answer.questionId]) {
+          questionMap[answer.questionId] = {
+            id: answer.questionId,
+            title: answer.questionTitle,
+            type: answer.questionType,
+            // Add other required fields with default values if necessary
+            context: '',
+            required: false,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          };
+        }
+      });
+
+      setQuestions(Object.values(questionMap));
+      setAnswers(transformedAnswers);
+      setQuantities(transformedQuantities);
+      setIsPreviewModalVisible(true);
+      
+    } catch (err: any) {
+      Alert.alert('Error', err.message || 'Could not load answers preview.');
+    } finally {
+      setIsLoadingPreview(false);
+    }
+  };
+
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleDateString('en-US', {
@@ -206,9 +291,10 @@ export default function ManifoldDetails({
     });
   };
 
-  const formatTime = (timeString: string | null) => {
-    if (!timeString) return 'Not specified';
-    return timeString;
+  const formatTime = (timeString: string | null, prefix: string) => {
+    if (!timeString) return 'Heure non spécifiée';
+    // Extracts HH:MM from formats like HH:MM:SS
+    return `${prefix}: ${timeString.slice(0, 5)}`;
   };
 
   const generatePDF = async () => {
@@ -543,42 +629,9 @@ export default function ManifoldDetails({
               </Text>
             </View>
           </View>
-        </View>
 
-        {/* Primary Actions */}
-        <View style={styles.primaryActionsCard}>
-          <View style={styles.primaryActionsContainer}>
-            {onGoToQuestions && (
-              <Pressable style={styles.primaryActionButton} onPress={() => onGoToQuestions(manifolderId)}>
-                <Ionicons name="list-outline" size={20} color="#FFFFFF" />
-                <Text style={styles.primaryActionButtonText}>Passer aux questions</Text>
-              </Pressable>
-            )}
-            
-            <Pressable 
-              style={styles.primaryActionButton} 
-              onPress={pdfExists ? viewPDF : generatePDF}
-              disabled={isCheckingPdf}
-            >
-              <Ionicons 
-                name={pdfExists ? "eye-outline" : "document-text-outline"} 
-                size={20} 
-                color="#FFFFFF" 
-              />
-              <Text style={styles.primaryActionButtonText}>
-                {isCheckingPdf ? 'Vérification...' : pdfExists ? 'Voir le PDF' : 'Générer le PDF'}
-              </Text>
-              {pdfExists && (
-                <Ionicons name="checkmark-circle" size={16} color="#34C759" style={{ marginLeft: 6 }} />
-              )}
-            </Pressable>
-          </View>
-        </View>
+          <View style={styles.divider} />
 
-        {/* Main Info Card */}
-        <View style={styles.infoGroupCard}>
-          {/* Section 1: Informations de base */}
-          
           <View style={styles.infoRow}>
             <Text style={styles.infoValue}>{manifolder.title}</Text>
           </View>
@@ -595,10 +648,10 @@ export default function ManifoldDetails({
           
           <View style={styles.timeRow}>
             <View style={styles.timeItem}>
-              <Text style={styles.infoValue}>{formatTime(manifolder.heur_d || null)}</Text>
+              <Text style={styles.infoValue}>{formatTime(manifolder.heur_d || null, 'Début')}</Text>
             </View>
             <View style={styles.timeItem}>
-              <Text style={styles.infoValue}>{formatTime(manifolder.heur_f || null)}</Text>
+              <Text style={styles.infoValue}>{formatTime(manifolder.heur_f || null, 'Fin')}</Text>
             </View>
           </View>
         </View>
@@ -640,16 +693,53 @@ export default function ManifoldDetails({
                 />
               </View>
               
-              {signatureStatus && (
+              {signatureStatus && signatureStatus.isComplete && (
                 <View style={styles.signatureStatusContainer}>
                   <Text style={styles.signatureStatusLabel}>
-                    {signatureStatus.isComplete 
-                      ? '✅ Toutes les signatures sont complétées' 
-                      : `📝 ${signatureStatus.remainingSignatures} signature(s) restantes`
-                    }
+                    ✅ Toutes les signatures sont complétées
                   </Text>
                 </View>
               )}
+              
+              <View style={styles.primaryActionsContainer}>
+                {onGoToQuestions && (
+                  <Pressable style={styles.primaryActionButton} onPress={() => onGoToQuestions(manifolderId)}>
+                    <Ionicons name="list-outline" size={28} color="#FFFFFF" />
+                  </Pressable>
+                )}
+                
+                <Pressable 
+                  style={styles.primaryActionButton} 
+                  onPress={pdfExists ? viewPDF : generatePDF}
+                  disabled={isCheckingPdf}
+                >
+                  {isCheckingPdf ? (
+                    <ActivityIndicator size="small" color="#FFFFFF" />
+                  ) : (
+                    <Ionicons 
+                      name="document-text-outline" 
+                      size={28} 
+                      color="#FFFFFF" 
+                    />
+                  )}
+                </Pressable>
+
+                <Pressable 
+                  style={styles.primaryActionButton} 
+                  onPress={handlePreviewAnswers}
+                  disabled={isLoadingPreview}
+                >
+                  {isLoadingPreview ? (
+                    <ActivityIndicator size="small" color="#FFFFFF" />
+                  ) : (
+                    <Ionicons 
+                      name="eye-outline" 
+                      size={28} 
+                      color="#FFFFFF" 
+                    />
+                  )}
+                </Pressable>
+              </View>
               
               {signatures.technicien || signatures.control || signatures.admin ? (
                 <View style={styles.signatureInfoContainer}>
@@ -758,6 +848,17 @@ export default function ManifoldDetails({
         {/* Bottom Spacing */}
         <View style={styles.bottomSpacing} />
       </ScrollView>
+
+      <AnswersPreviewModal
+        visible={isPreviewModalVisible}
+        onClose={() => setIsPreviewModalVisible(false)}
+        questions={questions}
+        answers={answers}
+        quantities={quantities}
+        project={manifolder.project_title}
+        zone={manifolder.zone_title}
+        type={manifolder.type_title}
+      />
     </View>
   );
 }
@@ -848,6 +949,12 @@ const styles = StyleSheet.create({
     fontFamily: 'monospace',
     textAlign: 'center',
   },
+  headerPreviewButton: {
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   headerSubtitleContainer: {
     flexDirection: 'row',
     gap: 8,
@@ -876,35 +983,19 @@ const styles = StyleSheet.create({
   headerSpacer: {
     width: 40,
   },
-  primaryActionsCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    padding: 20,
-    marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-    borderWidth: 1,
-    borderColor: '#f87b1b',
-  },
   primaryActionsContainer: {
     flexDirection: 'row',
     gap: 12,
+    justifyContent: 'center',
+    marginVertical: 16,
   },
   primaryActionButton: {
-    flex: 1,
-    flexDirection: 'row',
+    width: 60,
+    height: 60,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
     backgroundColor: '#f87b1b',
-    borderRadius: 10,
+    borderRadius: 12,
     shadowColor: '#f87b1b',
     shadowOffset: {
       width: 0,
@@ -913,13 +1004,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.2,
     shadowRadius: 4,
     elevation: 3,
-  },
-  primaryActionButtonText: {
-    marginLeft: 6,
-    fontSize: 14,
-    color: '#FFFFFF',
-    fontWeight: '600',
-    flexShrink: 1,
   },
   card: {
     backgroundColor: '#FFFFFF',
@@ -956,7 +1040,8 @@ const styles = StyleSheet.create({
   divider: {
     height: 1,
     backgroundColor: '#E5E5EA',
-    marginVertical: 16,
+    marginVertical: 12,
+    marginHorizontal: -16,
   },
   cardHeader: {
     flexDirection: 'row',
@@ -970,7 +1055,7 @@ const styles = StyleSheet.create({
     marginLeft: 12,
   },
   infoRow: {
-    marginBottom: 16,
+    marginBottom: 8,
   },
   infoLabel: {
     fontSize: 14,
@@ -987,7 +1072,7 @@ const styles = StyleSheet.create({
   timeRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 16,
+    marginBottom: 0,
     gap: 16,
   },
   timeItem: {

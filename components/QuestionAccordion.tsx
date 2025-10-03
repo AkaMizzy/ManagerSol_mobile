@@ -481,27 +481,43 @@ export default function QuestionAccordion({
 
   // Check if question is answered
   const isAnswered = () => {
-    if (value === undefined || value === null || value === '') {
-        if (vocalAnswer === undefined || vocalAnswer === null || vocalAnswer === '') {
-            return false;
-        }
+    // If all possible answer types are empty, then it's not answered.
+    if (
+      (value === undefined || value === null || value === '') &&
+      (vocalAnswer === undefined || vocalAnswer === null || vocalAnswer === '') &&
+      (imageAnswer === undefined || imageAnswer === null || imageAnswer === '')
+    ) {
+      return false;
     }
-    
-    // For GPS answers, check if both latitude and longitude exist
-    if (typeof value === 'object' && value.latitude !== undefined && value.longitude !== undefined) {
+
+    // For GPS answers, check if value is an object with valid coordinates
+    if (value && typeof value === 'object' && value.latitude !== undefined && value.longitude !== undefined) {
       return value.latitude !== null && value.longitude !== null;
     }
     
-    // For file answers, check if file object exists with path
-    if (typeof value === 'object' && value.path !== undefined) {
+    // For file answers, check if value is an object with a path
+    if (value && typeof value === 'object' && value.path !== undefined) {
       return value.path !== null && value.path !== '';
     }
 
-    if (typeof vocalAnswer === 'object' && vocalAnswer.path !== undefined) {
+    // Check for a valid vocal answer object
+    if (vocalAnswer && typeof vocalAnswer === 'object' && vocalAnswer.path !== undefined) {
         return vocalAnswer.path !== null && vocalAnswer.path !== '';
     }
     
-    return true;
+    // Check for a valid image answer object
+    if (imageAnswer && typeof imageAnswer === 'object' && (imageAnswer.path !== undefined || imageAnswer.uri !== undefined)) {
+      return (imageAnswer.path !== null && imageAnswer.path !== '') || (imageAnswer.uri !== null && imageAnswer.uri !== '');
+    }
+    
+    // If any of the answer types have a value, consider it answered.
+    // This will correctly handle boolean `false` as a valid answer.
+    if (value !== undefined && value !== null && value !== '') return true;
+    if (vocalAnswer !== undefined && vocalAnswer !== null && vocalAnswer !== '') return true;
+    if (imageAnswer !== undefined && imageAnswer !== null && imageAnswer !== '') return true;
+
+    // Fallback for cases like an empty object for a file answer, which should be considered unanswered.
+    return false;
   };
 
   return (

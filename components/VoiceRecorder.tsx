@@ -40,7 +40,26 @@ export default function VoiceRecorder({
   }, [sound]);
 
   useEffect(() => {
-    let interval: NodeJS.Timeout;
+    // This cleanup function runs when the component unmounts or when `recording` changes.
+    // It ensures that any active recording is stopped to release the microphone.
+    return () => {
+      if (recording) {
+        recording.stopAndUnloadAsync().catch(error => {
+          // This can happen if stopRecording was already called. It's safe to ignore.
+          console.log("Cleanup stopAndUnloadAsync error:", error.message);
+        });
+        // Reset audio mode to prevent issues on iOS.
+        Audio.setAudioModeAsync({
+          allowsRecordingIOS: false,
+        }).catch((error) => {
+          console.error("Failed to reset audio mode on cleanup", error);
+        });
+      }
+    };
+  }, [recording]);
+
+  useEffect(() => {
+    let interval: any;
     if (isRecording) {
       interval = setInterval(() => {
         setRecordingTime(prev => {
@@ -102,6 +121,11 @@ export default function VoiceRecorder({
       
       setRecording(null);
       setRecordingTime(0);
+
+      // Reset audio mode after recording is finished
+      await Audio.setAudioModeAsync({
+        allowsRecordingIOS: false,
+      });
     } catch (error) {
       Alert.alert('Error', 'Failed to stop recording');
     }

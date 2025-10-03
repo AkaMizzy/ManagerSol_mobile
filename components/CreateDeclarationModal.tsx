@@ -550,7 +550,7 @@ export default function CreateDeclarationModal({
               
               {/* Date */}
               <TouchableOpacity style={[styles.inputContainer, { marginTop: 12 }, errors.date_declaration && styles.inputError]} onPress={() => setShowDatePicker(true)}>
-                <Ionicons name="calendar-outline" size={18} color="#6b7280" />
+                <Ionicons name="calendar-outline" size={18} color="#f87b1b" />
                 <Text style={[styles.inputText, !formData.date_declaration && styles.placeholderText]}>
                   {formData.date_declaration ? formatDisplayDate(formData.date_declaration) : 'Sélectionner la date'}
                 </Text>
@@ -559,18 +559,15 @@ export default function CreateDeclarationModal({
               
               {/* Declarant */}
                <TouchableOpacity style={[styles.inputContainer, { marginTop: 12 }]} onPress={() => setShowDeclarantModal(true)}>
-                <Ionicons name="person-outline" size={18} color="#6b7280" />
+                <Ionicons name="person-outline" size={18} color="#f87b1b" />
                 <Text style={[styles.inputText, !formData.id_declarent && styles.placeholderText]}>
                   {getDeclarantName(formData.id_declarent || '')}
                 </Text>
               </TouchableOpacity>
-            </View>
-            {/* Main Info Card */}
-            <View style={styles.card}>
-              
+
               {/* Declaration Type */}
               <TouchableOpacity
-                style={[styles.inputContainer, errors.id_declaration_type && styles.inputError]}
+                style={[styles.inputContainer, { marginTop: 12 }, errors.id_declaration_type && styles.inputError]}
                 onPress={() => setShowTypeDropdown(!showTypeDropdown)}
               >
                 <Text style={[styles.inputText, !formData.id_declaration_type && styles.placeholderText]}>
@@ -599,9 +596,6 @@ export default function CreateDeclarationModal({
               />
               {errors.title && <Text style={styles.errorText}>{errors.title}</Text>}
             </View>
-
-            
-
             {/* Severity and Description Card */}
             <View style={styles.card}>
               
@@ -648,14 +642,14 @@ export default function CreateDeclarationModal({
             {/* Photos Card */}
             <View style={styles.card}>
               <View style={styles.cardHeader}>
-                <View style={styles.cardIconWrap}><Ionicons name="images-outline" size={18} color="#11224e" /></View>
+                <View style={styles.cardIconWrap}><Ionicons name="images-outline" size={18} color="#f87b1b" /></View>
                 <View style={styles.cardHeaderText}>
                   <Text style={styles.cardTitle}>Photos</Text>
                   <Text style={styles.cardHint}>Ajouter des photos (optionnel)</Text>
                 </View>
               </View>
               <TouchableOpacity style={styles.photoPickerButton} onPress={showPhotoOptions}>
-                 <Ionicons name="camera-outline" size={24} color="#475569" />
+                 <Ionicons name="camera-outline" size={24} color="#f87b1b" />
                  <Text style={styles.photoPickerText}>Ajouter des Photos</Text>
                </TouchableOpacity>
 
@@ -676,7 +670,7 @@ export default function CreateDeclarationModal({
             {/* Location Card */}
             <View style={styles.card}>
               <View style={styles.cardHeader}>
-                <View style={styles.cardIconWrap}><Ionicons name="location-outline" size={18} color="#11224e" /></View>
+                <View style={styles.cardIconWrap}><Ionicons name="location-outline" size={18} color="#f87b1b" /></View>
                 <View style={styles.cardHeaderText}>
                   <Text style={styles.cardTitle}>Localisation</Text>
                   <Text style={styles.cardHint}>Coordonnées géographiques (optionnel)</Text>
@@ -757,7 +751,7 @@ export default function CreateDeclarationModal({
               }} 
               style={styles.modalCloseButton}
             >
-              <Ionicons name="close" size={24} color="#1C1C1E" />
+              <Ionicons name="close" size={24} color="#f87b1b" />
             </TouchableOpacity>
             <Text style={styles.modalHeaderTitle}>Sélectionner le Déclarant</Text>
             <View style={styles.modalPlaceholder} />
@@ -912,7 +906,7 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 2,
     borderWidth: 1,
-    borderColor: '#f1f5f9'
+    borderColor: '#f87b1b',
   },
   cardHeader: {
     flexDirection: 'row',
