@@ -691,17 +691,6 @@ export default function CreateDeclarationModal({
                    </View>
                 </View>
               </TouchableOpacity>
-               {showLocationInput && (
-                 <View style={styles.mapContainer}>
-                   <WebView
-                     source={{ html: mapHtml }}
-                     style={styles.map}
-                     onMessage={handleMapMessage}
-                     javaScriptEnabled={true}
-                     startInLoadingState={true}
-                   />
-                 </View>
-               )}
             </View>
             
             {/* Spacer */}
@@ -722,6 +711,22 @@ export default function CreateDeclarationModal({
               )}
             </TouchableOpacity>
           </View>
+
+          {/* Full Screen Map View */}
+          {showLocationInput && (
+            <View style={styles.fullScreenMapContainer}>
+              <WebView
+                source={{ html: mapHtml }}
+                style={styles.map}
+                onMessage={handleMapMessage}
+                javaScriptEnabled={true}
+                startInLoadingState={true}
+              />
+              <TouchableOpacity style={styles.mapCloseButton} onPress={handleLocationToggle}>
+                <Ionicons name="close" size={28} color="#11224e" />
+              </TouchableOpacity>
+            </View>
+          )}
         </SafeAreaView>
       </KeyboardAvoidingView>
 
@@ -1127,6 +1132,24 @@ const styles = StyleSheet.create({
   },
   map: {
     flex: 1,
+  },
+  fullScreenMapContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: '#FFFFFF',
+    zIndex: 10,
+  },
+  mapCloseButton: {
+    position: 'absolute',
+    top: 50,
+    right: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.8)',
+    borderRadius: 20,
+    padding: 6,
+    zIndex: 20,
   },
   miniMapPreview: {
     height: 100,

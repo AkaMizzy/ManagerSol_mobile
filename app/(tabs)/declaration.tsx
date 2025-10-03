@@ -168,28 +168,10 @@ export default function DeclarationScreen() {
       // Refresh declarations list
       await loadDeclarations();
       
-      // Show success message and redirect to Action Modal
-      Alert.alert(
-        'Succès', 
-        'Déclaration créée avec succès !',
-        [
-          {
-            text: 'Ok',
-            onPress: () => {
-              // Find the newly created declaration from the refreshed list
-              // We'll use the first declaration since it should be the newest
-              if (declarations.length > 0) {
-                const newestDeclaration = declarations[0]; // Assuming newest is first after refresh
-                setSelectedDeclaration(newestDeclaration);
-                // Open the Action Modal
-                setActionsModalVisible(true);
-                // Load actions for the new declaration
-                handleViewActions(newestDeclaration);
-              }
-            }
-          }
-        ]
-      );
+      // NOTE: The success alert has been removed as per the user's request.
+      // The modal will now close directly, and the user can proceed
+      // to the new declaration from the main list.
+      
     } catch (error) {
       console.error('Failed to create declaration:', error);
       throw error; // Re-throw to let the modal handle the error
