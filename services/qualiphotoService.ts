@@ -145,6 +145,12 @@ class QualiPhotoService {
     });
   }
 
+  async generatePdf(qualiphotoId: string, token: string): Promise<{ fileUrl: string; filename: string }> {
+    return this.makeRequest<{ fileUrl: string; filename: string }>(`/qualiphoto/generate-pdf/${qualiphotoId}`, token, {
+      method: 'GET',
+    });
+  }
+
   async transcribeVoiceNote(voiceNote: { uri: string; name: string; type: string }, token: string): Promise<{ transcription: string }> {
     const formData = new FormData();
     formData.append('voice_note', {

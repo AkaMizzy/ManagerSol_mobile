@@ -9,6 +9,7 @@ import { CreateChildQualiPhotoForm } from './CreateChildQualiPhotoModal';
 
 import { useAuth } from '@/contexts/AuthContext';
 import AppHeader from './AppHeader';
+import API_CONFIG from '@/app/config/api';
 
 const cameraIcon = require('@/assets/icons/camera.gif');
 const mapIcon = require('@/assets/icons/map.png');
@@ -87,6 +88,7 @@ type QualiPhotoItemWithComment2 = QualiPhotoItem & {
   const [isLoadingComments, setIsLoadingComments] = useState(false);
   const [isActionsVisible, setActionsVisible] = useState(false);
   const [layoutMode, setLayoutMode] = useState<'grid' | 'list'>('grid');
+  const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
 
   useEffect(() => {
     setItem(initialItem || null);
@@ -262,6 +264,29 @@ type QualiPhotoItemWithComment2 = QualiPhotoItem & {
    const renderDetailView = () => {
     if (!item) return null;
 
+    const handleGeneratePdf = async () => {
+        if (!item || !token) return;
+        setIsGeneratingPdf(true);
+        try {
+            const { fileUrl } = await qualiphotoService.generatePdf(item.id, token);
+            const absoluteUrl = `${API_CONFIG.BASE_URL}${fileUrl}`;
+            
+            // Check if linking is supported
+            const supported = await Linking.canOpenURL(absoluteUrl);
+            if (supported) {
+                await Linking.openURL(absoluteUrl);
+                Alert.alert('Succès', 'PDF généré et ouvert avec succès.');
+            } else {
+                Alert.alert('Erreur', `Impossible d'ouvrir l'URL: ${absoluteUrl}`);
+            }
+        } catch (error) {
+            console.error("PDF Generation Error:", error);
+            Alert.alert('Erreur', 'Échec de la génération du PDF.');
+        } finally {
+            setIsGeneratingPdf(false);
+        }
+    };
+
     const header = (
       <View style={styles.header}>
         {item?.id_qualiphoto_parent ? (
@@ -283,13 +308,26 @@ type QualiPhotoItemWithComment2 = QualiPhotoItem & {
         {!!item?.title && <Text style={styles.title}>{item.title}</Text>}
           
         </View>
-        {item?.before === 1 ? (
-          <TouchableOpacity style={styles.headerAction} onPress={() => setChildModalVisible(true)}>
-            <Image source={cameraIcon} style={styles.headerActionIcon} />
-          </TouchableOpacity>
-        ) : (
-          <View style={{ width: 40 }} />
-        )}
+        <View style={styles.headerActionsContainer}>
+          {item?.before === 1 ? (
+            <TouchableOpacity style={styles.headerAction} onPress={() => setChildModalVisible(true)}>
+              <Image source={cameraIcon} style={styles.headerActionIcon} />
+            </TouchableOpacity>
+          ) : (
+            <View style={{ width: 40 }} />
+          )}
+
+          {/* PDF Generation Button */}
+          {item && !item.id_qualiphoto_parent && (
+              <TouchableOpacity style={styles.headerAction} onPress={handleGeneratePdf} disabled={isGeneratingPdf}>
+                  {isGeneratingPdf ? (
+                      <ActivityIndicator color="#f87b1b" />
+                  ) : (
+                      <Ionicons name="document-text-outline" size={28} color="#11224e" />
+                  )}
+              </TouchableOpacity>
+          )}
+        </View>
       </View>
     );
 
@@ -684,6 +722,11 @@ const styles = StyleSheet.create({
     height: 40,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  headerActionsContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
   },
   headerActionIcon: {
     width: 50,
