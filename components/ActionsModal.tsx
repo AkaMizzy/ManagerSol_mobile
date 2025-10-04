@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Alert, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import DateTimePickerModal from 'react-native-modal-datetime-picker';
 import API_CONFIG from '../app/config/api';
@@ -27,7 +27,6 @@ export default function ActionsModal({ visible, actions, onClose, onCreateAction
   const [showPlanPicker, setShowPlanPicker] = useState(false);
   const [showExecPicker, setShowExecPicker] = useState(false);
   const [zones, setZones] = useState<Zone[]>([]);
-  const [showZoneDropdown, setShowZoneDropdown] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [companyUsers, setCompanyUsers] = useState<CompanyUser[]>([]);
   const [showUserDropdown, setShowUserDropdown] = useState(false);
@@ -102,7 +101,7 @@ export default function ActionsModal({ visible, actions, onClose, onCreateAction
     }
   };
 
-  const fetchCompanyUsers = async () => {
+  const fetchCompanyUsers = useCallback(async () => {
     if (!token) {
       Alert.alert('Erreur', 'Authentification requise');
       return;
@@ -128,7 +127,7 @@ export default function ActionsModal({ visible, actions, onClose, onCreateAction
     } finally {
       setLoadingUsers(false);
     }
-  };
+  }, [token]);
 
   const resetForm = () => {
     setForm({ id_zone: parentZone?.id });
@@ -241,7 +240,7 @@ export default function ActionsModal({ visible, actions, onClose, onCreateAction
     }
   };
 
-  const fetchSubActions = async (parentActionId: string, declarationId: string) => {
+  const fetchSubActions = useCallback(async (parentActionId: string, declarationId: string) => {
     if (!token) return;
     
     try {
@@ -270,7 +269,7 @@ export default function ActionsModal({ visible, actions, onClose, onCreateAction
         return newSet;
       });
     }
-  };
+  }, [token]);
 
   const toggleActionExpansion = (actionId: string, declarationId: string) => {
     const isExpanded = expandedActions.has(actionId);
@@ -301,14 +300,14 @@ export default function ActionsModal({ visible, actions, onClose, onCreateAction
     setZones(list);
     // default selection to parent
     setForm((p) => ({ ...p, id_zone: parentZone?.id }));
-  }, [parentZone?.id, childZones?.length]);
+  }, [parentZone, childZones]);
 
   // Fetch company users when form is shown
   useEffect(() => {
     if ((showForm || showEditForm || showSubActionForm) && companyUsers.length === 0) {
       fetchCompanyUsers();
     }
-  }, [showForm, showEditForm, showSubActionForm, token]);
+  }, [showForm, showEditForm, showSubActionForm, companyUsers.length, fetchCompanyUsers]);
 
   const renderZoneOption = (zone: Zone) => {
     const uri = zone.logo ? `${API_CONFIG.BASE_URL}${zone.logo}` : undefined;
@@ -351,7 +350,7 @@ export default function ActionsModal({ visible, actions, onClose, onCreateAction
     );
   };
 
-  const { parentActions, subActions } = React.useMemo(() => {
+  const { parentActions } = React.useMemo(() => {
     if (!actions) return { parentActions: [], subActions: [] };
     
     const parentActions: DeclarationAction[] = [];
@@ -388,7 +387,7 @@ export default function ActionsModal({ visible, actions, onClose, onCreateAction
         });
       }
     }
-  }, [visible, parentActions, token]);
+  }, [visible, parentActions, token, subActionsMap, fetchSubActions]);
 
   return (
     <>
@@ -757,7 +756,14 @@ export default function ActionsModal({ visible, actions, onClose, onCreateAction
              <TouchableOpacity onPress={() => setShowDetailsModal(false)} style={styles.closeButton}>
                <Ionicons name="close" size={24} color="#1C1C1E" />
              </TouchableOpacity>
-             <Text style={styles.headerTitle}>Détails de l&apos;action</Text>
+            <View style={styles.headerCenter}>
+              <Text style={styles.headerTitle}>Détails de l&apos;action</Text>
+              {selectedAction && (
+              <Text style={styles.headerSubtitle} numberOfLines={1}>
+                {`Projet: ${projectTitle || '—'} · Zone: ${getZoneTitleById(selectedAction.id_zone)}`}
+              </Text>
+              )}
+            </View>
              <View style={styles.placeholder} />
            </View>
 
@@ -810,16 +816,8 @@ export default function ActionsModal({ visible, actions, onClose, onCreateAction
                 <View style={styles.detailsSection}>
                   <Text style={styles.sectionHeader}>Contexte</Text>
                   <View style={styles.detailRow}>
-                    <Text style={styles.detailLabel}>Zone</Text>
-                    <Text style={styles.detailValue}>{getZoneTitleById(selectedAction.id_zone)}</Text>
-                  </View>
-                  <View style={styles.detailRow}>
                     <Text style={styles.detailLabel}>Entreprise</Text>
                     <Text style={styles.detailValue}>{selectedAction.company_title || '—'}</Text>
-                  </View>
-                  <View style={styles.detailRow}>
-                    <Text style={styles.detailLabel}>Projet</Text>
-                    <Text style={styles.detailValue}>{projectTitle || '—'}</Text>
                   </View>
                   <View style={styles.detailRow}>
                     <Text style={styles.detailLabel}>Statut</Text>
@@ -1258,10 +1256,20 @@ const styles = StyleSheet.create({
     borderBottomColor: '#E5E5EA',
   },
   closeButton: { padding: 8 },
-  headerTitle: { fontSize: 18, fontWeight: '600', color: '#1C1C1E' },
-  placeholder: { width: 24 },
-  content: { padding: 16 },
-  searchBar: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#E5E5EA', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8, marginBottom: 12 },
+  headerTitle: { fontSize: 18, fontWeight: '600', color: '#1C1C1E', textAlign: 'center' },
+  headerSubtitle: {
+    fontSize: 12,
+    color: '#8E8E93',
+    textAlign: 'center',
+    marginTop: 2,
+  },
+  headerCenter: {
+    flex: 1,
+    alignItems: 'center',
+  },
+   placeholder: { width: 24 },
+   content: { padding: 16 },
+   searchBar: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#E5E5EA', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8, marginBottom: 12 },
   searchInput: { flex: 1, fontSize: 14, color: '#1C1C1E' },
   createBar: { marginBottom: 12 },
   createButton: { flex: 1,
