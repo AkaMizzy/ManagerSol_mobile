@@ -167,10 +167,10 @@ export function CreateChildQualiPhotoForm({ onClose, onSuccess, parentItem }: Fo
       <SafeAreaView style={styles.container}>
         <View style={styles.header}>
           <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-            <Ionicons name="close" size={24} color="#6b7280" />
+            <Ionicons name="close" size={24} color="#f87b1b" />
           </TouchableOpacity>
           <View style={styles.headerCenter}>
-            <Text style={styles.headerTitle}>{`Ajouter une photo "Après"`}</Text>
+            <Text style={styles.headerTitle}>{`Ajouter une photo d'évolution`}</Text>
           </View>
           <View style={styles.placeholder} />
         </View>
@@ -190,27 +190,18 @@ export function CreateChildQualiPhotoForm({ onClose, onSuccess, parentItem }: Fo
           <View style={styles.card}>
             <View style={styles.cardHeader}>
               <View style={styles.cardHeaderText}>
-                <Text style={styles.cardTitle} numberOfLines={1}>{`${parentItem.project_title} • ${parentItem.zone_title}`}</Text>
-                {parentItem.date_taken ? <Text style={styles.cardSubtitle}>{formatDate(parentItem.date_taken)}</Text> : null}
+                <Text style={styles.cardTitle} numberOfLines={1}>
+                  {`${parentItem.project_title} • ${parentItem.zone_title}${parentItem.date_taken ? ` • ${formatDate(parentItem.date_taken)}` : ''}`}
+                </Text>
               </View>
             </View>
             <View style={styles.parentPhotoContainer}>
               <Image source={{ uri: parentItem.photo }} style={styles.parentPhoto} />
-              <View style={styles.parentInfoOverlay}>
-                <View style={styles.contextItem}>
-                  <Ionicons name="briefcase-outline" size={14} color="white" />
-                  <Text style={styles.parentInfoText} numberOfLines={1}>{parentItem.project_title}</Text>
-                </View>
-                <View style={styles.contextItem}>
-                  <Ionicons name="location-outline" size={14} color="white" />
-                  <Text style={styles.parentInfoText} numberOfLines={1}>{parentItem.zone_title}</Text>
-                </View>
-              </View>
             </View>
-          </View>
+          
+            <View style={styles.separator} />
 
-          {/* New Photo Card */}
-          <View style={styles.card}>
+            {/* New Photo Card */}
             <View style={[styles.inputWrap, { marginBottom: 16 }]}>
               <Ionicons name="text-outline" size={16} color="#6b7280" />
               <TextInput
@@ -245,7 +236,6 @@ export function CreateChildQualiPhotoForm({ onClose, onSuccess, parentItem }: Fo
                 <Text style={styles.photoPickerText}>{`Ajouter une Photo "Après"`}</Text>
               </TouchableOpacity>
             )}
-
             <View style={styles.voiceNoteContainer}>
               {isRecording ? (
                 <View style={styles.recordingWrap}>
@@ -378,16 +368,22 @@ const styles = StyleSheet.create({
   alertBanner: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#fffbeb', borderColor: '#f59e0b', borderWidth: 1, paddingHorizontal: 12, paddingVertical: 8, marginHorizontal: 16, marginTop: 8, borderRadius: 10 },
   alertBannerText: { color: '#b45309', flex: 1, fontSize: 12 },
   card: { backgroundColor: '#FFFFFF', borderRadius: 16, padding: 16, marginTop: 16, marginHorizontal: 8, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8, elevation: 2, borderWidth: 1, borderColor: '#f87b1b' },
-  cardHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 10 },
+  cardHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginBottom: 10 },
   cardIconWrap: { width: 28, height: 28, borderRadius: 14, backgroundColor: '#eef2ff', justifyContent: 'center', alignItems: 'center', marginRight: 10 },
-  cardHeaderText: { flex: 1 },
-  cardTitle: { fontSize: 12, color: '#11224e' },
+  cardHeaderText: { flex: 1, alignItems: 'center' },
+  cardTitle: { fontSize: 12, color: '#11224e', fontWeight: '500' },
   cardSubtitle: {
     fontSize: 12,
     color: '#11224e',
     marginTop: 2,
   },
   
+  separator: {
+    height: 1,
+    backgroundColor: '#e5e7eb',
+    marginVertical: 16,
+  },
+
   parentPhotoContainer: {
     position: 'relative',
     borderRadius: 12,
@@ -395,7 +391,7 @@ const styles = StyleSheet.create({
   },
   parentPhoto: {
     width: '100%',
-    aspectRatio: 16 / 10,
+    aspectRatio: 2 / 1,
     backgroundColor: '#e5e7eb',
   },
   parentInfoOverlay: {
@@ -427,7 +423,7 @@ const styles = StyleSheet.create({
     borderColor: '#f87b1b',
     borderStyle: 'dashed',
     borderRadius: 12,
-    paddingVertical: 32,
+    paddingVertical: 20,
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: '#f8fafc',
@@ -443,7 +439,7 @@ const styles = StyleSheet.create({
   },
   imagePreview: {
     width: '100%',
-    aspectRatio: 16 / 10,
+    aspectRatio: 2 / 1,
     borderRadius: 12,
   },
   imageActions: {
