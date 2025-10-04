@@ -4,8 +4,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { Audio } from 'expo-av';
 import * as ImagePicker from 'expo-image-picker';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, Image, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { ActivityIndicator, Alert, Image, KeyboardAvoidingView, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 type FormProps = {
   onClose: () => void;
@@ -13,10 +13,8 @@ type FormProps = {
   parentItem: QualiPhotoItem;
 };
 
-// Extracted the form content into its own component
 export function CreateChildQualiPhotoForm({ onClose, onSuccess, parentItem }: FormProps) {
   const { token } = useAuth();
-  const insets = useSafeAreaInsets();
   const [title, setTitle] = useState('');
   const [comment, setComment] = useState('');
   const [photo, setPhoto] = useState<{ uri: string; name: string; type: string } | null>(null);
@@ -28,7 +26,10 @@ export function CreateChildQualiPhotoForm({ onClose, onSuccess, parentItem }: Fo
   const [recordingDuration, setRecordingDuration] = useState(0);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isTranscribing, setIsTranscribing] = useState(false);
+
   const durationIntervalRef = useRef<number | null>(null);
+  const scrollViewRef = useRef<ScrollView>(null);
 
   const canSave = useMemo(() => !!photo && !submitting, [photo, submitting]);
 
@@ -44,7 +45,7 @@ export function CreateChildQualiPhotoForm({ onClose, onSuccess, parentItem }: Fo
       Alert.alert('Permission', 'L\'autorisation d\'accéder à la caméra est requise.');
       return;
     }
-    const result = await ImagePicker.launchCameraAsync({ allowsEditing: true, aspect: [4,3], quality: 0.8 });
+    const result = await ImagePicker.launchCameraAsync({ allowsEditing: true, aspect: [4, 3], quality: 0.8 });
     if (!result.canceled && result.assets[0]) {
       const asset = result.assets[0];
       setPhoto({ uri: asset.uri, name: `qualiphoto_child_${Date.now()}.jpg`, type: 'image/jpeg' });
@@ -68,7 +69,7 @@ export function CreateChildQualiPhotoForm({ onClose, onSuccess, parentItem }: Fo
         voice_note: voiceNote || undefined,
       }, token);
       onSuccess(created);
-      onClose(); // Use onClose directly now
+      onClose();
     } catch (e: any) {
       setError(e?.message || 'Échec de l\'enregistrement de la photo "après".');
     } finally {
@@ -87,6 +88,7 @@ export function CreateChildQualiPhotoForm({ onClose, onSuccess, parentItem }: Fo
       const { recording } = await Audio.Recording.createAsync(Audio.RecordingOptionsPresets.HIGH_QUALITY);
       setRecording(recording);
       setIsRecording(true);
+      setRecordingDuration(0);
       durationIntervalRef.current = setInterval(() => {
         setRecordingDuration(prev => prev + 1);
       }, 1000);
@@ -104,7 +106,6 @@ export function CreateChildQualiPhotoForm({ onClose, onSuccess, parentItem }: Fo
     if (uri) {
       setVoiceNote({ uri, name: `voicenote-${Date.now()}.m4a`, type: 'audio/m4a' });
     }
-    setRecordingDuration(0);
     setRecording(null);
   }
 
@@ -139,160 +140,213 @@ export function CreateChildQualiPhotoForm({ onClose, onSuccess, parentItem }: Fo
     setIsPlaying(false);
   };
 
+  const handleTranscribe = async () => {
+    if (!voiceNote || !token) {
+      Alert.alert('Erreur', 'Aucune note vocale à transcrire.');
+      return;
+    }
+    setIsTranscribing(true);
+    setError(null);
+    try {
+      const result = await qualiphotoService.transcribeVoiceNote(voiceNote, token);
+      setComment(prev => prev ? `${prev}\n${result.transcription}` : result.transcription);
+    } catch (e: any) {
+      setError(e?.message || 'Échec de la transcription');
+      Alert.alert('Erreur de Transcription', e?.message || 'Une erreur est survenue lors de la transcription.');
+    } finally {
+      setIsTranscribing(false);
+    }
+  };
+
   useEffect(() => {
     return sound ? () => { sound.unloadAsync(); } : undefined;
   }, [sound]);
 
   return (
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-      <View style={styles.container}>
+      <SafeAreaView style={styles.container}>
         <View style={styles.header}>
-          <View style={{ width: 44 }} />
-          <View style={styles.headerCenter}>
-            <Text style={styles.headerTitle}>Ajouter une photo Suivi</Text>
-          </View>
           <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-            <Ionicons name="close-circle" size={28} color="#d1d5db" />
+            <Ionicons name="close" size={24} color="#6b7280" />
           </TouchableOpacity>
+          <View style={styles.headerCenter}>
+            <Text style={styles.headerTitle}>{`Ajouter une photo "Après"`}</Text>
+          </View>
+          <View style={styles.placeholder} />
         </View>
 
-        <ScrollView style={styles.content} contentContainerStyle={{ paddingBottom: 20 }}>
-          {error && (
-            <View style={styles.alertBanner}><Text style={styles.alertBannerText}>{error}</Text></View>
-          )}
-
-          {/* Context Section */}
-          <View style={styles.section}>
-            <View style={styles.sectionHeader}>
-              <Text style={styles.metaText} numberOfLines={1}>
-                {parentItem.project_title} • {parentItem.zone_title}
-                {parentItem.date_taken ? ` • ${formatDate(parentItem.date_taken)}` : ''}
-              </Text>
-            </View>
-            <View style={styles.contextCard}>
-              <Image source={{ uri: parentItem.photo }} style={styles.contextImage} />
-            </View>
+        {error && (
+          <View style={styles.alertBanner}>
+            <Ionicons name="warning" size={16} color="#b45309" />
+            <Text style={styles.alertBannerText}>{error}</Text>
+            <TouchableOpacity onPress={() => setError(null)}>
+              <Ionicons name="close" size={16} color="#b45309" />
+            </TouchableOpacity>
           </View>
+        )}
 
-          {/* Photo Section */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Nouvelle photo Suivi</Text>
-            {photo ? (
-              <View style={styles.photoPreviewContainer}>
-                <Image source={{ uri: photo.uri }} style={styles.photoPreview} />
-                <View style={styles.photoActions}>
-                  <TouchableOpacity style={styles.retakeButton} onPress={handlePickPhoto}>
-                    <Ionicons name="camera-reverse-outline" size={20} color="#374151" />
-                    <Text style={styles.retakeButtonText}>Reprendre</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity style={styles.removeButton} onPress={() => setPhoto(null)}>
-                    <Ionicons name="trash-outline" size={20} color="#ef4444" />
-                    <Text style={[styles.retakeButtonText, { color: '#ef4444' }]}>Supprimer</Text>
-                  </TouchableOpacity>
+        <ScrollView ref={scrollViewRef} style={styles.content} showsVerticalScrollIndicator={false}>
+          {/* Parent Info Card */}
+          <View style={styles.card}>
+            <View style={styles.cardHeader}>
+              <View style={styles.cardHeaderText}>
+                <Text style={styles.cardTitle} numberOfLines={1}>{`${parentItem.project_title} • ${parentItem.zone_title}`}</Text>
+                {parentItem.date_taken ? <Text style={styles.cardSubtitle}>{formatDate(parentItem.date_taken)}</Text> : null}
+              </View>
+            </View>
+            <View style={styles.parentPhotoContainer}>
+              <Image source={{ uri: parentItem.photo }} style={styles.parentPhoto} />
+              <View style={styles.parentInfoOverlay}>
+                <View style={styles.contextItem}>
+                  <Ionicons name="briefcase-outline" size={14} color="white" />
+                  <Text style={styles.parentInfoText} numberOfLines={1}>{parentItem.project_title}</Text>
+                </View>
+                <View style={styles.contextItem}>
+                  <Ionicons name="location-outline" size={14} color="white" />
+                  <Text style={styles.parentInfoText} numberOfLines={1}>{parentItem.zone_title}</Text>
                 </View>
               </View>
-            ) : (
-              <TouchableOpacity style={styles.captureButton} onPress={handlePickPhoto}>
-                <View style={styles.captureButtonIcon}>
-                  <Ionicons name="camera" size={24} color="#11224e" />
-                </View>
-                <Text style={styles.captureButtonText}>Appuyez pour prendre une photo</Text>
-                <Text style={styles.captureButtonSubtext}>Une nouvelle photo est requise</Text>
-              </TouchableOpacity>
-            )}
+            </View>
           </View>
 
-          {/* Details Section */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Détails (Optionnel)</Text>
-            <View style={styles.sectionCard}>
+          {/* New Photo Card */}
+          <View style={styles.card}>
+            <View style={[styles.inputWrap, { marginBottom: 16 }]}>
+              <Ionicons name="text-outline" size={16} color="#6b7280" />
               <TextInput
-                placeholder="Titre"
+                placeholder="Titre (optionnel)"
+                placeholderTextColor="#9ca3af"
                 value={title}
                 onChangeText={setTitle}
                 style={styles.input}
-                placeholderTextColor="#9ca3af"
-              />
-              <View style={styles.separator} />
-              <TextInput
-                placeholder="Description..."
-                value={comment}
-                onChangeText={setComment}
-                style={[styles.input, { minHeight: 80 }]}
-                multiline
-                placeholderTextColor="#9ca3af"
+                onFocus={() => {
+                  setTimeout(() => {
+                    scrollViewRef.current?.scrollToEnd({ animated: true });
+                  }, 100);
+                }}
               />
             </View>
-          </View>
 
-          {/* Voice Note Section */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Note Vocale (Optionnel)</Text>
-            <View style={styles.sectionCard}>
-            {isRecording ? (
-              <View style={styles.recordingWrap}>
-                <Text style={styles.recordingText}>Enregistrement... {formatDuration(recordingDuration)}</Text>
-                <Pressable style={styles.stopButton} onPress={stopRecording}>
-                  <Ionicons name="stop-circle" size={32} color="#dc2626" />
-                </Pressable>
-              </View>
-            ) : voiceNote ? (
-              <View style={styles.audioPlayerWrap}>
-                <Pressable style={styles.playButton} onPress={playSound}>
-                  <Ionicons name={isPlaying ? 'pause-circle' : 'play-circle'} size={40} color="#11224e" />
-                </Pressable>
-                <Text style={styles.audioMeta}>Note vocale enregistrée.</Text>
-                <Pressable style={styles.deleteButton} onPress={resetVoiceNote}>
-                  <Ionicons name="trash-outline" size={24} color="#dc2626" />
-                </Pressable>
+            {photo ? (
+              <View style={styles.imagePreviewContainer}>
+                <Image source={{ uri: photo.uri }} style={styles.imagePreview} />
+                <View style={styles.imageActions}>
+                  <TouchableOpacity style={[styles.iconButton, styles.iconButtonSecondary]} onPress={handlePickPhoto}>
+                    <Ionicons name="camera-reverse-outline" size={20} color="#11224e" />
+                  </TouchableOpacity>
+                  <TouchableOpacity style={[styles.iconButton, styles.iconButtonSecondary]} onPress={() => setPhoto(null)}>
+                    <Ionicons name="trash-outline" size={20} color="#dc2626" />
+                  </TouchableOpacity>
+                </View>
               </View>
             ) : (
-              <View style={styles.voiceActionsContainer}>
-                <TouchableOpacity style={styles.recordButton} onPress={startRecording}>
-                  <Ionicons name="mic-outline" size={22} color="#374151" />
-                  <Text style={styles.recordButtonText}>Enregistrer une note</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.recordButton, styles.transcribeButton]}
-                  onPress={() => Alert.alert('Bientôt disponible', 'La fonctionnalité de transcription sera bientôt disponible.')}
-                >
-                  <Ionicons name="document-text-outline" size={22} color="#374151" />
-                  <Text style={styles.recordButtonText}>Transcrire</Text>
-                </TouchableOpacity>
-              </View>
+              <TouchableOpacity style={styles.photoPickerButton} onPress={handlePickPhoto}>
+                <Ionicons name="camera-outline" size={24} color="#475569" />
+                <Text style={styles.photoPickerText}>{`Ajouter une Photo "Après"`}</Text>
+              </TouchableOpacity>
             )}
-          </View>
+
+            <View style={styles.voiceNoteContainer}>
+              {isRecording ? (
+                <View style={styles.recordingWrap}>
+                  <Text style={styles.recordingText}>Enregistrement... {formatDuration(recordingDuration)}</Text>
+                  <TouchableOpacity style={styles.stopButton} onPress={stopRecording}>
+                    <Ionicons name="stop-circle" size={24} color="#dc2626" />
+                  </TouchableOpacity>
+                </View>
+              ) : (
+                <View style={styles.voiceActionsContainer}>
+                  {voiceNote ? (
+                    <View style={styles.audioPlayerWrap}>
+                      <TouchableOpacity style={styles.playButton} onPress={playSound}>
+                        <Ionicons name={isPlaying ? 'pause-circle' : 'play-circle'} size={28} color="#11224e" />
+                      </TouchableOpacity>
+                      <TouchableOpacity style={styles.deleteButton} onPress={resetVoiceNote}>
+                        <Ionicons name="trash-outline" size={20} color="#dc2626" />
+                      </TouchableOpacity>
+                    </View>
+                  ) : (
+                    <TouchableOpacity style={styles.voiceRecordButton} onPress={startRecording}>
+                       <View style={styles.buttonContentWrapper}>
+                        <Ionicons name="mic-outline" size={24} color="#11224e" />
+                      </View>
+                    </TouchableOpacity>
+                  )}
+                   <TouchableOpacity
+                    style={[
+                      styles.voiceRecordButton,
+                      styles.transcribeButton,
+                      (!voiceNote || isTranscribing) && styles.buttonDisabled,
+                    ]}
+                    onPress={handleTranscribe}
+                    disabled={!voiceNote || isTranscribing}
+                  >
+                    {isTranscribing ? (
+                      <ActivityIndicator size="small" color="#11224e" />
+                    ) : (
+                      <View style={styles.buttonContentWrapper}>
+                        <Ionicons name="volume-high-outline" size={25} color="#11224e" />
+                        <Ionicons name="arrow-forward-circle-outline" size={20} color="#11224e" />
+                        <Ionicons name="document-text-outline" size={20} color="#11224e" />
+                      </View>
+                    )}
+                  </TouchableOpacity>
+                </View>
+              )}
+              <View style={{ marginTop: 16 }}>
+                <View style={[styles.inputWrap, { alignItems: 'flex-start' }]}>
+                  <Ionicons name="chatbubble-ellipses-outline" size={16} color="#6b7280" style={{ marginTop: 4 }} />
+                  <TextInput
+                    placeholder="Description (optionnel)"
+                    placeholderTextColor="#9ca3af"
+                    value={comment}
+                    onChangeText={setComment}
+                    style={[styles.input, { height: 80 }]}
+                    multiline
+                    onFocus={() => {
+                      setTimeout(() => {
+                        scrollViewRef.current?.scrollToEnd({ animated: true });
+                      }, 100);
+                    }}
+                  />
+                </View>
+              </View>
+            </View>
           </View>
         </ScrollView>
 
         <View style={styles.footer}>
           <TouchableOpacity style={[styles.submitButton, !canSave && styles.submitButtonDisabled]} disabled={!canSave} onPress={handleSubmit}>
             {submitting ? (
-              <ActivityIndicator color="#FFFFFF" />
+              <>
+                <Ionicons name="hourglass" size={16} color="#FFFFFF" />
+                <Text style={styles.submitButtonText}>Enregistrement...</Text>
+              </>
             ) : (
               <>
-                <Ionicons name="checkmark-circle-outline" size={22} color="#FFFFFF" />
-                <Text style={styles.submitButtonText}>Enregistrer la photo Suivi</Text>
+                <Ionicons name="save" size={16} color="#FFFFFF" />
+                <Text style={styles.submitButtonText}>Enregistrer</Text>
               </>
             )}
           </TouchableOpacity>
         </View>
-      </View>
+      </SafeAreaView>
     </KeyboardAvoidingView>
   );
 }
 
-function formatDate(dateStr: string) {
-  const replaced = dateStr.replace(' ', 'T');
-  const date = new Date(replaced);
-  if (isNaN(date.getTime())) return dateStr;
+function formatDate(dateStr: string): string {
+  if (!dateStr) return '';
+  const date = new Date(dateStr.replace(' ', 'T'));
+  if (isNaN(date.getTime())) {
+    return '';
+  }
   return new Intl.DateTimeFormat('fr-FR', {
     year: 'numeric',
     month: 'short',
     day: '2-digit',
   }).format(date);
 }
-
 
 type ModalProps = {
   visible: boolean;
@@ -314,249 +368,143 @@ export default function CreateChildQualiPhotoModal({ visible, onClose, onSuccess
 }
 
 const styles = StyleSheet.create({
-  container: { 
-    flex: 1, 
-    backgroundColor: '#f9fafb' 
+  container: { flex: 1, backgroundColor: '#F8FAFC' },
+  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12, backgroundColor: '#FFFFFF', borderBottomWidth: 1, borderBottomColor: '#e5e7eb' },
+  closeButton: { padding: 8 },
+  headerCenter: { flex: 1, alignItems: 'center' },
+  headerTitle: { fontSize: 18, fontWeight: '600', color: '#11224e' },
+  placeholder: { width: 40 },
+  content: { flex: 1, paddingHorizontal: 16 },
+  alertBanner: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#fffbeb', borderColor: '#f59e0b', borderWidth: 1, paddingHorizontal: 12, paddingVertical: 8, marginHorizontal: 16, marginTop: 8, borderRadius: 10 },
+  alertBannerText: { color: '#b45309', flex: 1, fontSize: 12 },
+  card: { backgroundColor: '#FFFFFF', borderRadius: 16, padding: 16, marginTop: 16, marginHorizontal: 8, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8, elevation: 2, borderWidth: 1, borderColor: '#f87b1b' },
+  cardHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 10 },
+  cardIconWrap: { width: 28, height: 28, borderRadius: 14, backgroundColor: '#eef2ff', justifyContent: 'center', alignItems: 'center', marginRight: 10 },
+  cardHeaderText: { flex: 1 },
+  cardTitle: { fontSize: 12, color: '#11224e' },
+  cardSubtitle: {
+    fontSize: 12,
+    color: '#11224e',
+    marginTop: 2,
   },
-  header: { 
-    flexDirection: 'row', 
-    alignItems: 'center', 
-    justifyContent: 'space-between', 
-    paddingHorizontal: 16, 
-    paddingVertical: 12, 
-    backgroundColor: '#ffffff', 
-    borderBottomWidth: 1, 
-    borderBottomColor: '#e5e7eb' 
-  },
-  closeButton: { 
-    width: 44,
-    height: 44,
-    alignItems: 'flex-end',
-    justifyContent: 'center',
-  },
-  headerCenter: { 
-    flex: 1, 
-    alignItems: 'center' 
-  },
-  headerTitle: { 
-    fontSize: 17, 
-    fontWeight: '600', 
-    color: '#1f2937' 
-  },
-  content: { 
-    flex: 1, 
-    paddingHorizontal: 16,
-    paddingTop: 16,
-  },
-  alertBanner: { 
-    backgroundColor: '#fef2f2', 
-    padding: 12, 
-    borderRadius: 8, 
-    marginBottom: 16
-  },
-  alertBannerText: { 
-    color: '#dc2626', 
-    fontWeight: '500'
-  },
-  section: {
-    marginBottom: 24,
-  },
-  sectionCard: {
-    backgroundColor: '#ffffff',
+  
+  parentPhotoContainer: {
+    position: 'relative',
     borderRadius: 12,
-    borderWidth: 1,
+    overflow: 'hidden',
+  },
+  parentPhoto: {
+    width: '100%',
+    aspectRatio: 16 / 10,
+    backgroundColor: '#e5e7eb',
+  },
+  parentInfoOverlay: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    alignItems: 'center',
+  },
+  contextItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    flexShrink: 1,
+  },
+  parentInfoText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+
+  photoPickerButton: {
+    borderWidth: 2,
     borderColor: '#f87b1b',
-    overflow: 'hidden',
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#374151',
-    marginBottom: 12,
-  },
-  contextCard: {
-    backgroundColor: '#ffffff',
+    borderStyle: 'dashed',
     borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-    overflow: 'hidden',
-  },
-  contextImage: {
-    width: '100%',
-    aspectRatio: 2.2,
-    backgroundColor: '#f3f4f6'
-  },
-  photoPreviewContainer: {
-    backgroundColor: '#ffffff',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-    overflow: 'hidden',
-  },
-  photoPreview: { 
-    width: '100%',
-    aspectRatio: 2.2,
-    backgroundColor: '#f3f4f6'
-  },
-  photoActions: {
-    flexDirection: 'row',
-  },
-  retakeButton: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
+    paddingVertical: 32,
     justifyContent: 'center',
-    gap: 8,
-    height: 48,
-    backgroundColor: '#f9fafb',
-    borderTopWidth: 1,
-    borderTopColor: '#e5e7eb'
-  },
-  removeButton: {
-    flex: 1,
-    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
+    backgroundColor: '#f8fafc',
     gap: 8,
-    height: 48,
-    backgroundColor: '#f9fafb',
-    borderTopWidth: 1,
-    borderTopColor: '#e5e7eb',
-    borderLeftWidth: 1,
-    borderLeftColor: '#e5e7eb'
   },
-  retakeButtonText: {
-    fontSize: 15,
+  photoPickerText: {
+    color: '#475569',
     fontWeight: '600',
-    color: '#374151'
+  },
+
+  imagePreviewContainer: {
+    position: 'relative',
+  },
+  imagePreview: {
+    width: '100%',
+    aspectRatio: 16 / 10,
+    borderRadius: 12,
+  },
+  imageActions: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    flexDirection: 'row',
+    gap: 8,
+  },
+  iconButton: {
+    padding: 10,
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    borderRadius: 99,
+  },
+  iconButtonSecondary: {
+    backgroundColor: '#f1f5f9',
+    borderRadius: 99,
+    padding: 8,
+    borderWidth: 1,
+    borderColor: '#e2e8f0'
+  },
+
+  inputWrap: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#fff', borderWidth: 1, borderColor: '#f87b1b', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10 },
+  input: { flex: 1, color: '#111827', fontSize: 16 },
+
+  voiceNoteContainer: {
+    marginTop: 12,
   },
   voiceActionsContainer: {
     flexDirection: 'row',
     gap: 8,
   },
-  recordButton: {
-    flex: 1,
+  buttonContentWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    height: 52,
-    backgroundColor: '#f3f4f6',
-    borderRadius: 10,
+    flex: 1,
   },
-  transcribeButton: {
-    flex: 0,
-    paddingHorizontal: 16,
-  },
-  recordButtonText: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#374151'
-  },
-  recordingWrap: { 
-    flexDirection: 'row', 
-    justifyContent: 'space-between', 
-    alignItems: 'center', 
-    backgroundColor: '#fef2f2', 
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 10 
-  },
-  recordingText: { 
-    color: '#dc2626', 
-    fontWeight: '600' 
-  },
-  stopButton: { 
-    padding: 4 
-  },
-  audioPlayerWrap: { 
-    flexDirection: 'row', 
-    alignItems: 'center', 
-    gap: 12, 
-    backgroundColor: '#f1f5f9', 
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 10 
-  },
-  playButton: {},
-  audioMeta: { 
-    flex: 1, 
-    color: '#1e293b',
-    fontWeight: '500'
-  },
-  deleteButton: {},
-  captureButton: { 
-    backgroundColor: '#ffffff', 
-    borderRadius: 12, 
-    padding: 24, 
-    alignItems: 'center', 
-    justifyContent: 'center', 
-    borderWidth: 2,
-    borderColor: '#e5e7eb',
-    borderStyle: 'dashed'
-  },
-  captureButtonIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: '#eef2ff',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 12,
-  },
-  captureButtonText: { 
-    color: '#11224e', 
-    fontSize: 16,
-    fontWeight: '600' 
-  },
-  captureButtonSubtext: {
-    color: '#6b7280',
-    fontSize: 13,
-    marginTop: 4,
-  },
-  input: { 
-    minHeight: 52,
-    textAlignVertical: 'top', 
-    padding: 12, 
-    backgroundColor: '#ffffff',
-    fontSize: 15,
-    lineHeight: 20
-  },
-  separator: {
-    height: 1,
-    backgroundColor: '#e5e7eb',
-    marginHorizontal: 12,
-  },
-  footer: { 
-    padding: 16, 
-    backgroundColor: '#ffffff', 
-    borderTopWidth: 1, 
-    borderTopColor: '#e5e7eb' 
-  },
-  submitButton: { 
-    backgroundColor: '#f87b1b', 
-    borderRadius: 12, 
-    paddingVertical: 14, 
-    alignItems: 'center',
+  voiceRecordButton: {
+    flex: 1,
     flexDirection: 'row',
     justifyContent: 'center',
-    gap: 8
-  },
-  submitButtonDisabled: { 
-    backgroundColor: '#fed7aa' 
-  },
-  submitButtonText: { 
-    fontSize: 16, 
-    fontWeight: '700', 
-    color: '#FFFFFF' 
-  },
-  sectionHeader: {
     alignItems: 'center',
-    marginBottom: 12,
+    height: 50,
+    backgroundColor: '#f1f5f9',
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#f87b1b'
   },
-  metaText: {
-    fontSize: 13,
-    color: '#6b7280',
-    fontWeight: '500',
-  },
+  transcribeButton: {},
+  buttonDisabled: { opacity: 0.5, backgroundColor: '#e5e7eb' },
+  recordingWrap: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#fef2f2', padding: 12, borderRadius: 10 },
+  recordingText: { color: '#dc2626', fontWeight: '600' },
+  stopButton: { padding: 4 },
+  audioPlayerWrap: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#f1f5f9', paddingHorizontal: 12, height: 50, borderRadius: 10, flex: 1, borderWidth: 1, borderColor: '#f87b1b' },
+  playButton: {},
+  deleteButton: {},
+
+  footer: { paddingHorizontal: 16, paddingTop: 8, paddingBottom: 16, backgroundColor: '#FFFFFF', borderTopWidth: 1, borderTopColor: '#e5e7eb', gap: 8 },
+  submitButton: { backgroundColor: '#f87b1b', borderRadius: 12, paddingVertical: 16, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 8, height: 48, alignSelf: 'center', width: '92%' },
+  submitButtonDisabled: { backgroundColor: '#d1d5db' },
+  submitButtonText: { fontSize: 16, fontWeight: '600', color: '#FFFFFF' },
 });

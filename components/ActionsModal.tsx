@@ -16,9 +16,10 @@ interface ActionsModalProps {
   onUpdateAction?: (actionId: string, data: CreateActionData) => Promise<void>;
   parentZone?: Zone | null; // declaration's zone
   childZones?: Zone[]; // optional: pass preloaded child zones
+  projectTitle?: string;
 }
 
-export default function ActionsModal({ visible, actions, onClose, onCreateAction, onUpdateAction, parentZone, childZones }: ActionsModalProps) {
+export default function ActionsModal({ visible, actions, onClose, onCreateAction, onUpdateAction, parentZone, childZones, projectTitle }: ActionsModalProps) {
   const { token } = useAuth();
   const [form, setForm] = useState<CreateActionData>({ id_zone: parentZone?.id });
   const [showForm, setShowForm] = useState(false);
@@ -50,6 +51,7 @@ export default function ActionsModal({ visible, actions, onClose, onCreateAction
   const [expandedActions, setExpandedActions] = useState<Set<string>>(new Set());
   const [subActionsMap, setSubActionsMap] = useState<Record<string, DeclarationAction[]>>({});
   const [loadingSubActions, setLoadingSubActions] = useState<Set<string>>(new Set());
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
 
   const toISODate = (d: Date) => {
     const year = d.getFullYear();
@@ -343,7 +345,9 @@ export default function ActionsModal({ visible, actions, onClose, onCreateAction
     if (!photo) return null;
     const uri = `${API_CONFIG.BASE_URL}${photo}`;
     return (
-      <Image source={{ uri }} style={styles.actionImage} contentFit="cover" />
+      <TouchableOpacity onPress={() => setPreviewImage(uri)}>
+        <Image source={{ uri }} style={styles.actionImage} contentFit="cover" />
+      </TouchableOpacity>
     );
   };
 
@@ -387,287 +391,288 @@ export default function ActionsModal({ visible, actions, onClose, onCreateAction
   }, [visible, parentActions, token]);
 
   return (
-    <Modal
-      visible={visible}
-      animationType="slide"
-      presentationStyle="pageSheet"
-      onRequestClose={onClose}
-    >
-      <View style={styles.container}>
-        {/* Header */}
-        <View style={styles.header}>
-          <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-            <Ionicons name="close" size={24} color="#1C1C1E" />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Actions de déclaration</Text>
-          <View style={styles.placeholder} />
-        </View>
-
-        {/* Content */}
-        <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-          {/* Create bar */}
-          <View style={styles.createBar}>
-            <TouchableOpacity style={styles.createButton} onPress={() => setShowForm((s) => !s)}>
-              <Ionicons name={showForm ? 'remove' : 'add'} size={20} color="#007AFF" />
-              <Text style={styles.createButtonText}>{showForm ? 'Fermer' : 'Ajouter une action'}</Text>
+    <>
+      <Modal
+        visible={visible}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={onClose}
+      >
+        <View style={styles.container}>
+          {/* Header */}
+          <View style={styles.header}>
+            <TouchableOpacity onPress={onClose} style={styles.closeButton}>
+              <Ionicons name="close" size={24} color="#1C1C1E" />
             </TouchableOpacity>
+            <Text style={styles.headerTitle}>Actions de déclaration</Text>
+            <View style={styles.placeholder} />
           </View>
 
-          {/* Search bar */}
-          
-          <View style={styles.searchBar}>
-            <Ionicons name="search" size={18} color="#8E8E93" />
-            <TextInput
-              placeholder="Rechercher des actions par titre"
-              placeholderTextColor="#8E8E93"
-              value={searchQuery}
-              onChangeText={setSearchQuery}
-              style={styles.searchInput}
-            />
-            {searchQuery.length > 0 ? (
-              <TouchableOpacity onPress={() => setSearchQuery('')} accessibilityLabel="Effacer la recherche">
-                <Ionicons name="close-circle" size={18} color="#C7C7CC" />
+          {/* Content */}
+          <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+            {/* Create bar */}
+            <View style={styles.createBar}>
+              <TouchableOpacity style={styles.createButton} onPress={() => setShowForm((s) => !s)}>
+                <Ionicons name={showForm ? 'remove' : 'add'} size={20} color="#f87b1b" />
+                <Text style={styles.createButtonText}>{showForm ? 'Fermer' : 'Ajouter une action'}</Text>
               </TouchableOpacity>
-            ) : null}
-          </View>
+            </View>
 
-          {showForm && (
-            <View style={styles.formCard}>
-              <Text style={styles.formTitle}>Nouvelle action</Text>
-              {/* Zone select */}
-              {/* {parentZone ? (
+            {/* Search bar */}
+            
+            <View style={styles.searchBar}>
+              <Ionicons name="search" size={18} color="#8E8E93" />
+              <TextInput
+                placeholder="Rechercher des actions par titre"
+                placeholderTextColor="#8E8E93"
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+                style={styles.searchInput}
+              />
+              {searchQuery.length > 0 ? (
+                <TouchableOpacity onPress={() => setSearchQuery('')} accessibilityLabel="Effacer la recherche">
+                  <Ionicons name="close-circle" size={18} color="#C7C7CC" />
+                </TouchableOpacity>
+              ) : null}
+            </View>
+
+            {showForm && (
+              <View style={styles.formCard}>
+                <Text style={styles.formTitle}>Nouvelle action</Text>
+                {/* Zone select */}
+                {/* {parentZone ? (
+                  <View style={{ marginBottom: 10 }}>
+                    <Text style={styles.label}>Zone</Text>
+                    <TouchableOpacity
+                      style={styles.selectHeader}
+                      onPress={() => setShowZoneDropdown((s) => !s)}
+                      activeOpacity={0.7}
+                    >
+                      <View style={styles.selectedPreview}>
+                        {renderZoneOption(zones.find(zz => zz.id === form.id_zone) || parentZone)}
+                      </View>
+                      <Ionicons name={showZoneDropdown ? 'chevron-up' : 'chevron-down'} size={18} color="#8E8E93" />
+                    </TouchableOpacity>
+
+                    {showZoneDropdown ? (
+                      <View style={styles.selectBox}>
+                        <ScrollView style={{ maxHeight: 220 }}>
+                          {zones.map((z) => (
+                            <TouchableOpacity
+                              key={z.id}
+                              style={styles.selectItem}
+                              onPress={() => {
+                                setForm((p) => ({ ...p, id_zone: z.id }));
+                                setShowZoneDropdown(false);
+                              }}
+                            >
+                              <View style={[styles.selectItemInner, form.id_zone === z.id && styles.selectItemSelected]}>
+                                {renderZoneOption(z)}
+                                {form.id_zone === z.id ? <Ionicons name="checkmark" size={18} color="#34C759" /> : null}
+                              </View>
+                            </TouchableOpacity>
+                          ))}
+                        </ScrollView>
+                      </View>
+                    ) : null}
+                  </View>
+                ) : null} */}
+                <TextInput
+                  style={styles.input}
+                  placeholder="Titre "
+                  placeholderTextColor="#8E8E93"
+                  value={form.title}
+                  onChangeText={(t) => setForm((p) => ({ ...p, title: t }))}
+                />
+                <TextInput
+                  style={[styles.input, styles.textArea]}
+                  placeholder="Description "
+                  placeholderTextColor="#8E8E93"
+                  value={form.description}
+                  onChangeText={(t) => setForm((p) => ({ ...p, description: t }))}
+                  multiline
+                />
+                
+                {/* User Assignment */}
                 <View style={{ marginBottom: 10 }}>
-                  <Text style={styles.label}>Zone</Text>
+                  <Text style={styles.label}>Affecter à</Text>
                   <TouchableOpacity
                     style={styles.selectHeader}
-                    onPress={() => setShowZoneDropdown((s) => !s)}
+                    onPress={() => setShowUserDropdown((s) => !s)}
                     activeOpacity={0.7}
                   >
                     <View style={styles.selectedPreview}>
-                      {renderZoneOption(zones.find(zz => zz.id === form.id_zone) || parentZone)}
+                      <Text style={[styles.dateText, !form.assigned_to && styles.placeholderText]}>
+                        {getSelectedUserName()}
+                      </Text>
                     </View>
-                    <Ionicons name={showZoneDropdown ? 'chevron-up' : 'chevron-down'} size={18} color="#8E8E93" />
+                    <Ionicons name={showUserDropdown ? 'chevron-up' : 'chevron-down'} size={18} color="#8E8E93" />
                   </TouchableOpacity>
 
-                  {showZoneDropdown ? (
+                  {showUserDropdown ? (
                     <View style={styles.selectBox}>
                       <ScrollView style={{ maxHeight: 220 }}>
-                        {zones.map((z) => (
-                          <TouchableOpacity
-                            key={z.id}
-                            style={styles.selectItem}
-                            onPress={() => {
-                              setForm((p) => ({ ...p, id_zone: z.id }));
-                              setShowZoneDropdown(false);
-                            }}
-                          >
-                            <View style={[styles.selectItemInner, form.id_zone === z.id && styles.selectItemSelected]}>
-                              {renderZoneOption(z)}
-                              {form.id_zone === z.id ? <Ionicons name="checkmark" size={18} color="#34C759" /> : null}
-                            </View>
-                          </TouchableOpacity>
-                        ))}
+                        {loadingUsers ? (
+                          <View style={styles.loadingItem}>
+                            <Text style={styles.loadingText}>Chargement des utilisateurs...</Text>
+                          </View>
+                        ) : companyUsers.length === 0 ? (
+                          <View style={styles.loadingItem}>
+                            <Text style={styles.loadingText}>Aucun utilisateur disponible</Text>
+                          </View>
+                        ) : (
+                          companyUsers.map((user) => (
+                            <TouchableOpacity
+                              key={user.id}
+                              style={styles.selectItem}
+                              onPress={() => {
+                                setForm((p) => ({ ...p, assigned_to: user.id }));
+                                setShowUserDropdown(false);
+                              }}
+                            >
+                              <View style={[styles.selectItemInner, form.assigned_to === user.id && styles.selectItemSelected]}>
+                                {renderUserOption(user)}
+                                {form.assigned_to === user.id ? <Ionicons name="checkmark" size={18} color="#34C759" /> : null}
+                              </View>
+                            </TouchableOpacity>
+                          ))
+                        )}
                       </ScrollView>
                     </View>
                   ) : null}
                 </View>
-              ) : null} */}
-              <TextInput
-                style={styles.input}
-                placeholder="Titre "
-                placeholderTextColor="#8E8E93"
-                value={form.title}
-                onChangeText={(t) => setForm((p) => ({ ...p, title: t }))}
-              />
-              <TextInput
-                style={[styles.input, styles.textArea]}
-                placeholder="Description "
-                placeholderTextColor="#8E8E93"
-                value={form.description}
-                onChangeText={(t) => setForm((p) => ({ ...p, description: t }))}
-                multiline
-              />
-              
-              {/* User Assignment */}
-              <View style={{ marginBottom: 10 }}>
-                <Text style={styles.label}>Affecter à</Text>
-                <TouchableOpacity
-                  style={styles.selectHeader}
-                  onPress={() => setShowUserDropdown((s) => !s)}
-                  activeOpacity={0.7}
-                >
-                  <View style={styles.selectedPreview}>
-                    <Text style={[styles.dateText, !form.assigned_to && styles.placeholderText]}>
-                      {getSelectedUserName()}
+                <View style={styles.rowGap}>
+                  {/* Planned date picker */}
+                  <TouchableOpacity style={styles.dateInput} onPress={() => setShowPlanPicker(true)} activeOpacity={0.7}>
+                    <Ionicons name="calendar-outline" size={18} color="#8E8E93" />
+                    <Text style={[styles.dateText, !form.date_planification && styles.placeholderText]}>
+                      {form.date_planification ? formatDisplayDate(form.date_planification) : 'Date planifiée'}
                     </Text>
-                  </View>
-                  <Ionicons name={showUserDropdown ? 'chevron-up' : 'chevron-down'} size={18} color="#8E8E93" />
-                </TouchableOpacity>
+                  </TouchableOpacity>
+                  <DateTimePickerModal
+                    isVisible={showPlanPicker}
+                    mode="date"
+                    date={form.date_planification ? new Date(form.date_planification) : new Date()}
+                    onConfirm={(selectedDate) => {
+                      setShowPlanPicker(false);
+                      if (selectedDate) setForm((p) => ({ ...p, date_planification: toISODate(selectedDate) }));
+                    }}
+                    onCancel={() => setShowPlanPicker(false)}
+                  />
 
-                {showUserDropdown ? (
-                  <View style={styles.selectBox}>
-                    <ScrollView style={{ maxHeight: 220 }}>
-                      {loadingUsers ? (
-                        <View style={styles.loadingItem}>
-                          <Text style={styles.loadingText}>Chargement des utilisateurs...</Text>
-                        </View>
-                      ) : companyUsers.length === 0 ? (
-                        <View style={styles.loadingItem}>
-                          <Text style={styles.loadingText}>Aucun utilisateur disponible</Text>
-                        </View>
-                      ) : (
-                        companyUsers.map((user) => (
-                          <TouchableOpacity
-                            key={user.id}
-                            style={styles.selectItem}
-                            onPress={() => {
-                              setForm((p) => ({ ...p, assigned_to: user.id }));
-                              setShowUserDropdown(false);
-                            }}
-                          >
-                            <View style={[styles.selectItemInner, form.assigned_to === user.id && styles.selectItemSelected]}>
-                              {renderUserOption(user)}
-                              {form.assigned_to === user.id ? <Ionicons name="checkmark" size={18} color="#34C759" /> : null}
-                            </View>
-                          </TouchableOpacity>
-                        ))
-                      )}
-                    </ScrollView>
+                  {/* Execution date picker */}
+                  <TouchableOpacity style={styles.dateInput} onPress={() => setShowExecPicker(true)} activeOpacity={0.7}>
+                    <Ionicons name="calendar-outline" size={18} color="#8E8E93" />
+                    <Text style={[styles.dateText, !form.date_execution && styles.placeholderText]}>
+                      {form.date_execution ? formatDisplayDate(form.date_execution) : 'Date d\'exécution'}
+                    </Text>
+                  </TouchableOpacity>
+                  <DateTimePickerModal
+                    isVisible={showExecPicker}
+                    mode="date"
+                    date={form.date_execution ? new Date(form.date_execution) : new Date()}
+                    onConfirm={(selectedDate) => {
+                      setShowExecPicker(false);
+                      if (selectedDate) setForm((p) => ({ ...p, date_execution: toISODate(selectedDate) }));
+                    }}
+                    onCancel={() => setShowExecPicker(false)}
+                  />
+                </View>
+                <View style={styles.row}>
+                  <TouchableOpacity style={styles.photoBtn} onPress={pickImage}>
+                    <Ionicons name="camera-outline" size={18} color="#8E8E93" />
+                    <Text style={styles.photoBtnText}>{photo ? 'Changer la photo' : 'Ajouter une photo'}</Text>
+                  </TouchableOpacity>
+                  {photo ? <Text style={styles.photoName}>1 photo sélectionnée</Text> : null}
+                </View>
+                {photo ? (
+                  <View style={styles.previewContainer}>
+                    <Image source={{ uri: photo.uri }} style={styles.previewImage} />
+                    <TouchableOpacity onPress={() => setPhoto(undefined)} style={styles.removeImageButton}>
+                      <Ionicons name="close-circle" size={24} color="red" />
+                    </TouchableOpacity>
                   </View>
                 ) : null}
-              </View>
-              <View style={styles.rowGap}>
-                {/* Planned date picker */}
-                <TouchableOpacity style={styles.dateInput} onPress={() => setShowPlanPicker(true)} activeOpacity={0.7}>
-                  <Ionicons name="calendar-outline" size={18} color="#8E8E93" />
-                  <Text style={[styles.dateText, !form.date_planification && styles.placeholderText]}>
-                    {form.date_planification ? formatDisplayDate(form.date_planification) : 'Date planifiée'}
-                  </Text>
+                <TouchableOpacity style={styles.submitBtn} onPress={handleCreate}>
+                  <Text style={styles.submitBtnText}>Créer une action</Text>
                 </TouchableOpacity>
-                <DateTimePickerModal
-                  isVisible={showPlanPicker}
-                  mode="date"
-                  date={form.date_planification ? new Date(form.date_planification) : new Date()}
-                  onConfirm={(selectedDate) => {
-                    setShowPlanPicker(false);
-                    if (selectedDate) setForm((p) => ({ ...p, date_planification: toISODate(selectedDate) }));
-                  }}
-                  onCancel={() => setShowPlanPicker(false)}
-                />
+              </View>
+            )}
 
-                {/* Execution date picker */}
-                <TouchableOpacity style={styles.dateInput} onPress={() => setShowExecPicker(true)} activeOpacity={0.7}>
-                  <Ionicons name="calendar-outline" size={18} color="#8E8E93" />
-                  <Text style={[styles.dateText, !form.date_execution && styles.placeholderText]}>
-                    {form.date_execution ? formatDisplayDate(form.date_execution) : 'Date d\'exécution'}
-                  </Text>
-                </TouchableOpacity>
-                <DateTimePickerModal
-                  isVisible={showExecPicker}
-                  mode="date"
-                  date={form.date_execution ? new Date(form.date_execution) : new Date()}
-                  onConfirm={(selectedDate) => {
-                    setShowExecPicker(false);
-                    if (selectedDate) setForm((p) => ({ ...p, date_execution: toISODate(selectedDate) }));
-                  }}
-                  onCancel={() => setShowExecPicker(false)}
-                />
+            {!filteredParentActions || filteredParentActions.length === 0 ? (
+              <View style={styles.emptyState}>
+                <Ionicons name="list-outline" size={48} color="#C7C7CC" />
+                <Text style={styles.emptyTitle}>{searchQuery ? 'Aucun résultat trouvé' : 'Aucune action n\'a encore été ajoutée pour cette déclaration.'}</Text>
               </View>
-              <View style={styles.row}>
-                <TouchableOpacity style={styles.photoBtn} onPress={pickImage}>
-                  <Ionicons name="camera-outline" size={18} color="#8E8E93" />
-                  <Text style={styles.photoBtnText}>{photo ? 'Changer la photo' : 'Ajouter une photo'}</Text>
-                </TouchableOpacity>
-                {photo ? <Text style={styles.photoName}>1 photo sélectionnée</Text> : null}
-              </View>
-              {photo ? (
-                <View style={styles.previewContainer}>
-                  <Image source={{ uri: photo.uri }} style={styles.previewImage} />
-                  <TouchableOpacity onPress={() => setPhoto(undefined)} style={styles.removeImageButton}>
-                    <Ionicons name="close-circle" size={24} color="red" />
-                  </TouchableOpacity>
-                </View>
-              ) : null}
-              <TouchableOpacity style={styles.submitBtn} onPress={handleCreate}>
-                <Text style={styles.submitBtnText}>Créer une action</Text>
-              </TouchableOpacity>
-            </View>
-          )}
-
-          {!filteredParentActions || filteredParentActions.length === 0 ? (
-            <View style={styles.emptyState}>
-              <Ionicons name="list-outline" size={48} color="#C7C7CC" />
-              <Text style={styles.emptyTitle}>{searchQuery ? 'Aucun résultat trouvé' : 'Aucune action n\'a encore été ajoutée pour cette déclaration.'}</Text>
-            </View>
-          ) : (
-                         filteredParentActions.map((action: DeclarationAction) => {
-                           const subActionsForThisAction = subActionsMap[action.id] || [];
-                           const hasSubActions = subActionsForThisAction.length > 0;
-                           const isExpanded = expandedActions.has(action.id);
-                           const isLoading = loadingSubActions.has(action.id);
-                           
-                           return (
-                             <View key={action.id} style={styles.card}>
-                               <TouchableOpacity onPress={() => handleActionPress(action)} activeOpacity={0.7}>
-                                 <View style={styles.cardHeader}>
-                                   <Text style={styles.cardTitle}>{action.title || 'Action sans titre'}</Text>
-                                   <View style={styles.statusPill}>
-                                     <Text style={styles.statusText}>{String(action.status ?? 'en attente')}</Text>
-                                   </View>
-                                 </View>
-                                 
-                                 {action.description ? (
-                                   <Text style={styles.cardDesc}>{action.description}</Text>
-                                 ) : null}
-                                 
-                                 {renderPhoto(action.photo)}
-                                 
-                                 <View style={styles.metaSection}>
-                                   {/* User Information */}
-                                   <View style={styles.userInfoRow}>
-                                     {action.creator_firstname || action.creator_lastname ? (
-                                       <View style={styles.userInfoItem}>
-                                         <Text style={styles.userInfoLabel}>Créé par</Text>
-                                         <Text style={styles.userInfoValue}>
-                                           {[action.creator_firstname, action.creator_lastname].filter(Boolean).join(' ')}
-                                         </Text>
-                                       </View>
-                                     ) : null}
-                                     
-                                     {action.assigned_firstname || action.assigned_lastname ? (
-                                       <View style={styles.userInfoItem}>
-                                         <Text style={styles.userInfoLabel}>Affecté à</Text>
-                                         <Text style={styles.userInfoValue}>
-                                           {[action.assigned_firstname, action.assigned_lastname].filter(Boolean).join(' ')}
-                                         </Text>
-                                       </View>
-                                     ) : null}
+            ) : (
+                           filteredParentActions.map((action: DeclarationAction) => {
+                             const subActionsForThisAction = subActionsMap[action.id] || [];
+                             const hasSubActions = subActionsForThisAction.length > 0;
+                             const isExpanded = expandedActions.has(action.id);
+                             const isLoading = loadingSubActions.has(action.id);
+                             
+                             return (
+                               <View key={action.id} style={styles.card}>
+                                 <TouchableOpacity onPress={() => handleActionPress(action)} activeOpacity={0.7}>
+                                   <View style={styles.cardHeader}>
+                                     <Text style={styles.cardTitle}>{action.title || 'Action sans titre'}</Text>
+                                     <View style={styles.statusPill}>
+                                       <Text style={styles.statusText}>{String(action.status ?? 'en attente')}</Text>
+                                     </View>
                                    </View>
                                    
-                                   {/* Date Information */}
-                                   {(action.date_execution || action.date_planification) && (
-                                     <View style={styles.dateInfoRow}>
-                                       {action.date_execution ? (
-                                         <View style={styles.dateInfoItem}>
-                                           <Text style={styles.dateInfoLabel}>Date d&apos;exécution</Text>
-                                           <Text style={styles.dateInfoValue}>
-                                             {new Date(action.date_execution).toLocaleDateString()}
+                                   {action.description ? (
+                                     <Text style={styles.cardDesc}>{action.description}</Text>
+                                   ) : null}
+                                   
+                                   {renderPhoto(action.photo)}
+                                   
+                                   <View style={styles.metaSection}>
+                                     {/* User Information */}
+                                     <View style={styles.userInfoRow}>
+                                       {action.creator_firstname || action.creator_lastname ? (
+                                         <View style={styles.userInfoItem}>
+                                           <Text style={styles.userInfoLabel}>Créé par</Text>
+                                           <Text style={styles.userInfoValue}>
+                                             {[action.creator_firstname, action.creator_lastname].filter(Boolean).join(' ')}
                                            </Text>
                                          </View>
-                                       ) : action.date_planification ? (
-                                         <View style={styles.dateInfoItem}>
-                                           <Text style={styles.dateInfoLabel}>Date planifiée</Text>
-                                           <Text style={styles.dateInfoValue}>
-                                             {new Date(action.date_planification).toLocaleDateString()}
+                                       ) : null}
+                                       
+                                       {action.assigned_firstname || action.assigned_lastname ? (
+                                         <View style={styles.userInfoItem}>
+                                           <Text style={styles.userInfoLabel}>Affecté à</Text>
+                                           <Text style={styles.userInfoValue}>
+                                             {[action.assigned_firstname, action.assigned_lastname].filter(Boolean).join(' ')}
                                            </Text>
                                          </View>
                                        ) : null}
                                      </View>
-                                   )}
-                                 </View>
-                               </TouchableOpacity>
-                               
-                                                               {/* Sub-actions section */}
+                                     
+                                     {/* Date Information */}
+                                     {(action.date_execution || action.date_planification) && (
+                                       <View style={styles.dateInfoRow}>
+                                         {action.date_execution ? (
+                                           <View style={styles.dateInfoItem}>
+                                             <Text style={styles.dateInfoLabel}>Date d&apos;exécution</Text>
+                                             <Text style={styles.dateInfoValue}>
+                                               {new Date(action.date_execution).toLocaleDateString()}
+                                             </Text>
+                                           </View>
+                                         ) : action.date_planification ? (
+                                           <View style={styles.dateInfoItem}>
+                                             <Text style={styles.dateInfoLabel}>Date planifiée</Text>
+                                             <Text style={styles.dateInfoValue}>
+                                               {new Date(action.date_planification).toLocaleDateString()}
+                                             </Text>
+                                           </View>
+                                         ) : null}
+                                       </View>
+                                     )}
+                                   </View>
+                                 </TouchableOpacity>
+                                 
+                                                                   {/* Sub-actions section */}
                                 {(hasSubActions || isLoading) && (
                                   <View style={styles.subActionsSection}>
                                     <TouchableOpacity 
@@ -736,7 +741,7 @@ export default function ActionsModal({ visible, actions, onClose, onCreateAction
                              </View>
                            );
                          })
-          )}
+            )}
                  </ScrollView>
        </View>
 
@@ -813,6 +818,10 @@ export default function ActionsModal({ visible, actions, onClose, onCreateAction
                     <Text style={styles.detailValue}>{selectedAction.company_title || '—'}</Text>
                   </View>
                   <View style={styles.detailRow}>
+                    <Text style={styles.detailLabel}>Projet</Text>
+                    <Text style={styles.detailValue}>{projectTitle || '—'}</Text>
+                  </View>
+                  <View style={styles.detailRow}>
                     <Text style={styles.detailLabel}>Statut</Text>
                     <Text style={styles.detailValue}>{String(selectedAction.status ?? 'en attente')}</Text>
                   </View>
@@ -836,7 +845,7 @@ export default function ActionsModal({ visible, actions, onClose, onCreateAction
                       setShowSubActionForm(true);
                       setShowDetailsModal(false);
                     }}>
-                      <Ionicons name="add-circle-outline" size={18} color="#007AFF" />
+                      <Ionicons name="add-circle-outline" size={18} color="#11224e" />
                       <Text style={styles.addMiniButtonText}>Ajouter une sous-action</Text>
                     </TouchableOpacity>
                   )}
@@ -864,7 +873,7 @@ export default function ActionsModal({ visible, actions, onClose, onCreateAction
            </View>
 
            <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-             <View style={styles.formCard}>
+             <View style={[styles.formCard, styles.editFormCard]}>
                <Text style={styles.formTitle}>Mettre à jour l&apos;action</Text>
                
                <TextInput
@@ -1047,7 +1056,7 @@ export default function ActionsModal({ visible, actions, onClose, onCreateAction
            </View>
 
            <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-                           <View style={styles.formCard}>
+                           <View style={[styles.formCard, styles.editFormCard]}>
                 <Text style={styles.formTitle}>Nouvelle mini-action</Text>
                 <Text style={styles.subActionParentInfo}>
                   Parent: {selectedAction?.title || 'Action sans titre'}
@@ -1217,9 +1226,25 @@ export default function ActionsModal({ visible, actions, onClose, onCreateAction
            </ScrollView>
          </View>
        </Modal>
-     </Modal>
-   );
- }
+      <Modal
+        visible={!!previewImage}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setPreviewImage(null)}
+      >
+        <View style={styles.previewModalContainer}>
+          <TouchableOpacity style={styles.previewModalCloseButton} onPress={() => setPreviewImage(null)}>
+            <Ionicons name="close" size={32} color="#FFFFFF" />
+          </TouchableOpacity>
+          {previewImage && (
+            <Image source={{ uri: previewImage }} style={styles.previewModalImage} contentFit="contain" />
+          )}
+        </View>
+      </Modal>
+    </Modal>
+  </>
+  );
+}
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F2F2F7' },
@@ -1245,11 +1270,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: '#007AFF',
+    borderColor: '#f87b1b',
     paddingVertical: 12,
     borderRadius: 10,
     gap: 6, },
-  createButtonText: { color: '#007AFF', fontWeight: '600' },
+  createButtonText: { color: '#f87b1b', fontWeight: '600' },
   emptyState: { alignItems: 'center', justifyContent: 'center', paddingVertical: 60 },
   emptyTitle: { marginTop: 12, fontSize: 16, color: '#8E8E93', textAlign: 'center' },
   card: {
@@ -1258,14 +1283,14 @@ const styles = StyleSheet.create({
     padding: 16,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: '#E5E5EA',
+    borderColor: '#f87b1b',
   },
   cardHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 },
   cardTitle: { fontSize: 16, fontWeight: '600', color: '#1C1C1E' },
   statusPill: { backgroundColor: '#F2F2F7', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12 },
   statusText: { fontSize: 12, color: '#8E8E93', fontWeight: '600' },
   cardDesc: { fontSize: 14, color: '#1C1C1E', marginBottom: 8 },
-  actionImage: { width: '100%', height: 160, borderRadius: 8, marginTop: 4 },
+  actionImage: { width: '100%', height: 160, borderRadius: 8, marginTop: 4, marginBottom: 12 },
   metaSection: { marginTop: 16 },
   userInfoRow: { marginBottom: 12 },
   userInfoItem: { marginBottom: 8 },
@@ -1276,6 +1301,9 @@ const styles = StyleSheet.create({
   dateInfoLabel: { fontSize: 11, color: '#8E8E93', fontWeight: '600', marginBottom: 2, textTransform: 'uppercase', letterSpacing: 0.5 },
   dateInfoValue: { fontSize: 14, color: '#1C1C1E', fontWeight: '500' },
   formCard: { backgroundColor: '#FFFFFF', borderRadius: 12, padding: 16, marginBottom: 16, borderWidth: 1, borderColor: '#E5E5EA' },
+  editFormCard: {
+    borderColor: '#f87b1b',
+  },
   formTitle: { fontSize: 16, fontWeight: '600', marginBottom: 8, color: '#1C1C1E' },
   input: { backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#E5E5EA', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10, color: '#1C1C1E', marginBottom: 10 },
   textArea: { minHeight: 80, textAlignVertical: 'top' },
@@ -1284,7 +1312,7 @@ const styles = StyleSheet.create({
   photoBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: '#F2F2F7', paddingVertical: 10, paddingHorizontal: 12, borderRadius: 10, borderWidth: 1, borderColor: '#E5E5EA' },
   photoBtnText: { color: '#8E8E93' },
   photoName: { color: '#8E8E93', fontSize: 12 },
-  submitBtn: { backgroundColor: '#34C759', paddingVertical: 12, borderRadius: 10, alignItems: 'center' },
+  submitBtn: { backgroundColor: '#f87b1b', paddingVertical: 12, borderRadius: 10, alignItems: 'center' },
   submitBtnText: { color: '#FFFFFF', fontWeight: '700' },
   dateInput: {
     flexDirection: 'row',
@@ -1351,18 +1379,18 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: '#007AFF',
+    borderColor: '#11224e',
     paddingVertical: 12,
     borderRadius: 10,
     gap: 6,
   },
   addMiniButtonText: {
-    color: '#007AFF',
-    fontWeight: '600',
+    color: '#11224e',
+    fontWeight: '500',
   },
   detailsTitle: { fontSize: 20, fontWeight: '700', color: '#1C1C1E', marginBottom: 8 },
   detailsDesc: { fontSize: 14, color: '#1C1C1E', marginBottom: 12, lineHeight: 20 },
-  detailsSection: { backgroundColor: '#FFFFFF', borderRadius: 12, padding: 14, borderWidth: 1, borderColor: '#E5E5EA', marginBottom: 12 },
+  detailsSection: { backgroundColor: '#FFFFFF', borderRadius: 12, padding: 14, borderWidth: 1, borderColor: '#f87b1b', marginBottom: 12 },
   sectionHeader: { fontSize: 12, color: '#8E8E93', fontWeight: '700', letterSpacing: 0.8, textTransform: 'uppercase', marginBottom: 10 },
   detailRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 6 },
   detailLabel: { fontSize: 13, color: '#8E8E93', marginRight: 12, flex: 0.9 },
@@ -1411,6 +1439,22 @@ const styles = StyleSheet.create({
     backgroundColor: 'white',
     borderRadius: 12,
     padding: 2,
+  },
+  previewModalContainer: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.9)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  previewModalImage: {
+    width: '90%',
+    height: '80%',
+  },
+  previewModalCloseButton: {
+    position: 'absolute',
+    top: 50,
+    right: 20,
+    zIndex: 1,
   },
 });
 

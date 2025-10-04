@@ -2,15 +2,15 @@ import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import React, { useCallback, useEffect, useState } from 'react';
 import {
-  Alert,
-  Modal,
-  RefreshControl,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View
+    Alert,
+    Modal,
+    RefreshControl,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View
 } from 'react-native';
 
 import DateTimePickerModal from 'react-native-modal-datetime-picker';
@@ -277,6 +277,8 @@ export default function DeclarationScreen() {
 
   const sortedDeclarations = getSortedDeclarations();
 
+  const projectTitle = selectedDeclaration ? projects.find(p => p.id === selectedDeclaration.id_project)?.title : undefined;
+
   // Severity helper functions
   const getSeverityColor = (severity: number) => {
     if (severity >= 7) return '#FF3B30'; // High - Red
@@ -460,6 +462,7 @@ export default function DeclarationScreen() {
         }}
         parentZone={selectedDeclaration ? zones.find(z => z.id === selectedDeclaration.id_zone) || null : null}
         childZones={selectedDeclaration ? zones.filter(z => z.id_zone === selectedDeclaration.id_zone) : []}
+        projectTitle={projectTitle}
       />
 
       {/* Declaration Details Modal */}

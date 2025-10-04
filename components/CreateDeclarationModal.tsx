@@ -63,9 +63,7 @@ export default function CreateDeclarationModal({
   const [showTypeDropdown, setShowTypeDropdown] = useState(false);
   const [showZoneDropdown, setShowZoneDropdown] = useState(false);
   const [showProjectDropdown, setShowProjectDropdown] = useState(false);
-  const [showDeclarantDropdown, setShowDeclarantDropdown] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
-  const [showMap, setShowMap] = useState(false);
   const [showDeclarantModal, setShowDeclarantModal] = useState(false);
   const [declarantSearchQuery, setDeclarantSearchQuery] = useState('');
   
@@ -501,12 +499,9 @@ export default function CreateDeclarationModal({
 
           {/* Form */}
           <ScrollView style={styles.form} showsVerticalScrollIndicator={false}>
-            {/* Context Card */}
+            {/* Unified Card */}
             <View style={styles.card}>
-              <View style={styles.cardHeader}>
-                
-              </View>
-              {/* Project */}
+              {/* --- CONTEXT SECTION --- */}
               <TouchableOpacity style={styles.inputContainer} onPress={() => setShowProjectDropdown(!showProjectDropdown)}>
                 <Text style={[styles.inputText, !formData.id_project && styles.placeholderText]}>
                   {getProjectTitle(formData.id_project || '')}
@@ -595,11 +590,10 @@ export default function CreateDeclarationModal({
                 onChangeText={value => updateFormData('title', value)}
               />
               {errors.title && <Text style={styles.errorText}>{errors.title}</Text>}
-            </View>
-            {/* Severity and Description Card */}
-            <View style={styles.card}>
+
+              <View style={styles.divider} />
               
-              {/* Severity */}
+              {/* --- SEVERITY & DESCRIPTION SECTION --- */}
               <View style={styles.severityContainer}>
                 <View style={styles.severityHeader}>
                   <Text style={[styles.severityValue, { color: getSeverityColor(formData.severite) }]}>
@@ -626,7 +620,6 @@ export default function CreateDeclarationModal({
               </View>
               {errors.severite && <Text style={styles.errorText}>{errors.severite}</Text>}
               
-              {/* Description */}
               <TextInput
                 style={[styles.inputContainer, styles.textArea, { marginTop: 16 }, errors.description && styles.inputError]}
                 placeholder="Description *"
@@ -637,10 +630,10 @@ export default function CreateDeclarationModal({
                 textAlignVertical="top"
               />
               {errors.description && <Text style={styles.errorText}>{errors.description}</Text>}
-            </View>
 
-            {/* Photos Card */}
-            <View style={styles.card}>
+              <View style={styles.divider} />
+              
+              {/* --- PHOTOS SECTION --- */}
               <View style={styles.cardHeader}>
                 <View style={styles.cardIconWrap}><Ionicons name="images-outline" size={18} color="#f87b1b" /></View>
                 <View style={styles.cardHeaderText}>
@@ -665,10 +658,10 @@ export default function CreateDeclarationModal({
                   ))}
                 </View>
               )}
-            </View>
-            
-            {/* Location Card */}
-            <View style={styles.card}>
+
+              <View style={styles.divider} />
+              
+              {/* --- LOCATION SECTION --- */}
               <View style={styles.cardHeader}>
                 <View style={styles.cardIconWrap}><Ionicons name="location-outline" size={18} color="#f87b1b" /></View>
                 <View style={styles.cardHeaderText}>
@@ -939,6 +932,11 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#64748b',
     marginTop: 2
+  },
+  divider: {
+    height: 1,
+    backgroundColor: '#e5e7eb',
+    marginVertical: 20,
   },
   inputLabel: {
     fontSize: 16,

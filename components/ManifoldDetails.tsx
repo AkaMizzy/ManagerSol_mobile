@@ -330,11 +330,9 @@ export default function ManifoldDetails({
         window.open(pdfUrl, '_blank');
         Alert.alert('Success', 'PDF opened in new tab!');
       } else {
-        // Mobile: Try to open PDF directly with device's default PDF viewer
         const pdfUrl = `${API_CONFIG.BASE_URL}${result.fileUrl}`;
         
         try {
-          // Try to open with device's default PDF viewer
           const supported = await Linking.canOpenURL(pdfUrl);
           
           if (supported) {
@@ -593,7 +591,7 @@ export default function ManifoldDetails({
         <View style={styles.headerContainer}>
           <View style={styles.headerTopRow}>
             <Pressable style={styles.headerBackButton} onPress={onBack}>
-              <Ionicons name="arrow-back" size={24} color="#11224e" />
+              <Ionicons name="arrow-back" size={24} color="#f87b1b" />
             </Pressable>
             <View style={styles.headerCenterContent}>
               <Text style={styles.headerTitle}>{manifolder.code_formatted}</Text>
@@ -603,7 +601,7 @@ export default function ManifoldDetails({
 
           <View style={styles.headerSubtitleContainer}>
             <View style={styles.headerSubtitleItem}>
-              <Ionicons name="business-outline" size={16} color="#8E8E93" />
+              <Ionicons name="business-outline" size={16} color="#f87b1b" />
               <Text style={styles.headerSubtitleText} numberOfLines={1}>
                 {manifolder.project_title || 'N/A'}
               </Text>
@@ -616,14 +614,14 @@ export default function ManifoldDetails({
                   contentFit="contain"
                 />
               ) : (
-                <Ionicons name="location-outline" size={16} color="#8E8E93" />
+                <Ionicons name="location-outline" size={16} color="#f87b1b" />
               )}
               <Text style={styles.headerSubtitleText} numberOfLines={1}>
                 {manifolder.zone_title || 'N/A'}
               </Text>
             </View>
             <View style={styles.headerSubtitleItem}>
-              <Ionicons name="pricetag-outline" size={16} color="#8E8E93" />
+              <Ionicons name="pricetag-outline" size={16} color="#f87b1b" />
               <Text style={styles.headerSubtitleText} numberOfLines={1}>
                 {manifolder.type_title || 'N/A'}
               </Text>
@@ -691,23 +689,13 @@ export default function ManifoldDetails({
                   disabled={!!signatures.admin}
                   signerEmail={signatures.admin?.email}
                 />
-              </View>
-              
-              {signatureStatus && signatureStatus.isComplete && (
-                <View style={styles.signatureStatusContainer}>
-                  <Text style={styles.signatureStatusLabel}>
-                    ✅ Toutes les signatures sont complétées
-                  </Text>
-                </View>
-              )}
-              
+              </View>       
               <View style={styles.primaryActionsContainer}>
                 {onGoToQuestions && (
                   <Pressable style={styles.primaryActionButton} onPress={() => onGoToQuestions(manifolderId)}>
                     <Ionicons name="list-outline" size={28} color="#FFFFFF" />
                   </Pressable>
                 )}
-                
                 <Pressable 
                   style={styles.primaryActionButton} 
                   onPress={pdfExists ? viewPDF : generatePDF}
@@ -765,7 +753,6 @@ export default function ManifoldDetails({
           )}
         </View>
 
-        {/* Document Upload Card */}
         <View style={styles.card}>
           <View style={styles.cardHeader}>
             <Ionicons name="document-outline" size={24} color="#11224e" />
@@ -781,7 +768,7 @@ export default function ManifoldDetails({
                   <Text style={styles.documentPath}>{manifolder.upload_doc.split('/').pop()}</Text>
                 </View>
               </View>
-              
+            
               <View style={styles.documentActions}>
                 <Pressable style={styles.documentActionButton} onPress={viewDocument}>
                   <Ionicons name="eye-outline" size={20} color="#007AFF" />
@@ -936,6 +923,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#F2F2F7',
     justifyContent: 'center',
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#f87b1b',
   },
   headerCenterContent: {
     flex: 1,
@@ -969,6 +958,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#f87b1b',
   },
   headerSubtitleText: {
     fontSize: 14,

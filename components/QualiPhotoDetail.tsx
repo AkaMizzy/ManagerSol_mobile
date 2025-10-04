@@ -238,7 +238,7 @@ type QualiPhotoItemWithComment2 = QualiPhotoItem & {
     <>
         <View style={styles.header}>
             <Pressable onPress={() => setMapDetailVisible(false)} style={styles.closeBtn}>
-                <Ionicons name="arrow-back" size={24} color="#11224e" />
+                <Ionicons name="arrow-back" size={24} color="#f87b1b" />
             </Pressable>
             <View style={styles.headerTitles}>
                 <Text style={styles.title}>Localisation de la Photo</Text>
@@ -667,9 +667,12 @@ const styles = StyleSheet.create({
   closeBtn: {
     width: 40,
     height: 40,
+    backgroundColor: '#F2F2F7',
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#f87b1b',
   },
   headerTitles: {
     flex: 1,
