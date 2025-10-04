@@ -429,7 +429,7 @@ type QualiPhotoItemWithComment2 = QualiPhotoItem & {
                         <Text style={styles.pageButtonText}>{layoutMode === 'grid' ? '2' : '1'}</Text>
                       </TouchableOpacity>
                     ) : null}
-                    <Text style={styles.sectionTitle}>Évolution Travaux Prévus</Text>
+                    <Text style={styles.sectionTitle}>Évolution Travaux</Text>
                     {children.length > 0 && (
                       <TouchableOpacity
                         style={styles.sortButton}
