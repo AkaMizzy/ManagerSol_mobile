@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Alert, Dimensions, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import DateTimePickerModal from 'react-native-modal-datetime-picker';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -41,16 +41,6 @@ export default function DeclarationDetailsModal({ visible, onClose, declaration 
   const [showTypeDropdown, setShowTypeDropdown] = useState(false);
   const [showDeclarantDropdown, setShowDeclarantDropdown] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
-
-  const selectedTypeTitle = useMemo(() => {
-    const t = types.find(x => x.id === form.id_declaration_type);
-    return t ? t.title : 'Select type';
-  }, [types, form.id_declaration_type]);
-
-  const selectedDeclarantName = useMemo(() => {
-    const u = users.find(x => x.id === form.id_declarent);
-    return u ? `${u.firstname} ${u.lastname}` : '—';
-  }, [users, form.id_declarent]);
 
   useEffect(() => {
     if (!declaration) return;
@@ -344,7 +334,12 @@ export default function DeclarationDetailsModal({ visible, onClose, declaration 
                 <TouchableOpacity onPress={closeUpdateModal} style={styles.closeButton}>
                   <Ionicons name="close" size={24} color="#1C1C1E" />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>Modifier la Déclaration</Text>
+                <View style={styles.headerCenter}>
+                  <Text style={styles.headerTitle}>Modifier la Déclaration</Text>
+                  <Text style={styles.headerSubtitle} numberOfLines={1}>
+                    {`Projet: ${declaration.project_title}  ·  Zone: ${declaration.zone_title || '—'}`}
+                  </Text>
+                </View>
                 <View style={{ width: 24 }} />
               </View>
               <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
@@ -547,12 +542,6 @@ const DetailItem = ({ label, value, icon }: { label: string; value: string; icon
   </View>
 );
 
-function severityBadgeColor(sev: number) {
-  if (sev >= 7) return { backgroundColor: '#FF3B30' };
-  if (sev >= 5) return { backgroundColor: '#FF9500' };
-  return { backgroundColor: '#34C759' };
-}
-
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F9F9FB' },
   header: { 
@@ -566,7 +555,17 @@ const styles = StyleSheet.create({
     borderBottomColor: '#E5E5EA' 
   },
   closeButton: { padding: 8, marginLeft: -8 },
-  headerTitle: { fontSize: 17, fontWeight: '600', color: '#1C1C1E' },
+  headerTitle: { fontSize: 17, fontWeight: '600', color: '#1C1C1E', textAlign: 'center' },
+  headerSubtitle: {
+    fontSize: 12,
+    color: '#8E8E93',
+    textAlign: 'center',
+    marginTop: 2,
+  },
+  headerCenter: {
+    flex: 1,
+    alignItems: 'center',
+  },
   content: { padding: 16 },
   
   // New Section Styles
