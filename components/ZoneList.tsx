@@ -205,8 +205,8 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.08,
     shadowRadius: 12,
     elevation: 3,
-    borderWidth: 1,
-    borderColor: '#f1f5f9',
+    borderWidth: 2,
+    borderColor: '#f87b1b',
   },
   zoneContent: {
     flexDirection: 'row',
