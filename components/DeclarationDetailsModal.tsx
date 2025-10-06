@@ -1,7 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
+import * as WebBrowser from 'expo-web-browser';
 import React, { useEffect, useState } from 'react';
-import { Alert, Dimensions, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, Dimensions, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import DateTimePickerModal from 'react-native-modal-datetime-picker';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { WebView } from 'react-native-webview';
@@ -23,6 +24,7 @@ export default function DeclarationDetailsModal({ visible, onClose, declaration 
   const [isDetailsMapVisible, setIsDetailsMapVisible] = useState(false);
   const [isImagePreviewVisible, setImagePreviewVisible] = useState(false);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+  const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
 
   // Form state (title is read-only per backend PUT support)
   const [form, setForm] = useState({
@@ -125,6 +127,20 @@ export default function DeclarationDetailsModal({ visible, onClose, declaration 
       Alert.alert('Échec de la mise à jour', e?.message || 'Veuillez réessayer');
     } finally {
       setIsSubmitting(false);
+    }
+  }
+
+  async function handleGeneratePdf() {
+    if (!declaration || !token) return;
+    setIsGeneratingPdf(true);
+    try {
+      const result = await declarationService.generateDeclarationPdf(declaration.id, token);
+      const pdfUrl = `${API_CONFIG.BASE_URL}${result.fileUrl}`;
+      await WebBrowser.openBrowserAsync(pdfUrl);
+    } catch (error: any) {
+      Alert.alert('Échec de la génération du PDF', error?.message || 'Une erreur est survenue.');
+    } finally {
+      setIsGeneratingPdf(false);
     }
   }
 
@@ -253,7 +269,13 @@ export default function DeclarationDetailsModal({ visible, onClose, declaration 
             <Ionicons name="close" size={24} color="#1C1C1E" />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Détails de la déclaration</Text>
-          <View style={{ width: 24 }} />
+          {isGeneratingPdf ? (
+            <ActivityIndicator style={styles.headerIcon} />
+          ) : (
+            <TouchableOpacity onPress={handleGeneratePdf} style={styles.headerIcon}>
+              <Ionicons name="document-text-outline" size={24} color="#11224e" />
+            </TouchableOpacity>
+          )}
         </View>
 
         <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
@@ -561,6 +583,12 @@ const styles = StyleSheet.create({
     color: '#8E8E93',
     textAlign: 'center',
     marginTop: 2,
+  },
+  headerIcon: {
+    width: 24,
+    height: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   headerCenter: {
     flex: 1,

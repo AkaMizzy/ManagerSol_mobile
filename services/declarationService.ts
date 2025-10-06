@@ -297,6 +297,11 @@ class DeclarationService {
       method: 'GET',
     });
   }
+
+  // PDF Generation
+  async generateDeclarationPdf(declarationId: string, token: string): Promise<{ fileUrl: string; filename: string }> {
+    return this.makeRequest(`/declarations/${declarationId}/generate-pdf`, token);
+  }
 }
 
 export default new DeclarationService();
