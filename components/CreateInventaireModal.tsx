@@ -587,8 +587,8 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.06,
     shadowRadius: 8,
     elevation: 2,
-    borderWidth: 1,
-    borderColor: '#f1f5f9',
+    borderWidth: 2,
+    borderColor: '#f87b1b',
   },
   cardDisabled: {
     opacity: 0.6,
