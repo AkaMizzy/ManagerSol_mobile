@@ -28,8 +28,11 @@ function formatDateForGrid(dateStr?: string | null): string {
 export default function QualiPhotoGalleryScreen() {
   const { user, token } = useAuth();
   const [photos, setPhotos] = useState<QualiPhotoItem[]>([]);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
   const [limit] = useState(10);
   const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [projects, setProjects] = useState<QualiProject[]>([]);
   const [zones, setZones] = useState<QualiZone[]>([]);
@@ -53,22 +56,35 @@ export default function QualiPhotoGalleryScreen() {
 
   const isCreateDisabled = !selectedProject || !selectedZone || photoExists || checkingIfPhotoExists;
 
-  const fetchPhotos = useCallback(async () => {
+  const fetchPhotos = useCallback(async (loadPage = 1, appending = false) => {
     if (!token) return;
+
     if (fetchingRef.current) return;
     fetchingRef.current = true;
-    setIsLoading(true);
+    
+    if (appending) {
+      setIsLoadingMore(true);
+    } else {
+      setIsLoading(true);
+    }
+    
     setErrorMessage(null);
     const requestId = ++requestIdRef.current;
+
     try {
-      const { items } = await qualiphotoService.list({
+      const { items, total } = await qualiphotoService.list({
         id_project: selectedZone ? undefined : selectedProject,
         id_zone: selectedZone || undefined,
-        page: 1,
+        page: loadPage,
         limit,
       }, token);
+
       if (requestId !== requestIdRef.current) return;
-      setPhotos(items);
+
+      setPhotos(currentPhotos => appending ? [...currentPhotos, ...items] : items);
+      setPage(loadPage);
+      setHasMore(items.length > 0 && (appending ? photos.length + items.length : items.length) < total);
+
     } catch (e) {
       if (requestId === requestIdRef.current) {
         console.error('Failed to load QualiPhoto', e);
@@ -77,11 +93,20 @@ export default function QualiPhotoGalleryScreen() {
     } finally {
       if (requestId === requestIdRef.current) {
         fetchingRef.current = false;
-        setIsLoading(false);
+        if (appending) {
+          setIsLoadingMore(false);
+        } else {
+          setIsLoading(false);
+        }
       }
     }
   }, [token, selectedProject, selectedZone, limit]);
 
+  const handleLoadMore = () => {
+    if (isLoadingMore || !hasMore) return;
+    fetchPhotos(page + 1, true);
+  };
+  
   // Check if a photo already exists for the selected project/zone
   useEffect(() => {
     if (!token || !selectedProject || !selectedZone) {
@@ -109,8 +134,11 @@ export default function QualiPhotoGalleryScreen() {
   const refresh = useCallback(async () => {
     if (!token) return;
     setIsRefreshing(true);
+    // Reset pagination and fetch first page
+    setPage(1);
+    setHasMore(true);
     try {
-      await fetchPhotos();
+      await fetchPhotos(1, false);
     } finally {
       setIsRefreshing(false);
     }
@@ -141,7 +169,10 @@ export default function QualiPhotoGalleryScreen() {
 
   // Refetch photos on filter change
   useEffect(() => {
-    fetchPhotos();
+    // Reset pagination and fetch first page on filter change
+    setPage(1);
+    setHasMore(true);
+    fetchPhotos(1, false);
   }, [fetchPhotos]);
 
   const renderItem = useCallback(({ item }: { item: QualiPhotoItem }) => (
@@ -291,6 +322,16 @@ export default function QualiPhotoGalleryScreen() {
           }
           ListFooterComponent={
             <>
+              {isLoadingMore && (
+                <View style={styles.loadingMoreWrap}>
+                  <ActivityIndicator color="#f87b1b" />
+                </View>
+              )}
+              {hasMore && !isLoading && !isLoadingMore && (
+                <Pressable style={styles.loadMoreButton} onPress={handleLoadMore}>
+                  <Text style={styles.loadMoreButtonText}>View More</Text>
+                </Pressable>
+              )}
               {/* Spacer for custom tab bar */}
               <View style={{ height: 50 }} />
             </>
@@ -545,6 +586,19 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     textAlign: 'center',
     marginTop: 2,
+  },
+  loadingMoreWrap: {
+    paddingVertical: 20,
+    alignItems: 'center',
+  },
+  loadMoreButton: {
+    marginVertical: 20,
+    alignItems: 'center',
+  },
+  loadMoreButtonText: {
+    color: '#f87b1b',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
 });
 

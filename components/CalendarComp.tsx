@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View, useWindowDimensions } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 
 interface DayCell {
   date: Date;
@@ -36,9 +37,10 @@ interface Props {
   eventsByDate?: Record<string, string[]>; // date ISO -> array of contexts
   onMonthChange?: (startIso: string, endIso: string) => void;
   onDayPress?: (dateIso: string) => void;
+  onAddEvent?: () => void;
 }
 
-export default function CalendarComp({ eventsByDate = {}, onMonthChange, onDayPress }: Props) {
+export default function CalendarComp({ eventsByDate = {}, onMonthChange, onDayPress, onAddEvent }: Props) {
   const [visibleMonth, setVisibleMonth] = useState<Date>(new Date());
   const { width } = useWindowDimensions();
 
@@ -87,6 +89,11 @@ export default function CalendarComp({ eventsByDate = {}, onMonthChange, onDayPr
         <TouchableOpacity style={styles.navBtn} onPress={goNext} accessibilityRole="button">
           <Text style={styles.navText}>{'>'}</Text>
         </TouchableOpacity>
+        {onAddEvent && (
+          <TouchableOpacity style={styles.addEventBtn} onPress={onAddEvent} accessibilityRole="button">
+            <Ionicons name="add-circle" size={24} color="#f87b1b" />
+          </TouchableOpacity>
+        )}
       </View>
      
       <View style={[styles.weekRow, { paddingHorizontal: pagePadding }]}>
@@ -180,6 +187,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#F2F2F7',
+  },
+  addEventBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#F2F2F7',
+    marginLeft: 10,
   },
   navText: {
     fontSize: 16,

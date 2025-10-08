@@ -12,6 +12,7 @@ import {
   Text,
   View
 } from 'react-native';
+import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AppHeader from '../../components/AppHeader';
 import CalendarComp from '../../components/CalendarComp';
@@ -19,22 +20,42 @@ import CreateCalendarEventModal from '../../components/CreateCalendarEventModal'
 import DayEventsModal from '../../components/DayEventsModal';
 import API_CONFIG from '../config/api';
 
-const GRID_ITEMS: { title: string; icon: keyof typeof Ionicons.glyphMap }[] = [
-  { title: 'Projets', icon: 'briefcase-outline' },
-  { title: 'Déclarations', icon: 'construct-outline' },
-  { title: 'Rapports', icon: 'document-text-outline' },
-  { title: 'Inventaires', icon: 'file-tray-full-outline' },
-  { title: 'Contrôles', icon: 'shield-checkmark-outline' },
-  { title: 'Clients', icon: 'people-circle-outline' },
+const GRID_ITEMS: {
+  title: string;
+  icon?: keyof typeof Ionicons.glyphMap;
+  image?: any;
+}[] = [
+  { title: 'QualiPhoto', image: require('../../assets/icons/camera.png') },
+  { title: 'Planning', image: require('../../assets/icons/planning.png') },
+  { title: 'Calendrier', image: require('../../assets/icons/calendar.png') },
+  { title: 'Manifold', image: require('../../assets/icons/manifolder.png') },
+  { title: 'Déclarations', image: require('../../assets/icons/declaration_anomalie.png') },
+  { title: 'Audit', image: require('../../assets/icons/audit_zone.png') },
+  { title: 'Echantillon', image: require('../../assets/icons/prelevement_echantillon.png') },
+  { title: 'Inventaires', image: require('../../assets/icons/inventaire_article.png') },
+  { title: 'Réception', image: require('../../assets/icons/reception.png') },
   { title: 'Fournisseurs', icon: 'business-outline' },
   { title: 'Employés', icon: 'people-outline' },
   { title: 'Paramètres', icon: 'settings-outline' },
 ];
 
+// const GRID_ITEMS: { title: string; icon: keyof typeof Ionicons.glyphMap }[] = [
+//   { title: 'Manifold', icon: 'people-circle-outline' },
+//   { title: 'Déclarations', icon: 'briefcase-outline' },
+//   { title: 'Projets', icon: 'construct-outline' },
+//   { title: 'Rapports', icon: 'document-text-outline' },
+//   { title: 'Inventaires', icon: 'file-tray-full-outline' },
+//   { title: 'Contrôles', icon: 'shield-checkmark-outline' },
+//   { title: 'Fournisseurs', icon: 'business-outline' },
+//   { title: 'Employés', icon: 'people-outline' },
+//   { title: 'Paramètres', icon: 'settings-outline' },
+// ];
+
 export default function DashboardScreen() {
   const { token, user } = useAuth();
   const router = useRouter();
   const [eventModalVisible, setEventModalVisible] = useState(false);
+  const [isCalendarVisible, setIsCalendarVisible] = useState(true);
   const [eventsByDate, setEventsByDate] = useState<Record<string, string[]>>({});
   const [dayModalVisible, setDayModalVisible] = useState(false);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
@@ -131,6 +152,27 @@ export default function DashboardScreen() {
     }
   };
 
+  const onMonthChange = useCallback(async (startIso: string, endIso: string) => {
+    try {
+      if (!token) return;
+      const res = await fetch(`${API_CONFIG.BASE_URL}/calendar?start_date=${startIso}&end_date=${endIso}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      const data = await res.json();
+      if (!res.ok) return;
+      const map: Record<string, string[]> = {};
+      (data || []).forEach((ev: any) => {
+        const key = ev.date?.slice(0,10);
+        if (!key) return;
+        if (!map[key]) map[key] = [];
+        map[key].push(ev.context);
+      });
+      setEventsByDate(map);
+    } catch {}
+  }, [token]);
+
   return (
     <SafeAreaView style={styles.container}>
       {/* Header */}
@@ -181,92 +223,71 @@ export default function DashboardScreen() {
           </View>
         </View> */}
 
-        {/* Create Event CTA */}
-        <View style={{ paddingHorizontal: 20, marginTop: 12 }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-around' }}>
-            <Pressable
-              onPress={() => router.push('/(tabs)/qualiphoto')}
-              style={styles.quickAction}
-              accessibilityRole="button"
-              accessibilityLabel="Ouvrir QualiPhoto"
-            >
-              <Ionicons name="camera" size={24} color="#f87b1b" />
-            </Pressable>
-
-            <Pressable
-              onPress={() => router.push('/planning')}
-              style={styles.quickAction}
-              accessibilityRole="button"
-              accessibilityLabel="Ouvrir Planning"
-            >
-              <Ionicons name="calendar" size={24} color="#f87b1b" />
-            </Pressable>
-
-            <Pressable
-              onPress={() => setEventModalVisible(true)}
-              style={styles.quickAction}
-              accessibilityRole="button"
-              accessibilityLabel="Ajouter activité"
-            >
-              <Ionicons name="add-circle" size={24} color="#f87b1b" />
-            </Pressable>
-          </View>
-        </View>
-
         {/* Feature Grid */}
         <View style={styles.gridContainer}>
           {GRID_ITEMS.map((item) => (
             <Pressable
               key={item.title}
               style={styles.gridButton}
-              onPress={() => Alert.alert('Bientôt disponible', `La fonctionnalité ${item.title} est en cours de développement.`)}
+              onPress={() => {
+                if (item.title === 'QualiPhoto') {
+                  router.push('/(tabs)/qualiphoto');
+                } else if (item.title === 'Planning') {
+                  router.push('/planning');
+                } else if (item.title === 'Calendrier') {
+                  LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+                  setIsCalendarVisible(prevState => !prevState);
+                } else if (item.title === 'Manifold') {
+                  router.push('/manifolder');
+                } else if (item.title === 'Déclarations') {
+                  router.push('/declaration');
+                } else if (item.title === 'Audit') {
+                  router.push('/audit');
+                } else if (item.title === 'Echantillon') {
+                  router.push('/echantillon');
+                } else if (item.title === 'Inventaires') {
+                  router.push('/inventaire');
+                } else {
+                  Alert.alert('Bientôt disponible', `La fonctionnalité ${item.title} est en cours de développement.`);
+                }
+              }}
             >
-              <Ionicons name={item.icon} size={32} color="#f87b1b" />
+              {item.image ? (
+                <Image source={item.image} style={styles.gridImage} />
+              ) : (
+                <Ionicons name={item.icon!} size={32} color="#f87b1b" />
+              )}
               <Text style={styles.gridButtonText}>{item.title}</Text>
             </Pressable>
           ))}
         </View>
 
         {/* Calendar */}
-        <CalendarComp
-          eventsByDate={eventsByDate}
-          onMonthChange={useCallback(async (startIso: string, endIso: string) => {
-            try {
-              if (!token) return;
-              const res = await fetch(`${API_CONFIG.BASE_URL}/calendar?start_date=${startIso}&end_date=${endIso}`, {
-                headers: {
-                  Authorization: `Bearer ${token}`,
-                },
-              });
-              const data = await res.json();
-              if (!res.ok) return;
-              const map: Record<string, string[]> = {};
-              (data || []).forEach((ev: any) => {
-                const key = ev.date?.slice(0,10);
-                if (!key) return;
-                if (!map[key]) map[key] = [];
-                map[key].push(ev.context);
-              });
-              setEventsByDate(map);
-            } catch {}
-          }, [token])}
-          onDayPress={async (dateIso) => {
-            setSelectedDate(dateIso);
-            if (!token) { setDayEvents([]); setDayModalVisible(true); return; }
-            try {
-              const res = await fetch(`${API_CONFIG.BASE_URL}/calendar?start_date=${dateIso}&end_date=${dateIso}`, {
-                headers: { Authorization: `Bearer ${token}` },
-              });
-              const data = await res.json();
-              if (!res.ok) throw new Error('Failed');
-              setDayEvents(Array.isArray(data) ? data : []);
-            } catch {
-              setDayEvents([]);
-            } finally {
-              setDayModalVisible(true);
-            }
-          }}
-        />
+        {isCalendarVisible && (
+          <View style={{ marginTop: -50 }}>
+            <CalendarComp
+              eventsByDate={eventsByDate}
+              onMonthChange={onMonthChange}
+              onDayPress={async (dateIso) => {
+                setSelectedDate(dateIso);
+                if (!token) { setDayEvents([]); setDayModalVisible(true); return; }
+                try {
+                  const res = await fetch(`${API_CONFIG.BASE_URL}/calendar?start_date=${dateIso}&end_date=${dateIso}`, {
+                    headers: { Authorization: `Bearer ${token}` },
+                  });
+                  const data = await res.json();
+                  if (!res.ok) throw new Error('Failed');
+                  setDayEvents(Array.isArray(data) ? data : []);
+                } catch {
+                  setDayEvents([]);
+                } finally {
+                  setDayModalVisible(true);
+                }
+              }}
+              onAddEvent={() => setEventModalVisible(true)}
+            />
+          </View>
+        )}
 
         {/* Recent Activity */}
         <View style={styles.section}>
@@ -462,6 +483,10 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#f87b1b',
   },
+  gridImage: {
+    width: 32,
+    height: 32,
+  },
   gridButtonText: {
     marginTop: 8,
     fontSize: 12,
@@ -605,15 +630,6 @@ const styles = StyleSheet.create({
     color: '#f87b1b',
     fontSize: 14,
     fontWeight: '700',
-  },
-  quickAction: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    borderWidth: 1,
-    borderColor: '#f87b1b',
-    justifyContent: 'center',
-    alignItems: 'center',
   },
   quickActionsFrame: {
     backgroundColor: '#FFFFFF',
