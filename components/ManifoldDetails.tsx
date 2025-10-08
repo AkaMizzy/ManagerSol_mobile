@@ -7,16 +7,16 @@ import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import React, { useCallback, useEffect, useState } from 'react';
 import {
-  ActivityIndicator,
-  Alert,
-  Linking,
-  Platform,
-  Pressable,
-  ScrollView,
-  Share,
-  StyleSheet,
-  Text,
-  View,
+    ActivityIndicator,
+    Alert,
+    Linking,
+    Platform,
+    Pressable,
+    ScrollView,
+    Share,
+    StyleSheet,
+    Text,
+    View,
 } from 'react-native';
 import AnswersPreviewModal from './AnswersPreviewModal';
 import FileUploader from './FileUploader';
@@ -47,9 +47,6 @@ export default function ManifoldDetails({
   const [isLoading, setIsLoading] = useState(!manifolderData);
   const [manifolder, setManifolder] = useState<ManifolderDetailData | null>(manifolderData || null);
   const [error, setError] = useState<string | null>(null);
-  const [pdfExists, setPdfExists] = useState(false);
-  const [pdfUrl, setPdfUrl] = useState<string | null>(null);
-  const [isCheckingPdf, setIsCheckingPdf] = useState(false);
   const [isUploadingDocument, setIsUploadingDocument] = useState(false);
 
   // Preview Modal states
@@ -169,41 +166,6 @@ export default function ManifoldDetails({
     }
   }, [manifolder, loadSignatures]);
 
-  const checkPDFStatus = useCallback(async () => {
-    try {
-      setIsCheckingPdf(true);
-      
-      // Check if PDF exists by trying to fetch the latest PDF for this manifolder
-      const response = await fetch(`${API_CONFIG.BASE_URL}/manifolder-details/check-pdf/${manifolderId}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-      
-      if (response.ok) {
-        const result = await response.json();
-        setPdfExists(result.exists);
-        setPdfUrl(result.fileUrl || null);
-      } else {
-        setPdfExists(false);
-        setPdfUrl(null);
-      }
-    } catch {
-      // If check fails, assume no PDF exists
-      setPdfExists(false);
-      setPdfUrl(null);
-    } finally {
-      setIsCheckingPdf(false);
-    }
-  }, [manifolderId, token]);
-
-  useEffect(() => {
-    // Check PDF status when manifolder loads
-    if (manifolder) {
-      checkPDFStatus();
-    }
-  }, [manifolder, checkPDFStatus]);
-
   const handlePreviewAnswers = async () => {
     if (isLoadingPreview) return;
     
@@ -320,42 +282,34 @@ export default function ManifoldDetails({
       const result = await response.json();
       
       // Update PDF status after successful generation
-      setPdfExists(true);
-      setPdfUrl(result.fileUrl);
+      const newPdfUrl = `${API_CONFIG.BASE_URL}${result.fileUrl}`;
       
       // Handle PDF opening based on platform
       if (Platform.OS === 'web') {
         // Web: Open PDF in new tab
-        const pdfUrl = `${API_CONFIG.BASE_URL}${result.fileUrl}`;
-        window.open(pdfUrl, '_blank');
-        Alert.alert('Success', 'PDF opened in new tab!');
+        window.open(newPdfUrl, '_blank');
       } else {
-        const pdfUrl = `${API_CONFIG.BASE_URL}${result.fileUrl}`;
-        
         try {
-          const supported = await Linking.canOpenURL(pdfUrl);
+          const supported = await Linking.canOpenURL(newPdfUrl);
           
           if (supported) {
-            await Linking.openURL(pdfUrl);
-            Alert.alert('Success', 'PDF opened successfully!');
+            await Linking.openURL(newPdfUrl);
           } else {
             // Fallback to share if direct opening fails
             await Share.share({
-              url: pdfUrl,
+              url: newPdfUrl,
               title: `Manifolder ${manifolder?.code_formatted || manifolderId}`,
               message: `Manifolder PDF Report: ${manifolder?.code_formatted || manifolderId}`,
             });
-            Alert.alert('Success', 'PDF shared successfully!');
           }
         } catch {
           // If direct opening fails, fallback to share
           try {
             await Share.share({
-              url: pdfUrl,
+              url: newPdfUrl,
               title: `Manifolder ${manifolder?.code_formatted || manifolderId}`,
               message: `Manifolder PDF Report: ${manifolder?.code_formatted || manifolderId}`,
             });
-            Alert.alert('Success', 'PDF shared successfully!');
           } catch {
             Alert.alert('Error', 'Failed to open or share PDF. Please try again.');
           }
@@ -366,58 +320,6 @@ export default function ManifoldDetails({
       Alert.alert('Error', error.message || 'Failed to generate PDF');
     } finally {
       setIsLoading(false);
-    }
-  };
-
-  const viewPDF = async () => {
-    if (!pdfUrl) {
-      Alert.alert('Error', 'PDF URL not found');
-      return;
-    }
-
-    try {
-      const fullPdfUrl = `${API_CONFIG.BASE_URL}${pdfUrl}`;
-      
-      // Handle PDF opening based on platform
-      if (Platform.OS === 'web') {
-        // Web: Open PDF in new tab
-        window.open(fullPdfUrl, '_blank');
-        Alert.alert('Success', 'PDF opened in new tab!');
-      } else {
-        // Mobile: Try to open PDF directly with device's default PDF viewer
-        try {
-          // Try to open with device's default PDF viewer
-          const supported = await Linking.canOpenURL(fullPdfUrl);
-          
-          if (supported) {
-            await Linking.openURL(fullPdfUrl);
-            Alert.alert('Success', 'PDF opened successfully!');
-          } else {
-            // Fallback to share if direct opening fails
-            await Share.share({
-              url: fullPdfUrl,
-              title: `Manifolder ${manifolder?.code_formatted || manifolderId}`,
-              message: `Manifolder PDF Report: ${manifolder?.code_formatted || manifolderId}`,
-            });
-            Alert.alert('Success', 'PDF shared successfully!');
-          }
-        } catch {
-          // If direct opening fails, fallback to share
-          try {
-            await Share.share({
-              url: fullPdfUrl,
-              title: `Manifolder ${manifolder?.code_formatted || manifolderId}`,
-              message: `Manifolder PDF Report: ${manifolder?.code_formatted || manifolderId}`,
-            });
-            Alert.alert('Success', 'PDF shared successfully!');
-          } catch {
-            Alert.alert('Error', 'Failed to open or share PDF. Please try again.');
-          }
-        }
-      }
-      
-    } catch (error: any) {
-      Alert.alert('Error', error.message || 'Failed to open PDF');
     }
   };
 
@@ -698,10 +600,10 @@ export default function ManifoldDetails({
                 )}
                 <Pressable 
                   style={styles.primaryActionButton} 
-                  onPress={pdfExists ? viewPDF : generatePDF}
-                  disabled={isCheckingPdf}
+                  onPress={generatePDF}
+                  disabled={isLoading}
                 >
-                  {isCheckingPdf ? (
+                  {isLoading ? (
                     <ActivityIndicator size="small" color="#FFFFFF" />
                   ) : (
                     <Ionicons 

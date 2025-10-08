@@ -1,4 +1,4 @@
-import React, { useLayoutEffect, useMemo, useRef, useState, useEffect } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View, useWindowDimensions } from 'react-native';
 
 interface DayCell {
@@ -150,7 +150,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderRadius: 12,
     marginHorizontal: 20,
-    marginTop: 16,
+    marginTop: 0,
     paddingTop: 12,
     paddingBottom: 12,
     borderWidth: 2,

@@ -19,6 +19,18 @@ import CreateCalendarEventModal from '../../components/CreateCalendarEventModal'
 import DayEventsModal from '../../components/DayEventsModal';
 import API_CONFIG from '../config/api';
 
+const GRID_ITEMS: { title: string; icon: keyof typeof Ionicons.glyphMap }[] = [
+  { title: 'Projets', icon: 'briefcase-outline' },
+  { title: 'Déclarations', icon: 'construct-outline' },
+  { title: 'Rapports', icon: 'document-text-outline' },
+  { title: 'Inventaires', icon: 'file-tray-full-outline' },
+  { title: 'Contrôles', icon: 'shield-checkmark-outline' },
+  { title: 'Clients', icon: 'people-circle-outline' },
+  { title: 'Fournisseurs', icon: 'business-outline' },
+  { title: 'Employés', icon: 'people-outline' },
+  { title: 'Paramètres', icon: 'settings-outline' },
+];
+
 export default function DashboardScreen() {
   const { token, user } = useAuth();
   const router = useRouter();
@@ -199,6 +211,20 @@ export default function DashboardScreen() {
               <Ionicons name="add-circle" size={24} color="#f87b1b" />
             </Pressable>
           </View>
+        </View>
+
+        {/* Feature Grid */}
+        <View style={styles.gridContainer}>
+          {GRID_ITEMS.map((item) => (
+            <Pressable
+              key={item.title}
+              style={styles.gridButton}
+              onPress={() => Alert.alert('Bientôt disponible', `La fonctionnalité ${item.title} est en cours de développement.`)}
+            >
+              <Ionicons name={item.icon} size={32} color="#f87b1b" />
+              <Text style={styles.gridButtonText}>{item.title}</Text>
+            </Pressable>
+          ))}
         </View>
 
         {/* Calendar */}
@@ -411,6 +437,37 @@ const styles = StyleSheet.create({
   },
   scrollView: {
     flex: 1,
+  },
+  gridContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-around',
+    paddingHorizontal: 20,
+    marginTop: 20,
+    gap: 10,
+  },
+  gridButton: {
+    width: '30%',
+    aspectRatio: 1,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+    borderWidth: 1,
+    borderColor: '#f87b1b',
+  },
+  gridButtonText: {
+    marginTop: 8,
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#11224e',
+    textAlign: 'center',
   },
 
   statsContainer: {
