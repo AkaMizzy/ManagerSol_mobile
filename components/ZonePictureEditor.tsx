@@ -83,7 +83,6 @@ export default function ZonePictureEditor({ child, onClose, onSaved }: Props) {
       const uri = await captureRef(canvasRef, { format: 'jpg', quality: 0.9, result: 'tmpfile' } as any);
       const response = await qualiphotoService.uploadPlan(child.id, { uri, name: `plan-${Date.now()}.jpg`, type: 'image/jpeg' }, token);
       onSaved?.(response);
-      Alert.alert('Succès', 'Plan enregistré avec succès.');
       onClose();
     } catch (e: any) {
       Alert.alert('Erreur', e?.message || "Échec de l'enregistrement du plan");
@@ -133,36 +132,38 @@ export default function ZonePictureEditor({ child, onClose, onSaved }: Props) {
             <Text style={styles.alertBannerText}>{error}</Text>
           </View>
         ) : (
-          <ViewShot ref={canvasRef} style={styles.canvasWrap} options={{ format: 'jpg', quality: 0.9 }}>
-            <View style={styles.imageContainer}
-              onStartShouldSetResponder={() => true}
-              onMoveShouldSetResponder={() => true}
-              onResponderTerminationRequest={() => false}
-              onResponderGrant={(e) => {
-                const { locationX, locationY } = e.nativeEvent;
-                handlePanStart(locationX, locationY);
-              }}
-              onResponderMove={(e) => {
-                const { locationX, locationY } = e.nativeEvent;
-                handlePanMove(locationX, locationY);
-              }}
-              onResponderRelease={() => handlePanEnd()}
-            >
-              {baseImageUri ? (
-                <Image source={{ uri: baseImageUri }} style={styles.baseImage} resizeMode="contain" />
-              ) : (
-                <View style={[styles.baseImage, { backgroundColor: '#e5e7eb' }]} />
-              )}
-              <Svg style={StyleSheet.absoluteFill} pointerEvents="none">
-                {paths.map((p, idx) => (
-                  <Path key={idx} d={p.d} stroke={p.color} strokeWidth={p.width} fill="none" strokeLinecap="round" strokeLinejoin="round" />
-                ))}
-                {currentPath ? (
-                  <Path d={currentPath} stroke={selectedColor} strokeWidth={strokeWidth} fill="none" strokeLinecap="round" strokeLinejoin="round" />
-                ) : null}
-              </Svg>
-            </View>
-          </ViewShot>
+          <View style={styles.canvasFrame}>
+            <ViewShot ref={canvasRef} style={styles.canvasWrap} options={{ format: 'jpg', quality: 0.9 }}>
+              <View style={styles.imageContainer}
+                onStartShouldSetResponder={() => true}
+                onMoveShouldSetResponder={() => true}
+                onResponderTerminationRequest={() => false}
+                onResponderGrant={(e) => {
+                  const { locationX, locationY } = e.nativeEvent;
+                  handlePanStart(locationX, locationY);
+                }}
+                onResponderMove={(e) => {
+                  const { locationX, locationY } = e.nativeEvent;
+                  handlePanMove(locationX, locationY);
+                }}
+                onResponderRelease={() => handlePanEnd()}
+              >
+                {baseImageUri ? (
+                  <Image source={{ uri: baseImageUri }} style={styles.baseImage} resizeMode="contain" />
+                ) : (
+                  <View style={[styles.baseImage, { backgroundColor: '#e5e7eb' }]} />
+                )}
+                <Svg style={StyleSheet.absoluteFill} pointerEvents="none">
+                  {paths.map((p, idx) => (
+                    <Path key={idx} d={p.d} stroke={p.color} strokeWidth={p.width} fill="none" strokeLinecap="round" strokeLinejoin="round" />
+                  ))}
+                  {currentPath ? (
+                    <Path d={currentPath} stroke={selectedColor} strokeWidth={strokeWidth} fill="none" strokeLinecap="round" strokeLinejoin="round" />
+                  ) : null}
+                </Svg>
+              </View>
+            </ViewShot>
+          </View>
         )}
       </View>
 
@@ -201,7 +202,8 @@ const styles = StyleSheet.create({
   actionBtn: { padding: 8, borderWidth: 1, borderColor: '#e5e7eb', borderRadius: 8, backgroundColor: '#fff', marginRight: 8 },
   separator: { width: 1, height: 20, backgroundColor: '#e5e7eb', marginHorizontal: 6 },
   content: { flex: 1, padding: 12 },
-  canvasWrap: { flex: 1, borderWidth: 1, borderColor: '#f87b1b', borderRadius: 12, overflow: 'hidden', backgroundColor: '#fff' },
+  canvasFrame: { flex: 1, borderWidth: 1, borderColor: '#f87b1b', borderRadius: 12, overflow: 'hidden', backgroundColor: '#fff' },
+  canvasWrap: { flex: 1, backgroundColor: '#fff' },
   imageContainer: { flex: 1 },
   baseImage: { width: '100%', height: '100%' },
   alertBanner: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#fffbeb', borderColor: '#f59e0b', borderWidth: 1, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 10 },
