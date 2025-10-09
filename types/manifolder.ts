@@ -100,3 +100,23 @@ export interface ManifolderQuestionsResponse {
   availableZones: Zone[];
   questions: ManifolderQuestion[];
 }
+
+export type LocalFile = {
+  uri: string;
+  name: string;
+  type: string;
+  size?: number;
+};
+
+export type RemoteFile = {
+  path: string;
+  originalName: string;
+  mimetype: string;
+  size: number;
+  filename: string;
+  uri?: string; // for compatibility
+  name?: string; // for compatibility
+  type?: string; // for compatibility
+};
+
+export type UploadedFile = LocalFile | RemoteFile;

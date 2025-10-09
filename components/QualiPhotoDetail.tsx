@@ -6,10 +6,11 @@ import { ActivityIndicator, Alert, Image, LayoutAnimation, Linking, Modal, Platf
 import MapView, { Marker } from 'react-native-maps';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CreateChildQualiPhotoForm } from './CreateChildQualiPhotoModal';
+import CreateComplementaireQualiPhotoModal from './CreateComplementaireQualiPhotoModal';
 
+import API_CONFIG from '@/app/config/api';
 import { useAuth } from '@/contexts/AuthContext';
 import AppHeader from './AppHeader';
-import API_CONFIG from '@/app/config/api';
 
 const cameraIcon = require('@/assets/icons/camera.gif');
 const mapIcon = require('@/assets/icons/map.png');
@@ -74,10 +75,15 @@ type QualiPhotoItemWithComment2 = QualiPhotoItem & {
   const insets = useSafeAreaInsets();
   const [sound, setSound] = useState<Audio.Sound | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [compSound, setCompSound] = useState<Audio.Sound | null>(null);
+  const [isPlayingComp, setIsPlayingComp] = useState(false);
   const [isMapDetailVisible, setMapDetailVisible] = useState(false);
   const [isChildModalVisible, setChildModalVisible] = useState(false);
+  const [isComplementModalVisible, setComplementModalVisible] = useState(false);
   const [children, setChildren] = useState<QualiPhotoItem[]>([]);
   const [isLoadingChildren, setIsLoadingChildren] = useState(false);
+  const [complement, setComplement] = useState<QualiPhotoItem | null>(null);
+  const [isLoadingComplement, setIsLoadingComplement] = useState(false);
   const [item, setItem] = useState<QualiPhotoItem | null>(initialItem || null);
   const [isImagePreviewVisible, setImagePreviewVisible] = useState(false);
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
@@ -95,6 +101,7 @@ type QualiPhotoItemWithComment2 = QualiPhotoItem & {
     setSortOrder('desc'); // Reset sort order when item changes
     setActionsVisible(false);
     setLayoutMode('grid');
+    setComplement(null);
   }, [initialItem]);
 
   useEffect(() => {
@@ -118,9 +125,24 @@ type QualiPhotoItemWithComment2 = QualiPhotoItem & {
       } else {
         setChildren([]);
       }
+
+      // If viewing a child, fetch its complementary photo (before=0, after=0)
+      if (item.id_qualiphoto_parent) {
+        setIsLoadingComplement(true);
+        qualiphotoService.getChildren(item.id, token)
+          .then((rows) => {
+            const comp = rows.find(r => (r.before === 0 && r.after === 0) || !!r.photo_comp);
+            setComplement(comp || null);
+          })
+          .catch(() => setComplement(null))
+          .finally(() => setIsLoadingComplement(false));
+      } else {
+        setComplement(null);
+      }
     } else {
       setChildren([]);
       setComments([]);
+      setComplement(null);
     }
   }, [item, token, sortOrder]);
 
@@ -167,8 +189,9 @@ type QualiPhotoItemWithComment2 = QualiPhotoItem & {
   useEffect(() => {
     return () => {
       sound?.unloadAsync();
+      compSound?.unloadAsync();
     };
-  }, [sound]);
+  }, [sound, compSound]);
 
   useEffect(() => {
     if (!visible) {
@@ -197,6 +220,19 @@ type QualiPhotoItemWithComment2 = QualiPhotoItem & {
             .catch(() => setChildren([]))
             .finally(() => setIsLoadingChildren(false));
     }
+  };
+
+  const handleComplementSuccess = async () => {
+    if (!initialItem || !token) return;
+    // Refresh children list to reflect complement existence
+    setIsLoadingChildren(true);
+    try {
+      const newChildren = await qualiphotoService.getChildren(initialItem.id, token, sortOrder);
+      setChildren(newChildren);
+    } finally {
+      setIsLoadingChildren(false);
+    }
+    setComplementModalVisible(false);
   };
 
   const hasActionsOrDescription = useMemo(() => {
@@ -310,20 +346,24 @@ type QualiPhotoItemWithComment2 = QualiPhotoItem & {
         </View>
         <View style={styles.headerActionsContainer}>
           {item?.before === 1 ? (
-            <TouchableOpacity style={styles.headerAction} onPress={() => setChildModalVisible(true)}>
+            <TouchableOpacity style={styles.headerAction} onPress={() => setChildModalVisible(true)} accessibilityLabel="Ajouter une photo d'évolution">
               <Image source={cameraIcon} style={styles.headerActionIcon} />
+            </TouchableOpacity>
+          ) : item?.id_qualiphoto_parent ? (
+            <TouchableOpacity style={styles.headerAction} onPress={() => setComplementModalVisible(true)} accessibilityLabel="Ajouter une photo complémentaire">
+              <Ionicons name="add-circle-outline" size={28} color="#f87b1b" />
             </TouchableOpacity>
           ) : (
             <View style={{ width: 40 }} />
           )}
 
-          {/* PDF Generation Button */}
+          {/* PDF Generation Button (only for main/parent) */}
           {item && !item.id_qualiphoto_parent && (
-              <TouchableOpacity style={styles.headerAction} onPress={handleGeneratePdf} disabled={isGeneratingPdf}>
+              <TouchableOpacity style={styles.headerAction} onPress={handleGeneratePdf} disabled={isGeneratingPdf} accessibilityLabel="Générer le PDF">
                   {isGeneratingPdf ? (
                       <ActivityIndicator color="#f87b1b" />
                   ) : (
-                      <Ionicons name="document-text-outline" size={28} color="#11224e" />
+                      <Ionicons name="document-text-outline" size={28} color="#f87b1b" />
                   )}
               </TouchableOpacity>
           )}
@@ -395,6 +435,11 @@ type QualiPhotoItemWithComment2 = QualiPhotoItem & {
                           <Ionicons name="add-circle-outline" size={32} color="#11224e" />
                         </TouchableOpacity>
                       )}
+                      {item.id_qualiphoto_parent && (
+                        <TouchableOpacity style={styles.actionButton} onPress={() => setComplementModalVisible(true)}>
+                          <Ionicons name="add" size={32} color="#11224e" />
+                        </TouchableOpacity>
+                      )}
                     </View>
                   )}
                   {typeof item.commentaire === 'string' && item.commentaire.trim().length > 0 ? (
@@ -402,6 +447,50 @@ type QualiPhotoItemWithComment2 = QualiPhotoItem & {
                       <MetaRow label="Description" value={item.commentaire} multiline />
                     </View>
                   ) : null}
+                  {item.id_qualiphoto_parent && (
+                    <View style={styles.metaCard}>
+                      <Text style={styles.sectionTitle}>Photo Complémentaire</Text>
+                      {isLoadingComplement ? (
+                        <ActivityIndicator style={{ marginVertical: 12 }} />
+                      ) : complement ? (
+                        <View>
+                          {(complement.photo_comp || complement.photo) ? (
+                            <TouchableOpacity onPress={() => setImagePreviewVisible(true)} activeOpacity={0.9}>
+                              <View style={styles.imageWrap}>
+                                <Image source={{ uri: complement.photo_comp || complement.photo }} style={styles.image} />
+                              </View>
+                            </TouchableOpacity>
+                          ) : null}
+                          {(complement.voice_note) ? (
+                            <View style={[styles.actionsContainer, { marginTop: 8 }]}>
+                              <TouchableOpacity style={styles.actionButton} onPress={async () => {
+                                try {
+                                  if (isPlayingComp && compSound) { await compSound.pauseAsync(); setIsPlayingComp(false); return; }
+                                  if (compSound) { await compSound.playAsync(); setIsPlayingComp(true); return; }
+                                  const { sound: newSound } = await Audio.Sound.createAsync({ uri: complement.voice_note! });
+                                  setCompSound(newSound);
+                                  setIsPlayingComp(true);
+                                  newSound.setOnPlaybackStatusUpdate((status) => {
+                                    if (status.isLoaded && status.didJustFinish) { setIsPlayingComp(false); newSound.setPositionAsync(0); }
+                                  });
+                                  await newSound.playAsync();
+                                } catch {}
+                              }}>
+                                <Ionicons name={isPlayingComp ? 'pause-circle' : 'play-circle'} size={32} color="#11224e" />
+                              </TouchableOpacity>
+                            </View>
+                          ) : null}
+                          {typeof complement.commentaire === 'string' && complement.commentaire.trim().length > 0 ? (
+                            <View style={[styles.metaCard, { marginTop: 8 }]}>
+                              <MetaRow label="Description (Complémentaire)" value={complement.commentaire} multiline />
+                            </View>
+                          ) : null}
+                        </View>
+                      ) : (
+                        <Text style={styles.noChildrenText}>Aucune photo complémentaire.</Text>
+                      )}
+                    </View>
+                  )}
                 </>
               )}
               {item.after === 1 && (comments.length > 0 || isLoadingComments) && (
@@ -536,6 +625,58 @@ type QualiPhotoItemWithComment2 = QualiPhotoItem & {
                 </>
               )}
 
+              {/* Complementary content - always visible on child */}
+              <View style={styles.metaCard}>
+                <Text style={styles.sectionTitle}>Photo Complémentaire</Text>
+                {isLoadingComplement ? (
+                  <ActivityIndicator style={{ marginVertical: 12 }} />
+                ) : complement ? (
+                  <View>
+                    {(complement.photo_comp || complement.photo) ? (
+                      <View style={{ marginBottom: 8 }}>
+                        <View style={styles.imageWrap}>
+                          <Image source={{ uri: complement.photo_comp || complement.photo }} style={styles.image} />
+                        </View>
+                      </View>
+                    ) : null}
+                    {complement.voice_note ? (
+                      <View style={[styles.actionsContainer, { marginTop: 4 }]}>
+                        <TouchableOpacity style={styles.actionButton} onPress={async () => {
+                          try {
+                            if (isPlayingComp && compSound) { await compSound.pauseAsync(); setIsPlayingComp(false); return; }
+                            if (compSound) { await compSound.playAsync(); setIsPlayingComp(true); return; }
+                            const { sound: newSound } = await Audio.Sound.createAsync({ uri: complement.voice_note! });
+                            setCompSound(newSound);
+                            setIsPlayingComp(true);
+                            newSound.setOnPlaybackStatusUpdate((status) => {
+                              if (status.isLoaded && status.didJustFinish) { setIsPlayingComp(false); newSound.setPositionAsync(0); }
+                            });
+                            await newSound.playAsync();
+                          } catch {}
+                        }}>
+                          <Ionicons name={isPlayingComp ? 'pause-circle' : 'play-circle'} size={32} color="#11224e" />
+                        </TouchableOpacity>
+                      </View>
+                    ) : null}
+                    {typeof complement.commentaire === 'string' && complement.commentaire.trim().length > 0 ? (
+                      <View style={[styles.metaCard, { marginTop: 8 }]}>
+                        <Text style={styles.metaLabel}>Description (Complémentaire)</Text>
+                        <Text
+                          style={[styles.metaValue]}
+                          numberOfLines={1}
+                          ellipsizeMode="tail"
+                          onPress={() => Alert.alert('Description', complement.commentaire || '')}
+                        >
+                          {complement.commentaire}
+                        </Text>
+                      </View>
+                    ) : null}
+                  </View>
+                ) : (
+                  <Text style={styles.noChildrenText}>Aucune photo complémentaire.</Text>
+                )}
+              </View>
+
               {item.after === 1 && (comments.length > 0 || isLoadingComments) && (
                 <View style={styles.metaCard}>
                   <Text style={styles.sectionTitle}>Commentaires</Text>
@@ -658,6 +799,14 @@ type QualiPhotoItemWithComment2 = QualiPhotoItem & {
           renderMapView()
         ) : (
           renderDetailView()
+        )}
+        {item && item.id_qualiphoto_parent && (
+          <CreateComplementaireQualiPhotoModal
+            visible={isComplementModalVisible}
+            onClose={() => setComplementModalVisible(false)}
+            onSuccess={handleComplementSuccess}
+            childItem={item}
+          />
         )}
         {renderCommentModal()}
       </View>

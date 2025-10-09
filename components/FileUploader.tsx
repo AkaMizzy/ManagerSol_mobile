@@ -4,13 +4,13 @@ import * as DocumentPicker from 'expo-document-picker';
 import * as ImagePicker from 'expo-image-picker';
 import React, { useState } from 'react';
 import {
-    Alert,
-    Image,
-    Modal,
-    Pressable,
-    StyleSheet,
-    Text,
-    View
+  Alert,
+  Image,
+  Modal,
+  Pressable,
+  StyleSheet,
+  Text,
+  View
 } from 'react-native';
 
 interface FileUploaderProps {
@@ -31,7 +31,15 @@ export default function FileUploader({
   maxSize = 25,
 }: FileUploaderProps) {
   const [showOptions, setShowOptions] = useState(false);
-  const [isUploading, setIsUploading] = useState(false);
+
+  // Normalize file data from different sources (local selection vs. server data)
+  const file = value ? {
+    uri: 'uri' in value ? value.uri : value.path,
+    name: 'name' in value ? value.name : value.originalName,
+    type: 'type' in value ? value.type : value.mimetype,
+    size: value.size || 0,
+  } : null;
+
 
   const handleImagePicker = async () => {
     try {
@@ -54,6 +62,7 @@ export default function FileUploader({
         });
       }
     } catch (error) {
+      console.error('Failed to pick image:', error);
       Alert.alert('Error', 'Failed to pick image');
     }
     setShowOptions(false);
@@ -82,6 +91,7 @@ export default function FileUploader({
         });
       }
     } catch (error) {
+      console.error('Failed to pick document:', error);
       Alert.alert('Error', 'Failed to pick document');
     }
     setShowOptions(false);
@@ -109,6 +119,7 @@ export default function FileUploader({
         });
       }
     } catch (error) {
+      console.error('Failed to pick video:', error);
       Alert.alert('Error', 'Failed to pick video');
     }
     setShowOptions(false);
@@ -142,6 +153,7 @@ export default function FileUploader({
         });
       }
     } catch (error) {
+      console.error('Failed to record video:', error);
       Alert.alert('Error', 'Failed to record video');
     }
     setShowOptions(false);
@@ -173,15 +185,16 @@ export default function FileUploader({
         });
       }
     } catch (error) {
+      console.error('Failed to capture photo:', error);
       Alert.alert('Error', 'Failed to capture photo');
     }
     setShowOptions(false);
   };
 
   const getFileIcon = () => {
-    if (!value) return 'document-outline';
+    if (!file) return 'document-outline';
     
-    const mimeType = value.mimetype;
+    const mimeType = file.type || '';
     if (mimeType.startsWith('image/')) return 'image-outline';
     if (mimeType.startsWith('video/')) return 'videocam-outline';
     if (mimeType === 'application/pdf') return 'document-text-outline';
@@ -196,16 +209,16 @@ export default function FileUploader({
     return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   };
 
-  const isImage = value?.mimetype.startsWith('image/');
-  const isVideo = value?.mimetype.startsWith('video/');
+  const isImage = file?.type?.startsWith('image/');
+  const isVideo = file?.type?.startsWith('video/');
 
   return (
     <View style={styles.container}>
       {/* File Display */}
-             {value ? (
+             {file ? (
          <View style={styles.fileContainer}>
            {isImage ? (
-             <Image source={{ uri: value.path }} style={styles.imagePreview} />
+             <Image source={{ uri: file.uri }} style={styles.imagePreview} />
            ) : isVideo ? (
              <View style={styles.videoPreview}>
                <Ionicons name="videocam-outline" size={32} color="#007AFF" />
@@ -218,10 +231,10 @@ export default function FileUploader({
           
           <View style={styles.fileInfo}>
             <Text style={styles.fileName} numberOfLines={2}>
-              {value.originalName}
+              {file.name}
             </Text>
             <Text style={styles.fileSize}>
-              {getFileSize(value.size)}
+              {getFileSize(file.size)}
             </Text>
           </View>
           

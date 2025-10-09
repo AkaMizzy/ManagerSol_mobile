@@ -1,6 +1,6 @@
 // API Configuration
 const API_CONFIG = {
-  BASE_URL: 'http://192.168.1.136:3001',
+  BASE_URL: 'http://192.168.1.27:3001',
   
   // For web/emulator testing
   // BASE_URL: 'http://192.168.1.129:3001',

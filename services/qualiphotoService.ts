@@ -5,6 +5,7 @@ export type QualiPhotoItem = {
   id_project: string;
   id_zone: string;
   photo: string;
+  photo_comp?: string | null;
   title: string | null;
   commentaire: string | null;
   date_taken: string | null;
@@ -75,6 +76,7 @@ class QualiPhotoService {
     return {
       ...item,
       photo: this.toAbsoluteUrl(item.photo) ?? '',
+      photo_comp: this.toAbsoluteUrl(item.photo_comp ?? null),
       voice_note: this.toAbsoluteUrl(item.voice_note),
     };
   }
@@ -209,6 +211,35 @@ class QualiPhotoService {
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data?.error || 'Failed to create QualiPhoto');
+    return this.normalizeQualiPhotoItem(data);
+  }
+
+  async createComplementaire(params: { id_qualiphoto_parent: string; photo: { uri: string; name: string; type: string }; voice_note?: { uri: string; name: string; type: string }; commentaire?: string }, token: string): Promise<Partial<QualiPhotoItem>> {
+    const formData = new FormData();
+    formData.append('id_qualiphoto_parent', params.id_qualiphoto_parent);
+    formData.append('photo', {
+      uri: params.photo.uri,
+      name: params.photo.name,
+      type: params.photo.type,
+    } as any);
+    if (params.commentaire) {
+      formData.append('commentaire', params.commentaire);
+    }
+    if (params.voice_note) {
+      formData.append('voice_note', {
+        uri: params.voice_note.uri,
+        name: params.voice_note.name,
+        type: params.voice_note.type,
+      } as any);
+    }
+
+    const res = await fetch(`${API_CONFIG.BASE_URL}/qualiphoto/complementaire`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+      body: formData,
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data?.error || 'Failed to create complementary QualiPhoto');
     return this.normalizeQualiPhotoItem(data);
   }
 }
