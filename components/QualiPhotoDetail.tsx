@@ -86,6 +86,7 @@ type QualiPhotoItemWithComment2 = QualiPhotoItem & {
   const [isLoadingComplement, setIsLoadingComplement] = useState(false);
   const [item, setItem] = useState<QualiPhotoItem | null>(initialItem || null);
   const [isImagePreviewVisible, setImagePreviewVisible] = useState(false);
+  const [previewImageUri, setPreviewImageUri] = useState<string | null>(null);
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [isCommentModalVisible, setCommentModalVisible] = useState(false);
   const [newComment, setNewComment] = useState('');
@@ -222,16 +223,9 @@ type QualiPhotoItemWithComment2 = QualiPhotoItem & {
     }
   };
 
-  const handleComplementSuccess = async () => {
-    if (!initialItem || !token) return;
-    // Refresh children list to reflect complement existence
-    setIsLoadingChildren(true);
-    try {
-      const newChildren = await qualiphotoService.getChildren(initialItem.id, token, sortOrder);
-      setChildren(newChildren);
-    } finally {
-      setIsLoadingChildren(false);
-    }
+  const handleComplementSuccess = (createdItem: Partial<QualiPhotoItem>) => {
+    // Immediately reflect the newly created complementary item
+    setComplement((prev) => ({ ...(prev || {}), ...(createdItem as any) }) as any);
     setComplementModalVisible(false);
   };
 
@@ -627,51 +621,88 @@ type QualiPhotoItemWithComment2 = QualiPhotoItem & {
 
               {/* Complementary content - always visible on child */}
               <View style={styles.metaCard}>
-                <Text style={styles.sectionTitle}>Photo Complémentaire</Text>
+                <View style={styles.sectionHeaderRow}>
+                  <Text style={styles.sectionTitle}>Photo Complémentaire</Text>
+                  {complement && (
+                    <TouchableOpacity
+                      onPress={async () => {
+                        if (!token || !complement?.id) return;
+                        try {
+                          await qualiphotoService.deleteComplementaire(complement.id, token);
+                          setComplement(null);
+                        } catch (e) {
+                          Alert.alert('Erreur', "Échec de la suppression de la photo complémentaire.");
+                        }
+                      }}
+                      accessibilityLabel="Supprimer la photo complémentaire"
+                    >
+                      <Ionicons name="trash-outline" size={22} color="#dc2626" />
+                    </TouchableOpacity>
+                  )}
+                </View>
                 {isLoadingComplement ? (
                   <ActivityIndicator style={{ marginVertical: 12 }} />
                 ) : complement ? (
-                  <View>
-                    {(complement.photo_comp || complement.photo) ? (
-                      <View style={{ marginBottom: 8 }}>
-                        <View style={styles.imageWrap}>
-                          <Image source={{ uri: complement.photo_comp || complement.photo }} style={styles.image} />
+                  <>
+                    {(complement.user_name || complement.date_taken) && (
+                      <View style={styles.inlineMetaRow}>
+                        <View style={styles.inlineMetaItem}>
+                          {complement.user_name && (
+                            <Text numberOfLines={1}>
+                              <Text style={styles.metaMuted}>Prise par </Text>
+                              <Text style={styles.metaValue}>{`${complement.user_name} ${complement.user_lastname || ''}`.trim()}</Text>
+                            </Text>
+                          )}
+                        </View>
+                        <View style={[styles.inlineMetaItem, { alignItems: 'flex-end' }]}>
+                          {complement.date_taken && (
+                            <Text style={styles.metaValue} numberOfLines={1}>
+                              {`${formatDate(complement.date_taken)}`}
+                            </Text>
+                          )}
                         </View>
                       </View>
-                    ) : null}
-                    {complement.voice_note ? (
-                      <View style={[styles.actionsContainer, { marginTop: 4 }]}>
-                        <TouchableOpacity style={styles.actionButton} onPress={async () => {
-                          try {
-                            if (isPlayingComp && compSound) { await compSound.pauseAsync(); setIsPlayingComp(false); return; }
-                            if (compSound) { await compSound.playAsync(); setIsPlayingComp(true); return; }
-                            const { sound: newSound } = await Audio.Sound.createAsync({ uri: complement.voice_note! });
-                            setCompSound(newSound);
-                            setIsPlayingComp(true);
-                            newSound.setOnPlaybackStatusUpdate((status) => {
-                              if (status.isLoaded && status.didJustFinish) { setIsPlayingComp(false); newSound.setPositionAsync(0); }
-                            });
-                            await newSound.playAsync();
-                          } catch {}
-                        }}>
-                          <Ionicons name={isPlayingComp ? 'pause-circle' : 'play-circle'} size={32} color="#11224e" />
+                    )}
+                    {(complement.photo_comp || complement.photo) ? (
+                      <View style={styles.compImageLine}>
+                        <TouchableOpacity
+                          onPress={() => { setPreviewImageUri((complement.photo_comp || complement.photo) || null); setImagePreviewVisible(true); }}
+                          activeOpacity={0.85}
+                          accessibilityLabel="Agrandir la photo complémentaire"
+                        >
+                          <Image source={{ uri: complement.photo_comp || complement.photo }} style={styles.compImage} />
                         </TouchableOpacity>
                       </View>
                     ) : null}
-                    {typeof complement.commentaire === 'string' && complement.commentaire.trim().length > 0 ? (
-                      <View style={[styles.metaCard, { marginTop: 8 }]}>
-                        <Text style={styles.metaLabel}>Description (Complémentaire)</Text>
-                        <Text
-                          style={[styles.metaValue]}
-                          numberOfLines={1}
-                          ellipsizeMode="tail"
-                          onPress={() => Alert.alert('Description', complement.commentaire || '')}
+                    <View style={styles.compRowBelow}>
+                      {complement.voice_note ? (
+                        <TouchableOpacity
+                          style={styles.compactAudio}
+                          onPress={async () => {
+                            try {
+                              if (isPlayingComp && compSound) { await compSound.pauseAsync(); setIsPlayingComp(false); return; }
+                              if (compSound) { await compSound.playAsync(); setIsPlayingComp(true); return; }
+                              const { sound: newSound } = await Audio.Sound.createAsync({ uri: complement.voice_note! });
+                              setCompSound(newSound);
+                              setIsPlayingComp(true);
+                              newSound.setOnPlaybackStatusUpdate((status) => {
+                                if (status.isLoaded && status.didJustFinish) { setIsPlayingComp(false); newSound.setPositionAsync(0); }
+                              });
+                              await newSound.playAsync();
+                            } catch {}
+                          }}
+                          accessibilityLabel="Lire l'audio complémentaire"
                         >
+                          <Ionicons name={isPlayingComp ? 'pause-circle' : 'play-circle'} size={28} color="#11224e" />
+                        </TouchableOpacity>
+                      ) : null}
+                      {typeof complement.commentaire === 'string' && complement.commentaire.trim().length > 0 ? (
+                        <Text style={styles.compDescriptionFull}>
                           {complement.commentaire}
                         </Text>
-                      </View>
-                    ) : null}
-                  </View>
+                      ) : null}
+                    </View>
+                  </>
                 ) : (
                   <Text style={styles.noChildrenText}>Aucune photo complémentaire.</Text>
                 )}
@@ -771,12 +802,12 @@ type QualiPhotoItemWithComment2 = QualiPhotoItem & {
     </Modal>
   );
 
-   const renderImagePreview = () => (
+  const renderImagePreview = () => (
     <View style={styles.previewContainer}>
-      <Image source={{ uri: item!.photo }} style={styles.previewImage} resizeMode="contain" />
+      <Image source={{ uri: previewImageUri || (item ? item.photo : '') }} style={styles.previewImage} resizeMode="contain" />
       <TouchableOpacity
         style={[styles.previewCloseButton, { top: insets.top + 10 }]}
-        onPress={() => setImagePreviewVisible(false)}
+        onPress={() => { setImagePreviewVisible(false); setPreviewImageUri(null); }}
       >
         <Ionicons name="close" size={32} color="#fff" />
       </TouchableOpacity>
@@ -954,8 +985,65 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
   },
+  metaMuted: {
+    color: '#6b7280',
+    fontSize: 14,
+    fontWeight: '600',
+  },
   metaMultiline: {
     lineHeight: 20,
+  },
+  compactRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  compactImage: {
+    width: 110,
+    height: 70,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#f87b1b',
+    overflow: 'hidden',
+  },
+  compactRight: {
+    flex: 1,
+    gap: 6,
+  },
+  compactAudio: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  compactAudioText: {
+    color: '#11224e',
+    fontWeight: '600',
+  },
+  compactDescription: {
+    color: '#0f172a',
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  compImageLine: {
+    marginBottom: 8,
+  },
+  compImage: {
+    width: '100%',
+    height: undefined,
+    aspectRatio: 16/9,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#f87b1b',
+  },
+  compRowBelow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  compDescriptionFull: {
+    flex: 1,
+    color: '#0f172a',
+    fontSize: 13,
   },
   playerCard: {
     flexDirection: 'row',
@@ -1026,6 +1114,12 @@ const styles = StyleSheet.create({
     color: '#f87b1b',
     marginBottom: 8,
 
+  },
+  sectionHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 8,
   },
   childListContainer: {
     marginTop: 8,

@@ -242,6 +242,16 @@ class QualiPhotoService {
     if (!res.ok) throw new Error(data?.error || 'Failed to create complementary QualiPhoto');
     return this.normalizeQualiPhotoItem(data);
   }
+
+  async deleteComplementaire(id: string, token: string): Promise<{ success: boolean }> {
+    const res = await fetch(`${API_CONFIG.BASE_URL}/qualiphoto/complementaire/${encodeURIComponent(id)}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data?.error || 'Failed to delete complementary photo');
+    return data;
+  }
 }
 
 export default new QualiPhotoService();
