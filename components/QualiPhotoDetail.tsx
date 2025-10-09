@@ -1,3 +1,5 @@
+// removed modal editor in favor of full-screen editor
+import ZonePictureEditor from '@/components/ZonePictureEditor';
 import qualiphotoService, { Comment, QualiPhotoItem } from '@/services/qualiphotoService';
 import { Ionicons } from '@expo/vector-icons';
 import { Audio } from 'expo-av';
@@ -66,9 +68,7 @@ type Props = {
   item?: QualiPhotoItem | null;
 };
 
-type QualiPhotoItemWithComment2 = QualiPhotoItem & {
-  commentaire2?: string | null;
-};
+// type reserved for future enhancements
 
  export default function QualiPhotoDetail({ visible, onClose, item: initialItem }: Props) {
   const { token, user } = useAuth();
@@ -80,6 +80,7 @@ type QualiPhotoItemWithComment2 = QualiPhotoItem & {
   const [isMapDetailVisible, setMapDetailVisible] = useState(false);
   const [isChildModalVisible, setChildModalVisible] = useState(false);
   const [isComplementModalVisible, setComplementModalVisible] = useState(false);
+  const [isEditPlanVisible, setEditPlanVisible] = useState(false);
   const [children, setChildren] = useState<QualiPhotoItem[]>([]);
   const [isLoadingChildren, setIsLoadingChildren] = useState(false);
   const [complement, setComplement] = useState<QualiPhotoItem | null>(null);
@@ -182,8 +183,8 @@ type QualiPhotoItemWithComment2 = QualiPhotoItem & {
       });
 
       await newSound.playAsync();
-    } catch (e) {
-      console.error("Failed to play sound", e);
+    } catch (_err) {
+      console.error("Failed to play sound");
     }
   }
 
@@ -254,17 +255,7 @@ type QualiPhotoItemWithComment2 = QualiPhotoItem & {
     }
   };
 
-  const renderChildItem = ({ item: child }: { item: QualiPhotoItem }) => (
-    <TouchableOpacity style={styles.childGridItem} onPress={() => setItem(child)}>
-      <Image source={{ uri: child.photo }} style={styles.childThumbnail} />
-      <View style={styles.childGridOverlay}>
-        {child.title && <Text style={styles.childGridTitle} numberOfLines={1}>{child.title}</Text>}
-        {child.date_taken && (
-          <Text style={styles.childGridDate}>{formatDate(child.date_taken)}</Text>
-        )}
-      </View>
-    </TouchableOpacity>
-  );
+  // list/grid items rendered inline elsewhere
 
    const renderMapView = () => (
     <>
@@ -309,8 +300,8 @@ type QualiPhotoItemWithComment2 = QualiPhotoItem & {
             } else {
                 Alert.alert('Erreur', `Impossible d'ouvrir l'URL: ${absoluteUrl}`);
             }
-        } catch (error) {
-            console.error("PDF Generation Error:", error);
+            } catch (_err) {
+            console.error("PDF Generation Error");
             Alert.alert('Erreur', 'Échec de la génération du PDF.');
         } finally {
             setIsGeneratingPdf(false);
@@ -344,9 +335,14 @@ type QualiPhotoItemWithComment2 = QualiPhotoItem & {
               <Image source={cameraIcon} style={styles.headerActionIcon} />
             </TouchableOpacity>
           ) : item?.id_qualiphoto_parent ? (
-            <TouchableOpacity style={styles.headerAction} onPress={() => setComplementModalVisible(true)} accessibilityLabel="Ajouter une photo complémentaire">
-              <Ionicons name="add-circle-outline" size={28} color="#f87b1b" />
-            </TouchableOpacity>
+            <View style={{ flexDirection: 'row' }}>
+              <TouchableOpacity style={styles.headerAction} onPress={() => setEditPlanVisible(true)} accessibilityLabel="Éditer le plan de zone">
+                <Ionicons name="pencil" size={28} color="#f87b1b" />
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.headerAction} onPress={() => setComplementModalVisible(true)} accessibilityLabel="Ajouter une photo complémentaire">
+                <Ionicons name="add-circle-outline" size={28} color="#f87b1b" />
+              </TouchableOpacity>
+            </View>
           ) : (
             <View style={{ width: 40 }} />
           )}
@@ -630,7 +626,7 @@ type QualiPhotoItemWithComment2 = QualiPhotoItem & {
                         try {
                           await qualiphotoService.deleteComplementaire(complement.id, token);
                           setComplement(null);
-                        } catch (e) {
+                        } catch (_err) {
                           Alert.alert('Erreur', "Échec de la suppression de la photo complémentaire.");
                         }
                       }}
@@ -838,6 +834,15 @@ type QualiPhotoItemWithComment2 = QualiPhotoItem & {
             onSuccess={handleComplementSuccess}
             childItem={item}
           />
+        )}
+        {item && item.id_qualiphoto_parent && isEditPlanVisible && (
+          <View style={StyleSheet.absoluteFillObject} pointerEvents="box-none">
+            <ZonePictureEditor
+              child={item}
+              onClose={() => setEditPlanVisible(false)}
+              onSaved={() => setEditPlanVisible(false)}
+            />
+          </View>
         )}
         {renderCommentModal()}
       </View>

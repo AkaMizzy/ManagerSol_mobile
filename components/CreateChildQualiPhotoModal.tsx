@@ -1,5 +1,5 @@
 import { useAuth } from '@/contexts/AuthContext';
-import qualiphotoService, { QualiPhotoItem } from '@/services/qualiphotoService';
+import qualiphotoService, { QualiPhotoItem, QualiZone } from '@/services/qualiphotoService';
 import { Ionicons } from '@expo/vector-icons';
 import { Audio } from 'expo-av';
 import * as ImagePicker from 'expo-image-picker';
@@ -27,6 +27,11 @@ export function CreateChildQualiPhotoForm({ onClose, onSuccess, parentItem }: Fo
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isTranscribing, setIsTranscribing] = useState(false);
+
+  const [zones, setZones] = useState<QualiZone[]>([]);
+  const [zonesLoading, setZonesLoading] = useState(false);
+  const [zonesError, setZonesError] = useState<string | null>(null);
+  const [selectedZoneId, setSelectedZoneId] = useState<string>(parentItem.id_zone);
 
   const durationIntervalRef = useRef<number | null>(null);
   const scrollViewRef = useRef<ScrollView>(null);
@@ -59,7 +64,7 @@ export function CreateChildQualiPhotoForm({ onClose, onSuccess, parentItem }: Fo
     try {
       const created = await qualiphotoService.create({
         id_project: parentItem.id_project,
-        id_zone: parentItem.id_zone,
+        id_zone: selectedZoneId,
         title: title || undefined,
         commentaire: comment,
         photo,
@@ -162,6 +167,27 @@ export function CreateChildQualiPhotoForm({ onClose, onSuccess, parentItem }: Fo
     return sound ? () => { sound.unloadAsync(); } : undefined;
   }, [sound]);
 
+  useEffect(() => {
+    async function loadZones() {
+      if (!token || !parentItem?.id_project) return;
+      setZonesLoading(true);
+      setZonesError(null);
+      try {
+        const fetched = await qualiphotoService.getZonesByProject(parentItem.id_project, token);
+        setZones(fetched);
+        // Ensure selected zone remains valid or fallback to parent's zone
+        const exists = fetched.some(z => z.id === selectedZoneId);
+        if (!exists) setSelectedZoneId(parentItem.id_zone);
+      } catch (e: any) {
+        setZonesError(e?.message || 'Impossible de charger les zones');
+      } finally {
+        setZonesLoading(false);
+      }
+    }
+    loadZones();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [token, parentItem?.id_project]);
+
   return (
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
       <SafeAreaView style={styles.container}>
@@ -200,6 +226,34 @@ export function CreateChildQualiPhotoForm({ onClose, onSuccess, parentItem }: Fo
             </View>
           
             <View style={styles.separator} />
+
+            {/* Zone Selector */}
+            <View style={{ gap: 8, marginBottom: 8 }}>
+              {zonesLoading ? (
+                <ActivityIndicator size="small" color="#11224e" />
+              ) : zonesError ? (
+                <View style={styles.alertBanner}>
+                  <Ionicons name="warning" size={16} color="#b45309" />
+                  <Text style={styles.alertBannerText}>{zonesError}</Text>
+                </View>
+              ) : (
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.zoneList}>
+                  {zones.map(zone => {
+                    const selected = zone.id === selectedZoneId;
+                    return (
+                      <TouchableOpacity key={zone.id} style={[styles.zoneItem, selected && styles.zoneItemSelected]} onPress={() => setSelectedZoneId(zone.id)}>
+                        {zone.logo ? (
+                          <Image source={{ uri: zone.logo }} style={styles.zoneLogo} />
+                        ) : (
+                          <View style={[styles.zoneLogo, { backgroundColor: '#e5e7eb' }]} />
+                        )}
+                        <Text style={[styles.zoneTitle, selected && { color: '#11224e' }]} numberOfLines={1}>{zone.title}</Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </ScrollView>
+              )}
+            </View>
 
             {/* New Photo Card */}
             <View style={[styles.inputWrap, { marginBottom: 16 }]}>
@@ -503,4 +557,11 @@ const styles = StyleSheet.create({
   submitButton: { backgroundColor: '#f87b1b', borderRadius: 12, paddingVertical: 16, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 8, height: 48, alignSelf: 'center', width: '92%' },
   submitButtonDisabled: { backgroundColor: '#d1d5db' },
   submitButtonText: { fontSize: 16, fontWeight: '600', color: '#FFFFFF' },
+
+  // Zone selector styles
+  zoneList: { gap: 8, paddingVertical: 4 },
+  zoneItem: { width: 110, marginRight: 8, borderWidth: 1, borderColor: '#e5e7eb', borderRadius: 10, padding: 8, alignItems: 'center', backgroundColor: '#fff' },
+  zoneItemSelected: { borderColor: '#f87b1b', backgroundColor: '#fff7ed' },
+  zoneLogo: { width: 64, height: 64, borderRadius: 8, marginBottom: 6 },
+  zoneTitle: { fontSize: 12, color: '#475569', textAlign: 'center' },
 });

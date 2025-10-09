@@ -6,6 +6,7 @@ export type QualiPhotoItem = {
   id_zone: string;
   photo: string;
   photo_comp?: string | null;
+  photo_plan?: string | null;
   title: string | null;
   commentaire: string | null;
   date_taken: string | null;
@@ -77,6 +78,7 @@ class QualiPhotoService {
       ...item,
       photo: this.toAbsoluteUrl(item.photo) ?? '',
       photo_comp: this.toAbsoluteUrl(item.photo_comp ?? null),
+      photo_plan: this.toAbsoluteUrl(item.photo_plan ?? null),
       voice_note: this.toAbsoluteUrl(item.voice_note),
     };
   }
@@ -212,6 +214,26 @@ class QualiPhotoService {
     const data = await res.json();
     if (!res.ok) throw new Error(data?.error || 'Failed to create QualiPhoto');
     return this.normalizeQualiPhotoItem(data);
+  }
+
+  async uploadPlan(qualiphotoId: string, image: { uri: string; name: string; type: string }, token: string): Promise<{ id: string; photo_plan: string }> {
+    const formData = new FormData();
+    formData.append('photo_plan', {
+      uri: image.uri,
+      name: image.name,
+      type: image.type,
+    } as any);
+
+    const res = await fetch(`${API_CONFIG.BASE_URL}/qualiphoto/${encodeURIComponent(qualiphotoId)}/photo-plan`, {
+      method: 'PUT',
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      body: formData,
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data?.error || 'Failed to upload plan image');
+    return { id: data.id, photo_plan: this.toAbsoluteUrl(data.photo_plan) ?? '' };
   }
 
   async createComplementaire(params: { id_qualiphoto_parent: string; photo: { uri: string; name: string; type: string }; voice_note?: { uri: string; name: string; type: string }; commentaire?: string }, token: string): Promise<Partial<QualiPhotoItem>> {
