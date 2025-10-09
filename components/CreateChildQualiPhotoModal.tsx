@@ -1,3 +1,4 @@
+import PictureAnnotator from '@/components/PictureAnnotator';
 import { useAuth } from '@/contexts/AuthContext';
 import qualiphotoService, { QualiPhotoItem, QualiZone } from '@/services/qualiphotoService';
 import { Ionicons } from '@expo/vector-icons';
@@ -33,6 +34,9 @@ export function CreateChildQualiPhotoForm({ onClose, onSuccess, parentItem }: Fo
   const [zonesError, setZonesError] = useState<string | null>(null);
   const [selectedZoneId, setSelectedZoneId] = useState<string>(parentItem.id_zone);
 
+  const [isAnnotatorVisible, setAnnotatorVisible] = useState(false);
+  const [annotatorBaseUri, setAnnotatorBaseUri] = useState<string | null>(null);
+
   const durationIntervalRef = useRef<number | null>(null);
   const scrollViewRef = useRef<ScrollView>(null);
 
@@ -50,11 +54,18 @@ export function CreateChildQualiPhotoForm({ onClose, onSuccess, parentItem }: Fo
       Alert.alert('Permission', 'L\'autorisation d\'accéder à la caméra est requise.');
       return;
     }
-    const result = await ImagePicker.launchCameraAsync({ allowsEditing: true, aspect: [4, 3], quality: 0.8 });
+    const result = await ImagePicker.launchCameraAsync({ allowsEditing: false, quality: 0.9 });
     if (!result.canceled && result.assets[0]) {
       const asset = result.assets[0];
-      setPhoto({ uri: asset.uri, name: `qualiphoto_child_${Date.now()}.jpg`, type: 'image/jpeg' });
+      setAnnotatorBaseUri(asset.uri);
+      setAnnotatorVisible(true);
     }
+  };
+
+  const openAnnotatorForExisting = () => {
+    if (!photo) return;
+    setAnnotatorBaseUri(photo.uri);
+    setAnnotatorVisible(true);
   };
 
   const handleSubmit = async () => {
@@ -189,6 +200,7 @@ export function CreateChildQualiPhotoForm({ onClose, onSuccess, parentItem }: Fo
   }, [token, parentItem?.id_project]);
 
   return (
+    <>
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
       <SafeAreaView style={styles.container}>
         <View style={styles.header}>
@@ -278,6 +290,9 @@ export function CreateChildQualiPhotoForm({ onClose, onSuccess, parentItem }: Fo
                 <View style={styles.imageActions}>
                   <TouchableOpacity style={[styles.iconButton, styles.iconButtonSecondary]} onPress={handlePickPhoto}>
                     <Ionicons name="camera-reverse-outline" size={20} color="#11224e" />
+                  </TouchableOpacity>
+                  <TouchableOpacity style={[styles.iconButton, styles.iconButtonSecondary]} onPress={openAnnotatorForExisting}>
+                    <Ionicons name="create-outline" size={20} color="#11224e" />
                   </TouchableOpacity>
                   <TouchableOpacity style={[styles.iconButton, styles.iconButtonSecondary]} onPress={() => setPhoto(null)}>
                     <Ionicons name="trash-outline" size={20} color="#dc2626" />
@@ -376,6 +391,20 @@ export function CreateChildQualiPhotoForm({ onClose, onSuccess, parentItem }: Fo
         </View>
       </SafeAreaView>
     </KeyboardAvoidingView>
+    {isAnnotatorVisible && annotatorBaseUri && (
+      <View style={StyleSheet.absoluteFillObject} pointerEvents="box-none">
+        <PictureAnnotator
+          baseImageUri={annotatorBaseUri}
+          onClose={() => setAnnotatorVisible(false)}
+          onSaved={(image) => {
+            setPhoto(image);
+            setAnnotatorVisible(false);
+          }}
+          title="Annoter la photo"
+        />
+      </View>
+    )}
+    </>
   );
 }
 

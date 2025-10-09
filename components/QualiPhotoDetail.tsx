@@ -840,7 +840,11 @@ type Props = {
             <ZonePictureEditor
               child={item}
               onClose={() => setEditPlanVisible(false)}
-              onSaved={() => setEditPlanVisible(false)}
+            onSaved={(res) => {
+              // update current item with new photo_plan and refresh children list
+              setItem(prev => prev ? { ...prev, photo_plan: res.photo_plan } as any : prev);
+              setEditPlanVisible(false);
+            }}
             />
           </View>
         )}
