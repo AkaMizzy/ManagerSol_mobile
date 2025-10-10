@@ -6,7 +6,7 @@ import { Audio } from 'expo-av';
 import React, { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Alert, Image, LayoutAnimation, Linking, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, UIManager, View } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CreateChildQualiPhotoForm } from './CreateChildQualiPhotoModal';
 import CreateComplementaireQualiPhotoModal from './CreateComplementaireQualiPhotoModal';
 
@@ -811,8 +811,8 @@ type Props = {
   );
 
    return (
-     <Modal visible={visible} onRequestClose={onClose} animationType="slide" presentationStyle="fullScreen">
-      <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
+    <Modal visible={visible} onRequestClose={onClose} animationType="slide" presentationStyle="fullScreen">
+      <SafeAreaView style={styles.container} edges={['top','left','right','bottom']}>
         <AppHeader user={user || undefined} onNavigate={onClose} />
         {isImagePreviewVisible ? (
           renderImagePreview()
@@ -849,7 +849,7 @@ type Props = {
           </View>
         )}
         {renderCommentModal()}
-      </View>
+      </SafeAreaView>
     </Modal>
   );
 }
