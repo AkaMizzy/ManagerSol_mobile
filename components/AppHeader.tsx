@@ -9,6 +9,8 @@ import {
   TouchableOpacity,
   View
 } from 'react-native';
+import { ICONS } from '@/constants/Icons';
+
 
 interface AppHeaderProps {
   showNotifications?: boolean;
@@ -64,7 +66,7 @@ export default function AppHeader({
           accessibilityLabel="Navigate to home"
         >
           <Image
-            source={require('../assets/images/icon.png')}
+            source={ICONS.icon}
             style={styles.logo}
             resizeMode="contain"
           />
