@@ -15,7 +15,7 @@ export const ICONS = {
   reception: require('@/assets/icons/reception.png'),
   actionCorrective: require('@/assets/icons/action_corrective.png'),
   map: require('@/assets/icons/map.png'),
-
+  pdf: require('@/assets/icons/pdf.png'),
   // GIF icons
   cameraGif: require('@/assets/icons/camera.gif'),
   constructionGif: require('@/assets/icons/construction.gif'),

@@ -1,5 +1,8 @@
 // removed modal editor in favor of full-screen editor
+import API_CONFIG from '@/app/config/api';
 import ZonePictureEditor from '@/components/ZonePictureEditor';
+import { ICONS } from '@/constants/Icons';
+import { useAuth } from '@/contexts/AuthContext';
 import qualiphotoService, { Comment, QualiPhotoItem } from '@/services/qualiphotoService';
 import { Ionicons } from '@expo/vector-icons';
 import { Audio } from 'expo-av';
@@ -7,15 +10,12 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Alert, Image, LayoutAnimation, Linking, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, UIManager, View } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import AppHeader from './AppHeader';
 import { CreateChildQualiPhotoForm } from './CreateChildQualiPhotoModal';
 import CreateComplementaireQualiPhotoModal from './CreateComplementaireQualiPhotoModal';
 
-import API_CONFIG from '@/app/config/api';
-import { useAuth } from '@/contexts/AuthContext';
-import AppHeader from './AppHeader';
-
 const cameraIcon = require('@/assets/icons/camera.gif');
-const mapIcon = require('@/assets/icons/map.png');
+
 
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
@@ -183,8 +183,8 @@ type Props = {
       });
 
       await newSound.playAsync();
-    } catch (_err) {
-      console.error("Failed to play sound");
+    } catch (err) {
+      console.error("Failed to play sound", err);
     }
   }
 
@@ -300,8 +300,8 @@ type Props = {
             } else {
                 Alert.alert('Erreur', `Impossible d'ouvrir l'URL: ${absoluteUrl}`);
             }
-            } catch (_err) {
-            console.error("PDF Generation Error");
+            } catch (err) {
+            console.error("PDF Generation Error", err);
             Alert.alert('Erreur', 'Échec de la génération du PDF.');
         } finally {
             setIsGeneratingPdf(false);
@@ -337,10 +337,7 @@ type Props = {
           ) : item?.id_qualiphoto_parent ? (
             <View style={{ flexDirection: 'row' }}>
               <TouchableOpacity style={styles.headerAction} onPress={() => setEditPlanVisible(true)} accessibilityLabel="Éditer le plan de zone">
-                <Ionicons name="pencil" size={28} color="#f87b1b" />
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.headerAction} onPress={() => setComplementModalVisible(true)} accessibilityLabel="Ajouter une photo complémentaire">
-                <Ionicons name="add-circle-outline" size={28} color="#f87b1b" />
+                <Image source={require('@/assets/icons/plan.png')} style={styles.headerActionIcon} />
               </TouchableOpacity>
             </View>
           ) : (
@@ -349,11 +346,11 @@ type Props = {
 
           {/* PDF Generation Button (only for main/parent) */}
           {item && !item.id_qualiphoto_parent && (
-              <TouchableOpacity style={styles.headerAction} onPress={handleGeneratePdf} disabled={isGeneratingPdf} accessibilityLabel="Générer le PDF">
+              <TouchableOpacity style={[styles.headerAction, { marginLeft: 8 }]} onPress={handleGeneratePdf} disabled={isGeneratingPdf} accessibilityLabel="Générer le PDF">
                   {isGeneratingPdf ? (
                       <ActivityIndicator color="#f87b1b" />
                   ) : (
-                      <Ionicons name="document-text-outline" size={28} color="#f87b1b" />
+                      <Image source={ICONS.pdf} style={styles.headerActionIcon} />
                   )}
               </TouchableOpacity>
           )}
@@ -417,7 +414,7 @@ type Props = {
                       )}
                       {item.latitude && item.longitude && (
                         <TouchableOpacity style={styles.actionButton} onPress={handleMapPress}>
-                          <Image source={mapIcon} style={styles.actionIcon} />
+                          <Image source={ICONS.map} style={styles.actionIcon} />
                         </TouchableOpacity>
                       )}
                       {item.after === 1 && (
@@ -597,7 +594,7 @@ type Props = {
                       )}
                       {item.latitude && item.longitude && (
                         <TouchableOpacity style={styles.actionButton} onPress={handleMapPress}>
-                          <Image source={mapIcon} style={styles.actionIcon} />
+                          <Image source={ICONS.map} style={styles.actionIcon} />
                         </TouchableOpacity>
                       )}
                       {item.after === 1 && (
@@ -619,22 +616,31 @@ type Props = {
               <View style={styles.metaCard}>
                 <View style={styles.sectionHeaderRow}>
                   <Text style={styles.sectionTitle}>Photo Complémentaire</Text>
-                  {complement && (
+                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                     <TouchableOpacity
-                      onPress={async () => {
-                        if (!token || !complement?.id) return;
-                        try {
-                          await qualiphotoService.deleteComplementaire(complement.id, token);
-                          setComplement(null);
-                        } catch (_err) {
-                          Alert.alert('Erreur', "Échec de la suppression de la photo complémentaire.");
-                        }
-                      }}
-                      accessibilityLabel="Supprimer la photo complémentaire"
+                      onPress={() => setComplementModalVisible(true)}
+                      accessibilityLabel="Ajouter une photo complémentaire"
                     >
-                      <Ionicons name="trash-outline" size={22} color="#dc2626" />
+                      <Ionicons name="add-circle-outline" size={26} color="#f87b1b" />
                     </TouchableOpacity>
-                  )}
+                    {complement && (
+                      <TouchableOpacity
+                        onPress={async () => {
+                          if (!token || !complement?.id) return;
+                          try {
+                            await qualiphotoService.deleteComplementaire(complement.id, token);
+                            setComplement(null);
+                          } catch {
+                            Alert.alert('Erreur', "Échec de la suppression de la photo complémentaire.");
+                          }
+                        }}
+                        accessibilityLabel="Supprimer la photo complémentaire"
+                        style={{ marginLeft: 12 }}
+                      >
+                        <Ionicons name="trash-outline" size={22} color="#dc2626" />
+                      </TouchableOpacity>
+                    )}
+                  </View>
                 </View>
                 {isLoadingComplement ? (
                   <ActivityIndicator style={{ marginVertical: 12 }} />
@@ -918,8 +924,8 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   headerActionIcon: {
-    width: 50,
-    height: 50,
+    width: 40,
+    height: 40,
   },
   title: {
     fontSize: 16,

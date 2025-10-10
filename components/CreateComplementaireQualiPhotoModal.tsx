@@ -4,7 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Audio } from 'expo-av';
 import * as ImagePicker from 'expo-image-picker';
 import React, { useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, Image, KeyboardAvoidingView, Modal, Platform, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Image, Keyboard, KeyboardAvoidingView, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, TouchableWithoutFeedback, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 type Props = {
@@ -122,6 +122,7 @@ export default function CreateComplementaireQualiPhotoModal({ visible, onClose, 
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+        <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
         <SafeAreaView style={styles.container}>
           <View style={styles.header}>
             <TouchableOpacity onPress={onClose} style={styles.closeButton}>
@@ -133,7 +134,7 @@ export default function CreateComplementaireQualiPhotoModal({ visible, onClose, 
             <View style={{ width: 40 }} />
           </View>
 
-          <View style={{ paddingHorizontal: 16 }}>
+          <ScrollView keyboardDismissMode={Platform.OS === 'ios' ? 'on-drag' : 'interactive'} keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 16 }}>
             {photo ? (
               <View style={styles.imagePreviewContainer}>
                 <Image source={{ uri: photo.uri }} style={styles.imagePreview} />
@@ -207,6 +208,9 @@ export default function CreateComplementaireQualiPhotoModal({ visible, onClose, 
                     onChangeText={setComment}
                     style={[styles.input, { height: 80 }]}
                     multiline
+                    returnKeyType="done"
+                    blurOnSubmit
+                    onSubmitEditing={() => Keyboard.dismiss()}
                   />
                 </View>
               </View>
@@ -218,7 +222,7 @@ export default function CreateComplementaireQualiPhotoModal({ visible, onClose, 
                 <Text style={styles.errorText}>{error}</Text>
               </View>
             ) : null}
-          </View>
+          </ScrollView>
 
           <View style={styles.footer}>
             <TouchableOpacity style={[styles.submitButton, !canSave && styles.submitButtonDisabled]} disabled={!canSave} onPress={handleSubmit}>
@@ -236,6 +240,7 @@ export default function CreateComplementaireQualiPhotoModal({ visible, onClose, 
             </TouchableOpacity>
           </View>
         </SafeAreaView>
+        </TouchableWithoutFeedback>
       </KeyboardAvoidingView>
     </Modal>
   );
