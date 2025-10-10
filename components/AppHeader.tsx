@@ -2,7 +2,7 @@ import API_CONFIG from '@/app/config/api';
 import { ICONS } from '@/constants/Icons';
 import { Ionicons } from '@expo/vector-icons';
 import { Link, useRouter } from 'expo-router';
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Image,
   StyleSheet,
@@ -34,6 +34,12 @@ export default function AppHeader({
   user
 }: AppHeaderProps) {
   const router = useRouter();
+  const [imageError, setImageError] = useState(false);
+
+  // Reset image error when user changes
+  useEffect(() => {
+    setImageError(false);
+  }, [user?.photo]);
 
   const handleNavigate = (path: React.ComponentProps<typeof Link>['href']) => {
     if (onNavigate) {
@@ -106,10 +112,14 @@ export default function AppHeader({
               style={styles.iconButton}
               onPress={handleProfilePress}
             >
-              {user?.photo ? (
+              {user?.photo && !imageError ? (
                 <Image
                   source={{ uri: `${API_CONFIG.BASE_URL}${user.photo}` }}
                   style={styles.avatar}
+                  onError={() => {
+                    console.log('Failed to load avatar image:', `${API_CONFIG.BASE_URL}${user.photo}`);
+                    setImageError(true);
+                  }}
                 />
               ) : (
                 <Ionicons name="person-circle-outline" size={28} color="#FF6B35" />

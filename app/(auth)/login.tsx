@@ -114,8 +114,7 @@ export default function LoginScreen() {
                     contentFit="contain"
                   />
                 </View>
-                <Text style={styles.title}>Welcome to Qualisol</Text>
-                <Text style={styles.subtitle}>Sign in to continue</Text>
+                <Text style={styles.title}>QualiSol</Text>
               </View>
 
               {/* Form */}
@@ -290,7 +289,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: '#11224e',
+    color: '#f87b1b',
     textAlign: 'center',
   },
   subtitle: {
