@@ -205,7 +205,7 @@ export default function QualiPhotoGalleryScreen() {
                         <Text style={styles.selectItemText}>Tous les projets</Text>
                       </Pressable>
                       {(loadingProjects ? [] : projects).map(p => (
-                        <Pressable key={p.id} style={styles.selectItem} onPress={() => { setSelectedProject(p.id); setProjectOpen(false); }}>
+                        <Pressable key={p.id} style={styles.selectItem} onPress={() => { setSelectedProject(p.id); setSelectedZone(undefined); setProjectOpen(false); }}>
                           <Text numberOfLines={1} style={styles.selectItemText}>{p.title}</Text>
                         </Pressable>
                       ))}
