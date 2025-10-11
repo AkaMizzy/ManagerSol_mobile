@@ -1,6 +1,7 @@
 import { useAuth } from '@/contexts/AuthContext';
 import { createCalendarEvent } from '@/services/calendarService';
 import { Ionicons } from '@expo/vector-icons';
+import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useState } from 'react';
 import {
@@ -10,9 +11,9 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  View
+  View,
+  useWindowDimensions
 } from 'react-native';
-import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AppHeader from '../../components/AppHeader';
 import CalendarComp from '../../components/CalendarComp';
@@ -54,8 +55,9 @@ const GRID_ITEMS: {
 export default function DashboardScreen() {
   const { token, user } = useAuth();
   const router = useRouter();
+  const { height } = useWindowDimensions();
   const [eventModalVisible, setEventModalVisible] = useState(false);
-  const [isCalendarVisible, setIsCalendarVisible] = useState(true);
+  const [isCalendarVisible, setIsCalendarVisible] = useState(false);
   const [eventsByDate, setEventsByDate] = useState<Record<string, string[]>>({});
   const [dayModalVisible, setDayModalVisible] = useState(false);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
@@ -290,7 +292,7 @@ export default function DashboardScreen() {
         )}
 
         {/* Recent Activity */}
-        <View style={styles.section}>
+        <View style={[styles.section, !isCalendarVisible && { ...styles.sectionNoCalendar, marginTop: -(height * 0.08) }]}>
           {/* Activity Tabs */}
           <View style={styles.activityTabsContainer}>
             <Pressable
@@ -561,6 +563,10 @@ const styles = StyleSheet.create({
   },
   section: {
     padding: 20,
+  },
+  sectionNoCalendar: {
+    paddingTop: 0,
+    paddingBottom: 10,
   },
   sectionHeader: {
     flexDirection: 'row',
