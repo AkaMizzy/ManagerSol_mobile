@@ -325,9 +325,9 @@ type Props = {
           </Pressable>
         )}
         <View style={styles.headerTitles}>
-        {!!item && <Text numberOfLines={1} style={styles.subtitle}>{subtitle}</Text>}
         {!!item?.title && <Text style={styles.title}>{item.title}</Text>}
-          
+        {!!item && <Text numberOfLines={1} style={styles.subtitle}>{subtitle}</Text>}
+        {!!item?.date_taken && <Text style={styles.subtitle}>{formatDate(item.date_taken)}</Text>}
         </View>
         <View style={styles.headerActionsContainer}>
           {item?.before === 1 ? (
@@ -381,28 +381,7 @@ type Props = {
           </View>
           <ScrollView bounces>
             <View style={[styles.content, { paddingTop: 0 }]}>
-              <View style={styles.metaCard}>
-                {(item.user_name || item.date_taken) && (
-                  <View style={styles.inlineMetaRow}>
-                    <View style={styles.inlineMetaItem}>
-                      {item.user_name && (
-                        <>
-                          <Text style={styles.metaLabel}>Prise par</Text>
-                          <Text style={styles.metaValue} numberOfLines={1}>{`${item.user_name} ${item.user_lastname || ''}`.trim()}</Text>
-                        </>
-                      )}
-                    </View>
-                    <View style={styles.inlineMetaItem}>
-                      {item.date_taken && (
-                        <>
-                          <Text style={styles.metaLabel}>Date de prise</Text>
-                          <Text style={styles.metaValue} numberOfLines={1}>{formatDate(item.date_taken)}</Text>
-                        </>
-                      )}
-                    </View>
-                  </View>
-                )}
-              </View>
+              
               {isActionsVisible && (
                 <>
                   {(item.voice_note || (item.latitude && item.longitude) || item.after === 1) && (
@@ -429,9 +408,20 @@ type Props = {
                       )}
                     </View>
                   )}
-                  {typeof item.commentaire === 'string' && item.commentaire.trim().length > 0 ? (
+                  {(item.user_name || (typeof item.commentaire === 'string' && item.commentaire.trim().length > 0)) ? (
                     <View style={styles.metaCard}>
-                      <MetaRow label="Description" value={item.commentaire} multiline />
+                      {item.user_name ? (
+                        <View style={[styles.metaRow, { borderTopWidth: 0, paddingTop: 0 }]}>
+                          <Text style={styles.metaLabel}>Prise par</Text>
+                          <Text style={styles.metaValue} numberOfLines={1}>{`${item.user_name} ${item.user_lastname || ''}`.trim()}</Text>
+                        </View>
+                      ) : null}
+                      {typeof item.commentaire === 'string' && item.commentaire.trim().length > 0 ? (
+                        <View style={[styles.metaRow, item.user_name ? { borderTopWidth: 0, paddingTop: 0 } : null]}>
+                          <Text style={styles.metaLabel}>Description</Text>
+                          <Text style={[styles.metaValue, styles.metaMultiline]}>{item.commentaire}</Text>
+                        </View>
+                      ) : null}
                     </View>
                   ) : null}
                   {item.id_qualiphoto_parent && (
@@ -544,23 +534,11 @@ type Props = {
           <ScrollView bounces>
             <View style={styles.content}>
               <View style={styles.metaCard}>
-                {(item.user_name || item.date_taken) && (
+                {item.date_taken && (
                   <View style={styles.inlineMetaRow}>
                     <View style={styles.inlineMetaItem}>
-                      {item.user_name && (
-                        <>
-                          <Text style={styles.metaLabel}>Prise par</Text>
-                          <Text style={styles.metaValue} numberOfLines={1}>{`${item.user_name} ${item.user_lastname || ''}`.trim()}</Text>
-                        </>
-                      )}
-                    </View>
-                    <View style={styles.inlineMetaItem}>
-                      {item.date_taken && (
-                        <>
-                          <Text style={styles.metaLabel}>Date de prise</Text>
-                          <Text style={styles.metaValue} numberOfLines={1}>{formatDate(item.date_taken)}</Text>
-                        </>
-                      )}
+                      <Text style={styles.metaLabel}>Date de prise</Text>
+                      <Text style={styles.metaValue} numberOfLines={1}>{formatDate(item.date_taken)}</Text>
                     </View>
                   </View>
                 )}
@@ -604,9 +582,20 @@ type Props = {
                       )}
                     </View>
                   )}
-                  {typeof item.commentaire === 'string' && item.commentaire.trim().length > 0 ? (
+                  {(item.user_name || (typeof item.commentaire === 'string' && item.commentaire.trim().length > 0)) ? (
                     <View style={styles.metaCard}>
-                      <MetaRow label="Description" value={item.commentaire} multiline />
+                      {item.user_name ? (
+                        <View style={[styles.metaRow, { borderTopWidth: 0, paddingTop: 0 }]}>
+                          <Text style={styles.metaLabel}>Prise par</Text>
+                          <Text style={styles.metaValue} numberOfLines={1}>{`${item.user_name} ${item.user_lastname || ''}`.trim()}</Text>
+                        </View>
+                      ) : null}
+                      {typeof item.commentaire === 'string' && item.commentaire.trim().length > 0 ? (
+                        <View style={[styles.metaRow, item.user_name ? { borderTopWidth: 0, paddingTop: 0 } : null]}>
+                          <Text style={styles.metaLabel}>Description</Text>
+                          <Text style={[styles.metaValue, styles.metaMultiline]}>{item.commentaire}</Text>
+                        </View>
+                      ) : null}
                     </View>
                   ) : null}
                 </>
