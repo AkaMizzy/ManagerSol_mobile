@@ -12,9 +12,10 @@ type Props = {
   onClose: () => void;
   onSuccess: (created: Partial<QualiPhotoItem>) => void;
   childItem: QualiPhotoItem; 
+  parentTitle?: string | null;
 };
 
-export default function CreateComplementaireQualiPhotoModal({ visible, onClose, onSuccess, childItem }: Props) {
+export default function CreateComplementaireQualiPhotoModal({ visible, onClose, onSuccess, childItem, parentTitle }: Props) {
   const { token } = useAuth();
   const [photo, setPhoto] = useState<{ uri: string; name: string; type: string } | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -119,6 +120,13 @@ export default function CreateComplementaireQualiPhotoModal({ visible, onClose, 
     }
   };
 
+  function formatDate(dateStr: string | null | undefined) {
+    if (!dateStr) return '';
+    const d = new Date(dateStr.replace(' ', 'T'));
+    if (isNaN(d.getTime())) return '';
+    return new Intl.DateTimeFormat('fr-FR', { year: 'numeric', month: 'short', day: '2-digit' }).format(d);
+  }
+
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
@@ -129,12 +137,23 @@ export default function CreateComplementaireQualiPhotoModal({ visible, onClose, 
               <Ionicons name="close" size={24} color="#6b7280" />
             </TouchableOpacity>
             <View style={styles.headerCenter}>
-              <Text style={styles.headerTitle}>Photo Complémentaire</Text>
+              <Text style={styles.headerTitle} numberOfLines={1}>
+                {parentTitle || childItem.project_title || String(childItem.id_qualiphoto_parent || childItem.id)}
+              </Text>
             </View>
             <View style={{ width: 40 }} />
           </View>
 
           <ScrollView keyboardDismissMode={Platform.OS === 'ios' ? 'on-drag' : 'interactive'} keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 16 }}>
+            {/* Parent info (target child for this complementary) */}
+            <View style={styles.parentInfoCard}>
+              <Text style={styles.parentInfoTitle} numberOfLines={1}>
+                {(childItem.project_title || 'Projet') + ' • ' + (childItem.zone_title || 'Zone') + (childItem.date_taken ? ' • ' + formatDate(childItem.date_taken) : '')}
+              </Text>
+              <View style={styles.parentPhotoWrap}>
+                <Image source={{ uri: childItem.photo }} style={styles.parentPhoto} />
+              </View>
+            </View>
             {photo ? (
               <View style={styles.imagePreviewContainer}>
                 <Image source={{ uri: photo.uri }} style={styles.imagePreview} />
@@ -206,7 +225,7 @@ export default function CreateComplementaireQualiPhotoModal({ visible, onClose, 
                     placeholderTextColor="#9ca3af"
                     value={comment}
                     onChangeText={setComment}
-                    style={[styles.input, { height: 80 }]}
+                    style={[styles.input, { height: 150 }]}
                     multiline
                     returnKeyType="done"
                     blurOnSubmit
@@ -252,6 +271,10 @@ const styles = StyleSheet.create({
   closeButton: { padding: 8 },
   headerCenter: { alignItems: 'center', flex: 1 },
   headerTitle: { fontSize: 18, fontWeight: '600', color: '#11224e' },
+  parentInfoCard: { backgroundColor: '#FFFFFF', borderRadius: 12, padding: 12, marginTop: 12, borderWidth: 1, borderColor: '#f87b1b' },
+  parentInfoTitle: { fontSize: 12, color: '#11224e', fontWeight: '600', marginBottom: 8 },
+  parentPhotoWrap: { borderRadius: 10, overflow: 'hidden', borderWidth: 1, borderColor: '#f87b1b' },
+  parentPhoto: { width: '100%', aspectRatio: 16/10, backgroundColor: '#e5e7eb' },
   photoPickerButton: { borderWidth: 2, borderColor: '#f87b1b', borderStyle: 'dashed', borderRadius: 12, paddingVertical: 32, justifyContent: 'center', alignItems: 'center', backgroundColor: '#f8fafc', gap: 8, marginTop: 16 },
   photoPickerText: { color: '#475569', fontWeight: '600' },
   imagePreviewContainer: { position: 'relative', marginTop: 16 },

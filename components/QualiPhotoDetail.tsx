@@ -843,6 +843,7 @@ type Props = {
             onClose={() => setComplementModalVisible(false)}
             onSuccess={handleComplementSuccess}
             childItem={item}
+            parentTitle={initialItem?.title || initialItem?.project_title || undefined}
           />
         )}
         {item && item.id_qualiphoto_parent && isEditPlanVisible && (
