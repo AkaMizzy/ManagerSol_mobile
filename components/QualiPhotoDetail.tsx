@@ -440,7 +440,7 @@ type Props = {
                   ) : null}
                   {item.id_qualiphoto_parent && (
                     <View style={styles.metaCard}>
-                      <Text style={styles.sectionTitle}>Photo Complémentaire</Text>
+                      <Text style={styles.sectionTitle}>Photo Corrective</Text>
                       {isLoadingComplement ? (
                         <ActivityIndicator style={{ marginVertical: 12 }} />
                       ) : complement ? (
@@ -478,7 +478,7 @@ type Props = {
                           ) : null}
                         </View>
                       ) : (
-                        <Text style={styles.noChildrenText}>Aucune photo complémentaire.</Text>
+                        <Text style={styles.noChildrenText}>Aucune photo corrective.</Text>
                       )}
                     </View>
                   )}
@@ -619,13 +619,13 @@ type Props = {
               {/* Complementary content - always visible on child */}
               <View style={styles.metaCard}>
                 <View style={styles.sectionHeaderRow}>
-                  <Text style={styles.sectionTitle}>Photo Complémentaire</Text>
+                  <Text style={styles.sectionTitle}>Photo Corrective</Text>
                   <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                     <TouchableOpacity
                       onPress={() => setComplementModalVisible(true)}
                       accessibilityLabel="Ajouter une photo complémentaire"
                     >
-                      <Ionicons name="add-circle-outline" size={26} color="#f87b1b" />
+                      <Image source={ICONS.cameraGif} style={{ width: 45, height: 45 }} />
                     </TouchableOpacity>
                     {complement && (
                       <TouchableOpacity
@@ -710,7 +710,7 @@ type Props = {
                     </View>
                   </>
                 ) : (
-                  <Text style={styles.noChildrenText}>Aucune photo complémentaire.</Text>
+                  <Text style={styles.noChildrenText}>Aucune photo corrective.</Text>
                 )}
               </View>
 
@@ -732,7 +732,7 @@ type Props = {
               {item.id_qualiphoto_parent && (
                 <TouchableOpacity style={styles.backToParentButton} onPress={() => setItem(initialItem || null)}>
                   <Ionicons name="arrow-back" size={16} color="#f87b1b" />
-                  <Text style={styles.backToParentButtonText}>Retour à la photo originale</Text>
+                  <Text style={styles.backToParentButtonText}>Retour </Text>
                 </TouchableOpacity>
               )}
             </View>
