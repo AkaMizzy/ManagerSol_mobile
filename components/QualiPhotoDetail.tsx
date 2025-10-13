@@ -26,9 +26,10 @@ type ChildPhotoCardProps = {
   child: QualiPhotoItem;
   onPress: () => void;
   mode: 'grid' | 'list';
+  hasComplement?: boolean;
 };
 
-const ChildPhotoCard: React.FC<ChildPhotoCardProps> = ({ child, onPress, mode }) => {
+const ChildPhotoCard: React.FC<ChildPhotoCardProps> = ({ child, onPress, mode, hasComplement }) => {
   // const [isVisible, setIsVisible] = useState(true); // hidden feature disabled for now
   // const toggleVisibility = () => {
   //   LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
@@ -36,7 +37,11 @@ const ChildPhotoCard: React.FC<ChildPhotoCardProps> = ({ child, onPress, mode })
   // };
 
   return (
-    <View style={[styles.childGridItem, mode === 'list' && { width: '100%' }]}>
+    <View style={[
+      styles.childGridItem,
+      mode === 'list' && { width: '100%' },
+      hasComplement ? { borderColor: '#16a34a', borderWidth: 3 } : { borderColor: '#f87b1b', borderWidth: 3 }
+    ]}>
       {/* HIDE/SHOW feature disabled: always show image */}
       <TouchableOpacity onPress={onPress}>
         <>
@@ -74,6 +79,7 @@ type Props = {
   const [isComplementModalVisible, setComplementModalVisible] = useState(false);
   const [isEditPlanVisible, setEditPlanVisible] = useState(false);
   const [children, setChildren] = useState<QualiPhotoItem[]>([]);
+  const [childIdToHasComplement, setChildIdToHasComplement] = useState<Record<string, boolean>>({});
   const [isLoadingChildren, setIsLoadingChildren] = useState(false);
   const [complement, setComplement] = useState<QualiPhotoItem | null>(null);
   const [isLoadingComplement, setIsLoadingComplement] = useState(false);
@@ -113,11 +119,31 @@ type Props = {
       if (item.before === 1) {
         setIsLoadingChildren(true);
         qualiphotoService.getChildren(item.id, token, sortOrder)
-          .then(setChildren)
+          .then(async (rows) => {
+            setChildren(rows);
+            // Fetch complements flags in background
+            try {
+              const entries = await Promise.all(rows.map(async (r) => {
+                try {
+                  const kids = await qualiphotoService.getChildren(r.id, token);
+                  const comp = kids.find(c => (c.before === 0 && c.after === 0) || !!c.photo_comp);
+                  return [String(r.id), !!comp] as const;
+                } catch {
+                  return [String(r.id), false] as const;
+                }
+              }));
+              const map: Record<string, boolean> = {};
+              entries.forEach(([id, has]) => { map[id] = has; });
+              setChildIdToHasComplement(map);
+            } catch {
+              setChildIdToHasComplement({});
+            }
+          })
           .catch(() => setChildren([]))
           .finally(() => setIsLoadingChildren(false));
       } else {
         setChildren([]);
+        setChildIdToHasComplement({});
       }
 
       // If viewing a child, fetch its complementary photo (before=0, after=0)
@@ -515,6 +541,7 @@ type Props = {
                         child={child}
                         onPress={() => setItem(child)}
                         mode={layoutMode}
+                        hasComplement={!!childIdToHasComplement[String(child.id)]}
                       />
                     ))}
                   </View>
@@ -531,16 +558,6 @@ type Props = {
           {header}
           <ScrollView bounces>
             <View style={styles.content}>
-              <View style={styles.metaCard}>
-                {item.date_taken && (
-                  <View style={styles.inlineMetaRow}>
-                    <View style={styles.inlineMetaItem}>
-                      <Text style={styles.metaLabel}>Date de prise</Text>
-                      <Text style={styles.metaValue} numberOfLines={1}>{formatDate(item.date_taken)}</Text>
-                    </View>
-                  </View>
-                )}
-              </View>
 
               <View>
                 <TouchableOpacity onPress={() => setImagePreviewVisible(true)} activeOpacity={0.9}>
