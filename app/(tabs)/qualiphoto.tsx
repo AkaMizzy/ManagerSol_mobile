@@ -9,6 +9,8 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, FlatList, Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+const cameraIcon = require('@/assets/icons/camera.gif');
+
 function formatDateForGrid(dateStr?: string | null): string {
   if (!dateStr) return '';
   try {
@@ -79,9 +81,12 @@ export default function QualiPhotoGalleryScreen() {
 
       if (requestId !== requestIdRef.current) return;
 
-      setPhotos(currentPhotos => appending ? [...currentPhotos, ...items] : items);
+      setPhotos(currentPhotos => {
+        const nextPhotos = appending ? [...currentPhotos, ...items] : items;
+        setHasMore(items.length > 0 && nextPhotos.length < total);
+        return nextPhotos;
+      });
       setPage(loadPage);
-      setHasMore(items.length > 0 && (appending ? photos.length + items.length : items.length) < total);
 
     } catch (e) {
       if (requestId === requestIdRef.current) {
@@ -152,6 +157,16 @@ export default function QualiPhotoGalleryScreen() {
 
   const renderItem = useCallback(({ item }: { item: QualiPhotoItem }) => (
     <View style={styles.card}>
+      {item.title ? (
+        <Text style={styles.cardTitle} numberOfLines={2}>
+          {item.title}
+        </Text>
+      ) : null}
+      {item.date_taken ? (
+        <Text style={styles.cardDate}>
+          {formatDateForGrid(item.date_taken)}
+        </Text>
+      ) : null}
       <Pressable
         style={({ pressed }) => [styles.imageWrap, pressed && styles.pressed] }
         accessibilityRole="button"
@@ -165,16 +180,6 @@ export default function QualiPhotoGalleryScreen() {
           <Text style={styles.metaText} numberOfLines={1}>{item.project_title || ''}</Text>
           {item.zone_title ? <Text style={styles.metaSubText} numberOfLines={1}>{item.zone_title}</Text> : null}
         </View>
-        {item.title ? (
-          <Text style={styles.metaTitle} numberOfLines={1}>
-            {item.title}
-          </Text>
-        ) : null}
-        {item.date_taken ? (
-          <Text style={styles.metaDate}>
-            {formatDateForGrid(item.date_taken)}
-          </Text>
-        ) : null}
       </View>
     </View>
   ), []);
@@ -257,13 +262,13 @@ export default function QualiPhotoGalleryScreen() {
                   disabled={isCreateDisabled}
                   style={[styles.addIconButton, isCreateDisabled && styles.addIconButtonDisabled]}
                 >
-                <Ionicons name="camera-outline" size={32} color="#f87b1b" />
+                <Image source={cameraIcon} style={{ width: 40, height: 40 }} />
               </Pressable>
             </View>
           </View>
           {isCreateDisabled ? (
             <Text style={styles.filterHint}>
-              Veuillez sélectionner un projet et une zone pour créer une photo.
+              Veuillez sélectionner un projet et une zone pour créer un dossier.
             </Text>
           ) : null}
         </View>
@@ -527,7 +532,7 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   metaText: {
-    color: '#111827',
+    color: '#f87b1b',
     fontWeight: '600',
     fontSize: 13,
     flexShrink: 1,
@@ -554,6 +559,22 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '500',
     textAlign: 'center',
+    marginTop: 2,
+  },
+  cardTitle: {
+    color: '#f87b1b',
+    fontSize: 13,
+    fontWeight: '700',
+    textAlign: 'center',
+    paddingHorizontal: 8,
+    paddingTop: 8,
+  },
+  cardDate: {
+    color: '#9ca3af',
+    fontSize: 11,
+    fontWeight: '500',
+    alignSelf: 'flex-end',
+    paddingHorizontal: 8,
     marginTop: 2,
   },
   loadingMoreWrap: {
