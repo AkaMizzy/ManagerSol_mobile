@@ -318,8 +318,22 @@ export default function QualiPhotoGalleryScreen() {
         onClose={() => setModalVisible(false)}
         initialProjectId={selectedProject}
         initialZoneId={selectedZone}
-        onSuccess={() => {
+        onSuccess={(created) => {
           setModalVisible(false);
+          if (created) {
+            const projectTitle = selectedProject ? (projects.find(p => p.id === selectedProject)?.title || undefined) : undefined;
+            const zoneTitle = selectedZone ? (zones.find(z => z.id === selectedZone)?.title || undefined) : undefined;
+            const enriched = {
+              ...created,
+              project_title: projectTitle,
+              zone_title: zoneTitle,
+              user_name: user?.firstname,
+              user_lastname: user?.lastname,
+            } as any;
+            setSelectedItem(enriched);
+            setDetailVisible(true);
+          }
+          // Refresh list in background to include the new item
           fetchPhotos();
         }}
       />

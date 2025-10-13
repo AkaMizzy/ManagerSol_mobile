@@ -321,10 +321,10 @@ export default function CreateQualiPhotoModal({ visible, onClose, onSuccess, ini
           )}
 
           <ScrollView ref={scrollViewRef} style={styles.content} showsVerticalScrollIndicator={false}>
-            {initialProjectId && initialZoneId ? (
-              <View style={styles.card}>
-                
-                <View style={styles.contextDisplay}>
+            {/* Unified Card: Project/Zone + Other Inputs */}
+            <View style={styles.card}>
+              {initialProjectId && initialZoneId ? (
+                <View style={[styles.contextDisplay, { marginBottom: 16 }]}>
                   <View style={styles.contextItem}>
                     <Ionicons name="briefcase-outline" size={16} color="#4b5563" />
                     <Text style={styles.contextText} numberOfLines={1}>
@@ -339,79 +339,75 @@ export default function CreateQualiPhotoModal({ visible, onClose, onSuccess, ini
                     </Text>
                   </View>
                 </View>
-              </View>
-            ) : (
-              <>
-                {/* Project */}
-                <View style={styles.card}>
-                  <View style={styles.cardHeader}>
-                    <View style={styles.cardIconWrap}><Ionicons name="briefcase" size={18} color="#11224e" /></View>
-                    <View style={styles.cardHeaderText}><Text style={styles.cardTitle}>Projet</Text><Text style={styles.cardHint}>Choisir le projet</Text></View>
-                    {selectedProject && <View style={styles.pill}><Ionicons name="checkmark" size={14} color="#16a34a" /><Text style={styles.pillText}>Choisi</Text></View>}
+              ) : (
+                <>
+                  {/* Project */}
+                  <View style={{ marginBottom: 12 }}>
+                    <View style={styles.cardHeader}>
+                      <View style={styles.cardIconWrap}><Ionicons name="briefcase" size={18} color="#11224e" /></View>
+                      <View style={styles.cardHeaderText}><Text style={styles.cardTitle}>Projet</Text><Text style={styles.cardHint}>Choisir le projet</Text></View>
+                      {selectedProject && <View style={styles.pill}><Ionicons name="checkmark" size={14} color="#16a34a" /><Text style={styles.pillText}>Choisi</Text></View>}
+                    </View>
+                    <Pressable style={[styles.dropdownButton, !!initialProjectId && styles.dropdownButtonDisabled]} disabled={!!initialProjectId} onPress={() => { setProjectOpen(v => !v); setZoneOpen(false); }}>
+                      <View style={styles.dropdownButtonContent}>
+                        <Text style={[styles.dropdownButtonText, !selectedProject && styles.placeholderText]}>
+                          {projectTitle}
+                        </Text>
+                      </View>
+                    </Pressable>
+                    {projectOpen && (
+                      <View style={styles.dropdown}>
+                        <ScrollView showsVerticalScrollIndicator={true}>
+                          {(loadingProjects ? [] : projects).map(p => (
+                            <Pressable key={p.id} style={styles.dropdownItem} onPress={() => { setSelectedProject(p.id); setProjectOpen(false); setZoneOpen(false); }}>
+                              <View style={styles.dropdownRow}>
+                                <View style={styles.dropdownIconWrap}><Ionicons name="briefcase" size={18} color="#11224e" /></View>
+                                <View style={styles.dropdownItemContent}><Text style={styles.dropdownItemTitle} numberOfLines={1}>{p.title}</Text></View>
+                                <Ionicons name="chevron-forward" size={16} color="#9ca3af" />
+                              </View>
+                            </Pressable>
+                          ))}
+                          {loadingProjects && <View style={styles.dropdownItem}><Text style={styles.dropdownItemTitle}>Chargement...</Text></View>}
+                          {!loadingProjects && projects.length === 0 && <View style={styles.dropdownItem}><Text style={styles.dropdownItemTitle}>Aucun projet</Text></View>}
+                        </ScrollView>
+                      </View>
+                    )}
                   </View>
-                  <Pressable style={[styles.dropdownButton, !!initialProjectId && styles.dropdownButtonDisabled]} disabled={!!initialProjectId} onPress={() => { setProjectOpen(v => !v); setZoneOpen(false); }}>
-                    <View style={styles.dropdownButtonContent}>
-                      <Text style={[styles.dropdownButtonText, !selectedProject && styles.placeholderText]}>
-                        {projectTitle}
-                      </Text>
-                    </View>
-                  </Pressable>
-                  {projectOpen && (
-                    <View style={styles.dropdown}>
-                      <ScrollView showsVerticalScrollIndicator={true}>
-                        {(loadingProjects ? [] : projects).map(p => (
-                          <Pressable key={p.id} style={styles.dropdownItem} onPress={() => { setSelectedProject(p.id); setProjectOpen(false); setZoneOpen(false); }}>
-                            <View style={styles.dropdownRow}>
-                              <View style={styles.dropdownIconWrap}><Ionicons name="briefcase" size={18} color="#11224e" /></View>
-                              <View style={styles.dropdownItemContent}><Text style={styles.dropdownItemTitle} numberOfLines={1}>{p.title}</Text></View>
-                              <Ionicons name="chevron-forward" size={16} color="#9ca3af" />
-                            </View>
-                          </Pressable>
-                        ))}
-                        {loadingProjects && <View style={styles.dropdownItem}><Text style={styles.dropdownItemTitle}>Chargement...</Text></View>}
-                        {!loadingProjects && projects.length === 0 && <View style={styles.dropdownItem}><Text style={styles.dropdownItemTitle}>Aucun projet</Text></View>}
-                      </ScrollView>
-                    </View>
-                  )}
-                </View>
 
-                {/* Zone */}
-                <View style={[styles.card, !selectedProject && styles.cardDisabled]}>
-                  <View style={styles.cardHeader}>
-                    <View style={styles.cardIconWrap}><Ionicons name="location" size={18} color="#11224e" /></View>
-                    <View style={styles.cardHeaderText}><Text style={styles.cardTitle}>Zone</Text><Text style={styles.cardHint}>Choisir la zone</Text></View>
-                    {selectedZone && <View style={styles.pill}><Ionicons name="checkmark" size={14} color="#16a34a" /><Text style={styles.pillText}>Choisie</Text></View>}
+                  {/* Zone */}
+                  <View style={[{ marginBottom: 12 }, !selectedProject && styles.cardDisabled]}>
+                    <View style={styles.cardHeader}>
+                      <View style={styles.cardIconWrap}><Ionicons name="location" size={18} color="#11224e" /></View>
+                      <View style={styles.cardHeaderText}><Text style={styles.cardTitle}>Zone</Text><Text style={styles.cardHint}>Choisir la zone</Text></View>
+                      {selectedZone && <View style={styles.pill}><Ionicons name="checkmark" size={14} color="#16a34a" /><Text style={styles.pillText}>Choisie</Text></View>}
+                    </View>
+                    <Pressable style={[styles.dropdownButton, (!selectedProject || !!initialProjectId) && styles.dropdownButtonDisabled]} disabled={!selectedProject || !!initialProjectId} onPress={() => { if (!selectedProject) return; setZoneOpen(v => !v); setProjectOpen(false); }}>
+                      <View style={styles.dropdownButtonContent}>
+                        <Text style={[styles.dropdownButtonText, !selectedZone && styles.placeholderText]}>
+                          {zoneTitle}
+                        </Text>
+                      </View>
+                    </Pressable>
+                    {selectedProject && zoneOpen && (
+                      <View style={styles.dropdown}>
+                        <ScrollView showsVerticalScrollIndicator={true}>
+                          {(loadingZones ? [] : zones).map(z => (
+                            <Pressable key={z.id} style={styles.dropdownItem} onPress={() => { setSelectedZone(z.id); setZoneOpen(false); }}>
+                              <View style={styles.dropdownRow}>
+                                <View style={styles.dropdownIconWrap}>{z.logo ? <Image source={{ uri: z.logo }} style={styles.dropdownLogo} /> : <Ionicons name="location" size={18} color="#11224e" />}</View>
+                                <View style={styles.dropdownItemContent}><Text style={styles.dropdownItemTitle} numberOfLines={1}>{z.title}</Text></View>
+                                <Ionicons name="chevron-forward" size={16} color="#9ca3af" />
+                              </View>
+                            </Pressable>
+                          ))}
+                          {loadingZones && <View style={styles.dropdownItem}><Text style={styles.dropdownItemTitle}>Chargement...</Text></View>}
+                          {!loadingZones && zones.length === 0 && <View style={styles.dropdownItem}><Text style={styles.dropdownItemTitle}>Aucune zone</Text></View>}
+                        </ScrollView>
+                      </View>
+                    )}
                   </View>
-                  <Pressable style={[styles.dropdownButton, (!selectedProject || !!initialProjectId) && styles.dropdownButtonDisabled]} disabled={!selectedProject || !!initialProjectId} onPress={() => { if (!selectedProject) return; setZoneOpen(v => !v); setProjectOpen(false); }}>
-                    <View style={styles.dropdownButtonContent}>
-                      <Text style={[styles.dropdownButtonText, !selectedZone && styles.placeholderText]}>
-                        {zoneTitle}
-                      </Text>
-                    </View>
-                  </Pressable>
-                  {selectedProject && zoneOpen && (
-                    <View style={styles.dropdown}>
-                      <ScrollView showsVerticalScrollIndicator={true}>
-                        {(loadingZones ? [] : zones).map(z => (
-                          <Pressable key={z.id} style={styles.dropdownItem} onPress={() => { setSelectedZone(z.id); setZoneOpen(false); }}>
-                            <View style={styles.dropdownRow}>
-                              <View style={styles.dropdownIconWrap}>{z.logo ? <Image source={{ uri: z.logo }} style={styles.dropdownLogo} /> : <Ionicons name="location" size={18} color="#11224e" />}</View>
-                              <View style={styles.dropdownItemContent}><Text style={styles.dropdownItemTitle} numberOfLines={1}>{z.title}</Text></View>
-                              <Ionicons name="chevron-forward" size={16} color="#9ca3af" />
-                            </View>
-                          </Pressable>
-                        ))}
-                        {loadingZones && <View style={styles.dropdownItem}><Text style={styles.dropdownItemTitle}>Chargement...</Text></View>}
-                        {!loadingZones && zones.length === 0 && <View style={styles.dropdownItem}><Text style={styles.dropdownItemTitle}>Aucune zone</Text></View>}
-                      </ScrollView>
-                    </View>
-                  )}
-                </View>
-              </>
-            )}
-            
-            {/* Media Card */}
-            <View style={styles.card}>
+                </>
+              )}
               <View style={[styles.inputWrap, { marginBottom: 16 }]}>
                 <Ionicons name="text-outline" size={16} color="#6b7280" />
                 <TextInput
@@ -503,8 +499,10 @@ export default function CreateQualiPhotoModal({ visible, onClose, onSuccess, ini
                       placeholderTextColor="#9ca3af"
                       value={comment}
                       onChangeText={setComment}
-                      style={[styles.input, { height: 80 }]}
+                      style={[styles.input, { height: 250 }]}
                       multiline
+                      numberOfLines={6}
+                      textAlignVertical="top"
                       onFocus={() => {
                         setTimeout(() => {
                           scrollViewRef.current?.scrollToEnd({ animated: true });
@@ -526,26 +524,6 @@ export default function CreateQualiPhotoModal({ visible, onClose, onSuccess, ini
           />
 
           <View style={styles.footer}>
-            <View style={styles.locationIndicator}>
-              {locationStatus === 'fetching' && (
-                <>
-                  <ActivityIndicator size="small" color="#6b7280" />
-                  <Text style={styles.locationIndicatorText}>Acquisition de la position...</Text>
-                </>
-              )}
-              {locationStatus === 'success' && (
-                <>
-                  <Ionicons name="location" size={14} color="#16a34a" />
-                  <Text style={[styles.locationIndicatorText, { color: '#16a34a' }]}>Position acquise</Text>
-                </>
-              )}
-              {locationStatus === 'error' && (
-                <>
-                  <Ionicons name="warning-outline" size={14} color="#dc2626" />
-                  <Text style={[styles.locationIndicatorText, { color: '#dc2626' }]}>Position non disponible</Text>
-                </>
-              )}
-            </View>
             <TouchableOpacity style={[styles.submitButton, !canSave && styles.submitButtonDisabled]} disabled={!canSave} onPress={handleSubmit}>
               {submitting ? (<><Ionicons name="hourglass" size={16} color="#FFFFFF" /><Text style={styles.submitButtonText}>Enregistrement...</Text></>) : (<><Ionicons name="save" size={16} color="#FFFFFF" /><Text style={styles.submitButtonText}>Enregistrer</Text></>)}
             </TouchableOpacity>
