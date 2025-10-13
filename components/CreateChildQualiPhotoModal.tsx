@@ -42,6 +42,22 @@ export function CreateChildQualiPhotoForm({ onClose, onSuccess, parentItem }: Fo
 
   const canSave = useMemo(() => !!photo && !submitting, [photo, submitting]);
 
+  const resetForm = () => {
+    setTitle('');
+    setComment('');
+    setPhoto(null);
+    setVoiceNote(null);
+    setRecording(null);
+    if (sound) sound.unloadAsync();
+    setSound(null);
+    setIsPlaying(false);
+    setIsRecording(false);
+    setRecordingDuration(0);
+    setSelectedZoneId(parentItem.id_zone); // Reset to parent's zone
+    setError(null);
+    scrollViewRef.current?.scrollTo({ y: 0, animated: true }); // Scroll to top
+  };
+
   function formatDuration(seconds: number) {
     const minutes = Math.floor(seconds / 60);
     const remainingSeconds = seconds % 60;
@@ -85,7 +101,7 @@ export function CreateChildQualiPhotoForm({ onClose, onSuccess, parentItem }: Fo
         voice_note: voiceNote || undefined,
       }, token);
       onSuccess(created);
-      onClose();
+      resetForm();
     } catch (e: any) {
       setError(e?.message || 'Échec de l\'enregistrement de la photo "après".');
     } finally {

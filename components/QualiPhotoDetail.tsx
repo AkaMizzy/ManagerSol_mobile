@@ -224,7 +224,7 @@ type Props = {
   }, [visible, sound]);
 
   const handleChildSuccess = (createdItem: Partial<QualiPhotoItem>) => {
-    setChildModalVisible(false);
+    // Keep modal open for multiple submissions
     if (item && token) {
         setIsLoadingChildren(true);
         qualiphotoService.getChildren(item.id, token)

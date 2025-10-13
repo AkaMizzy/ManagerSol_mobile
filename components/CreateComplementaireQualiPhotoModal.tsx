@@ -29,6 +29,7 @@ export default function CreateComplementaireQualiPhotoModal({ visible, onClose, 
   const [isTranscribing, setIsTranscribing] = useState(false);
   const [comment, setComment] = useState('');
   const durationIntervalRef = useRef<number | null>(null);
+  const scrollViewRef = useRef<ScrollView>(null);
 
   const canSave = useMemo(() => !!photo && !submitting, [photo, submitting]);
 
@@ -144,7 +145,13 @@ export default function CreateComplementaireQualiPhotoModal({ visible, onClose, 
             <View style={{ width: 40 }} />
           </View>
 
-          <ScrollView keyboardDismissMode={Platform.OS === 'ios' ? 'on-drag' : 'interactive'} keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 16 }}>
+          <ScrollView 
+            ref={scrollViewRef}
+            keyboardDismissMode={Platform.OS === 'ios' ? 'on-drag' : 'interactive'} 
+            keyboardShouldPersistTaps="handled" 
+            contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 16 }}
+            showsVerticalScrollIndicator={false}
+          >
             {/* Parent info (target child for this complementary) */}
             <View style={styles.parentInfoCard}>
               <Text style={styles.parentInfoTitle} numberOfLines={1}>
@@ -230,6 +237,11 @@ export default function CreateComplementaireQualiPhotoModal({ visible, onClose, 
                     returnKeyType="done"
                     blurOnSubmit
                     onSubmitEditing={() => Keyboard.dismiss()}
+                    onFocus={() => {
+                      setTimeout(() => {
+                        scrollViewRef.current?.scrollToEnd({ animated: true });
+                      }, 100);
+                    }}
                   />
                 </View>
               </View>

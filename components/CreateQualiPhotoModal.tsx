@@ -416,11 +416,6 @@ export default function CreateQualiPhotoModal({ visible, onClose, onSuccess, ini
                   value={title}
                   onChangeText={setTitle}
                   style={styles.input}
-                  onFocus={() => {
-                    setTimeout(() => {
-                      scrollViewRef.current?.scrollToEnd({ animated: true });
-                    }, 100);
-                  }}
                 />
               </View>
               {/* Photo Input Area */}
@@ -506,7 +501,7 @@ export default function CreateQualiPhotoModal({ visible, onClose, onSuccess, ini
                       onFocus={() => {
                         setTimeout(() => {
                           scrollViewRef.current?.scrollToEnd({ animated: true });
-                        }, 100);
+                        }, 300);
                       }}
                     />
                   </View>
