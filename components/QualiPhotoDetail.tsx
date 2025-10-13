@@ -7,7 +7,7 @@ import qualiphotoService, { Comment, QualiPhotoItem } from '@/services/qualiphot
 import { Ionicons } from '@expo/vector-icons';
 import { Audio } from 'expo-av';
 import React, { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Alert, Image, LayoutAnimation, Linking, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, UIManager, View } from 'react-native';
+import { ActivityIndicator, Alert, Image, Linking, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, UIManager, View } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AppHeader from './AppHeader';
@@ -29,35 +29,27 @@ type ChildPhotoCardProps = {
 };
 
 const ChildPhotoCard: React.FC<ChildPhotoCardProps> = ({ child, onPress, mode }) => {
-  const [isVisible, setIsVisible] = useState(true);
-
-  const toggleVisibility = () => {
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-    setIsVisible(!isVisible);
-  };
+  // const [isVisible, setIsVisible] = useState(true); // hidden feature disabled for now
+  // const toggleVisibility = () => {
+  //   LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+  //   setIsVisible(!isVisible);
+  // };
 
   return (
     <View style={[styles.childGridItem, mode === 'list' && { width: '100%' }]}>
-      <TouchableOpacity onPress={isVisible ? onPress : toggleVisibility}>
-        {isVisible ? (
-          <>
-            <Image source={{ uri: child.photo }} style={styles.childThumbnail} />
-            <View style={styles.childGridOverlay}>
-              {child.title && <Text style={styles.childGridTitle} numberOfLines={1}>{child.title}</Text>}
-              {child.date_taken && <Text style={styles.childGridDate}>{formatDate(child.date_taken)}</Text>}
-            </View>
-          </>
-        ) : (
-          <View style={styles.hiddenImagePlaceholder}>
-            <Ionicons name="image-outline" size={32} color="#9ca3af" />
-            <Text style={styles.hiddenImageText}>Image cachée</Text>
-            <Text style={styles.hiddenImageSubText}>Appuyez pour réafficher</Text>
+      {/* HIDE/SHOW feature disabled: always show image */}
+      <TouchableOpacity onPress={onPress}>
+        <>
+          <Image source={{ uri: child.photo }} style={styles.childThumbnail} />
+          <View style={styles.childGridOverlay}>
+            {child.title && <Text style={styles.childGridTitle} numberOfLines={1}>{child.title}</Text>}
+            {child.date_taken && <Text style={styles.childGridDate}>{formatDate(child.date_taken)}</Text>}
           </View>
-        )}
+        </>
       </TouchableOpacity>
-      <TouchableOpacity onPress={toggleVisibility} style={styles.eyeIcon}>
+      {/* <TouchableOpacity onPress={toggleVisibility} style={styles.eyeIcon}>
         <Ionicons name={isVisible ? 'eye-outline' : 'eye-off-outline'} size={24} color="#fff" />
-      </TouchableOpacity>
+      </TouchableOpacity> */}
     </View>
   );
 };
@@ -95,14 +87,14 @@ type Props = {
   const [comments, setComments] = useState<Comment[]>([]);
   const [isLoadingComments, setIsLoadingComments] = useState(false);
   const [isActionsVisible, setActionsVisible] = useState(false);
-  const [layoutMode, setLayoutMode] = useState<'grid' | 'list'>('grid');
+  const [layoutMode, setLayoutMode] = useState<'grid' | 'list'>('list');
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
 
   useEffect(() => {
     setItem(initialItem || null);
     setSortOrder('desc'); // Reset sort order when item changes
     setActionsVisible(false);
-    setLayoutMode('grid');
+    setLayoutMode('list');
     setComplement(null);
   }, [initialItem]);
 
@@ -330,11 +322,7 @@ type Props = {
         {!!item?.date_taken && <Text style={styles.subtitle}>{formatDate(item.date_taken)}</Text>}
         </View>
         <View style={styles.headerActionsContainer}>
-          {item?.before === 1 ? (
-            <TouchableOpacity style={styles.headerAction} onPress={() => setChildModalVisible(true)} accessibilityLabel="Ajouter une photo d'évolution">
-              <Image source={cameraIcon} style={styles.headerActionIcon} />
-            </TouchableOpacity>
-          ) : item?.id_qualiphoto_parent ? (
+          {item?.id_qualiphoto_parent ? (
             <View style={{ flexDirection: 'row' }}>
               <TouchableOpacity style={styles.headerAction} onPress={() => setEditPlanVisible(true)} accessibilityLabel="Éditer le plan de zone">
                 <Image source={require('@/assets/icons/plan.png')} style={styles.headerActionIcon} />
@@ -494,9 +482,17 @@ type Props = {
                       >
                         <Text style={styles.pageButtonText}>{layoutMode === 'grid' ? '2' : '1'}</Text>
                       </TouchableOpacity>
-                    ) : null}
-                    <Text style={styles.sectionTitle}>Évolution Travaux</Text>
-                    {children.length > 0 && (
+                    ) : (
+                      <View style={{ width: 32, height: 32 }} />
+                    )}
+                    <TouchableOpacity
+                      onPress={() => setChildModalVisible(true)}
+                      accessibilityLabel="Ajouter une photo d'évolution"
+                      style={styles.cameraCTA}
+                    >
+                      <Image source={cameraIcon} style={styles.cameraCTAIcon} />
+                    </TouchableOpacity>
+                    {children.length > 0 ? (
                       <TouchableOpacity
                         style={styles.sortButton}
                         onPress={() => setSortOrder(current => current === 'asc' ? 'desc' : 'asc')}
@@ -504,6 +500,8 @@ type Props = {
                       >
                         <Ionicons name={sortOrder === 'desc' ? 'arrow-down' : 'arrow-up'} size={24} color="#f87b1b" />
                       </TouchableOpacity>
+                    ) : (
+                      <View style={{ width: 32, height: 32 }} />
                     )}
                   </View>
                   {isLoadingChildren && <Text>Chargement...</Text>}
@@ -1335,6 +1333,27 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 8,
+  },
+  cameraCTA: {
+    width: 72,
+    height: 72,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: '#f87b1b',
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    overflow: 'hidden',
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.12,
+    shadowRadius: 6,
+  },
+  cameraCTAIcon: {
+    width: 64,
+    height: 64,
+    resizeMode: 'contain',
   },
   sortButton: {
     width: 32,
