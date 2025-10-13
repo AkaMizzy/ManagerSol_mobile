@@ -196,7 +196,6 @@ export function CreateChildQualiPhotoForm({ onClose, onSuccess, parentItem }: Fo
       }
     }
     loadZones();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token, parentItem?.id_project]);
 
   return (
@@ -208,7 +207,9 @@ export function CreateChildQualiPhotoForm({ onClose, onSuccess, parentItem }: Fo
             <Ionicons name="close" size={24} color="#f87b1b" />
           </TouchableOpacity>
           <View style={styles.headerCenter}>
-            <Text style={styles.headerTitle}>{`Ajouter une photo d'évolution`}</Text>
+            <Text style={styles.headerTitle} numberOfLines={1}>
+              {parentItem.title || `Titre de la dossier`}
+            </Text>
           </View>
           <View style={styles.placeholder} />
         </View>
@@ -268,21 +269,7 @@ export function CreateChildQualiPhotoForm({ onClose, onSuccess, parentItem }: Fo
             </View>
 
             {/* New Photo Card */}
-            <View style={[styles.inputWrap, { marginBottom: 16 }]}>
-              <Ionicons name="text-outline" size={16} color="#6b7280" />
-              <TextInput
-                placeholder="Titre (optionnel)"
-                placeholderTextColor="#9ca3af"
-                value={title}
-                onChangeText={setTitle}
-                style={styles.input}
-                onFocus={() => {
-                  setTimeout(() => {
-                    scrollViewRef.current?.scrollToEnd({ animated: true });
-                  }, 100);
-                }}
-              />
-            </View>
+          
 
             {photo ? (
               <View style={styles.imagePreviewContainer}>
@@ -360,7 +347,7 @@ export function CreateChildQualiPhotoForm({ onClose, onSuccess, parentItem }: Fo
                     placeholderTextColor="#9ca3af"
                     value={comment}
                     onChangeText={setComment}
-                    style={[styles.input, { height: 80 }]}
+                    style={[styles.input, { height: 160 }]}
                     multiline
                     onFocus={() => {
                       setTimeout(() => {
