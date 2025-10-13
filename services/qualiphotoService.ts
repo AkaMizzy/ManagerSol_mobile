@@ -236,7 +236,7 @@ class QualiPhotoService {
     return { id: data.id, photo_plan: this.toAbsoluteUrl(data.photo_plan) ?? '' };
   }
 
-  async createComplementaire(params: { id_qualiphoto_parent: string; photo: { uri: string; name: string; type: string }; voice_note?: { uri: string; name: string; type: string }; commentaire?: string }, token: string): Promise<Partial<QualiPhotoItem>> {
+  async createComplementaire(params: { id_qualiphoto_parent: string; photo: { uri: string; name: string; type: string }; voice_note?: { uri: string; name: string; type: string }; commentaire?: string; latitude?: number; longitude?: number }, token: string): Promise<Partial<QualiPhotoItem>> {
     const formData = new FormData();
     formData.append('id_qualiphoto_parent', params.id_qualiphoto_parent);
     formData.append('photo', {
@@ -253,6 +253,12 @@ class QualiPhotoService {
         name: params.voice_note.name,
         type: params.voice_note.type,
       } as any);
+    }
+    if (params.latitude !== undefined) {
+      formData.append('latitude', params.latitude.toString());
+    }
+    if (params.longitude !== undefined) {
+      formData.append('longitude', params.longitude.toString());
     }
 
     const res = await fetch(`${API_CONFIG.BASE_URL}/qualiphoto/complementaire`, {

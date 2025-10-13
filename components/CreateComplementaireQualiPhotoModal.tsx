@@ -3,7 +3,8 @@ import qualiphotoService, { QualiPhotoItem } from '@/services/qualiphotoService'
 import { Ionicons } from '@expo/vector-icons';
 import { Audio } from 'expo-av';
 import * as ImagePicker from 'expo-image-picker';
-import React, { useMemo, useRef, useState } from 'react';
+import * as Location from 'expo-location';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Image, Keyboard, KeyboardAvoidingView, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, TouchableWithoutFeedback, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -28,6 +29,9 @@ export default function CreateComplementaireQualiPhotoModal({ visible, onClose, 
   const [recordingDuration, setRecordingDuration] = useState(0);
   const [isTranscribing, setIsTranscribing] = useState(false);
   const [comment, setComment] = useState('');
+  const [latitude, setLatitude] = useState<number | null>(null);
+  const [longitude, setLongitude] = useState<number | null>(null);
+  const [locationStatus, setLocationStatus] = useState<'idle' | 'fetching' | 'success' | 'error'>('idle');
   const durationIntervalRef = useRef<number | null>(null);
   const scrollViewRef = useRef<ScrollView>(null);
 
@@ -53,6 +57,8 @@ export default function CreateComplementaireQualiPhotoModal({ visible, onClose, 
         photo,
         voice_note: voiceNote || undefined,
         commentaire: comment || undefined,
+        latitude: latitude || undefined,
+        longitude: longitude || undefined,
       }, token);
       onSuccess(created);
       onClose();
@@ -128,6 +134,28 @@ export default function CreateComplementaireQualiPhotoModal({ visible, onClose, 
     return new Intl.DateTimeFormat('fr-FR', { year: 'numeric', month: 'short', day: '2-digit' }).format(d);
   }
 
+  useEffect(() => {
+    const fetchLocation = async () => {
+      setLocationStatus('fetching');
+      try {
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        if (status !== 'granted') {
+          console.log('Location permission denied.');
+          setLocationStatus('error');
+          return;
+        }
+        const location = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
+        setLatitude(location.coords.latitude);
+        setLongitude(location.coords.longitude);
+        setLocationStatus('success');
+      } catch (error) {
+        console.warn('Could not fetch location automatically.', error);
+        setLocationStatus('error');
+      }
+    };
+    fetchLocation();
+  }, []);
+
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
@@ -147,9 +175,7 @@ export default function CreateComplementaireQualiPhotoModal({ visible, onClose, 
 
           <ScrollView 
             ref={scrollViewRef}
-            keyboardDismissMode={Platform.OS === 'ios' ? 'on-drag' : 'interactive'} 
-            keyboardShouldPersistTaps="handled" 
-            contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 16 }}
+            style={styles.content}
             showsVerticalScrollIndicator={false}
           >
             {/* Parent info (target child for this complementary) */}
@@ -240,7 +266,7 @@ export default function CreateComplementaireQualiPhotoModal({ visible, onClose, 
                     onFocus={() => {
                       setTimeout(() => {
                         scrollViewRef.current?.scrollToEnd({ animated: true });
-                      }, 100);
+                      }, 300);
                     }}
                   />
                 </View>
@@ -280,6 +306,7 @@ export default function CreateComplementaireQualiPhotoModal({ visible, onClose, 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F8FAFC' },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12, backgroundColor: '#FFFFFF', borderBottomWidth: 1, borderBottomColor: '#e5e7eb' },
+  content: { flex: 1, paddingHorizontal: 16 },
   closeButton: { padding: 8 },
   headerCenter: { alignItems: 'center', flex: 1 },
   headerTitle: { fontSize: 18, fontWeight: '600', color: '#11224e' },

@@ -4,6 +4,7 @@ import qualiphotoService, { QualiPhotoItem, QualiZone } from '@/services/qualiph
 import { Ionicons } from '@expo/vector-icons';
 import { Audio } from 'expo-av';
 import * as ImagePicker from 'expo-image-picker';
+import * as Location from 'expo-location';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, Image, KeyboardAvoidingView, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -28,6 +29,9 @@ export function CreateChildQualiPhotoForm({ onClose, onSuccess, parentItem }: Fo
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isTranscribing, setIsTranscribing] = useState(false);
+  const [latitude, setLatitude] = useState<number | null>(null);
+  const [longitude, setLongitude] = useState<number | null>(null);
+  const [locationStatus, setLocationStatus] = useState<'idle' | 'fetching' | 'success' | 'error'>('idle');
 
   const [zones, setZones] = useState<QualiZone[]>([]);
   const [zonesLoading, setZonesLoading] = useState(false);
@@ -54,6 +58,9 @@ export function CreateChildQualiPhotoForm({ onClose, onSuccess, parentItem }: Fo
     setIsRecording(false);
     setRecordingDuration(0);
     setSelectedZoneId(parentItem.id_zone); // Reset to parent's zone
+    setLatitude(null);
+    setLongitude(null);
+    setLocationStatus('idle');
     setError(null);
     scrollViewRef.current?.scrollTo({ y: 0, animated: true }); // Scroll to top
   };
@@ -95,8 +102,8 @@ export function CreateChildQualiPhotoForm({ onClose, onSuccess, parentItem }: Fo
         title: title || undefined,
         commentaire: comment,
         photo,
-        latitude: parentItem.latitude ?? undefined,
-        longitude: parentItem.longitude ?? undefined,
+        latitude: latitude || undefined,
+        longitude: longitude || undefined,
         id_qualiphoto_parent: parentItem.id,
         voice_note: voiceNote || undefined,
       }, token);
@@ -213,6 +220,28 @@ export function CreateChildQualiPhotoForm({ onClose, onSuccess, parentItem }: Fo
     }
     loadZones();
   }, [token, parentItem?.id_project]);
+
+  useEffect(() => {
+    const fetchLocation = async () => {
+      setLocationStatus('fetching');
+      try {
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        if (status !== 'granted') {
+          console.log('Location permission denied.');
+          setLocationStatus('error');
+          return;
+        }
+        const location = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
+        setLatitude(location.coords.latitude);
+        setLongitude(location.coords.longitude);
+        setLocationStatus('success');
+      } catch (error) {
+        console.warn('Could not fetch location automatically.', error);
+        setLocationStatus('error');
+      }
+    };
+    fetchLocation();
+  }, []);
 
   return (
     <>

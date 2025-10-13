@@ -75,6 +75,7 @@ type Props = {
   const [compSound, setCompSound] = useState<Audio.Sound | null>(null);
   const [isPlayingComp, setIsPlayingComp] = useState(false);
   const [isMapDetailVisible, setMapDetailVisible] = useState(false);
+  const [isComplementMapVisible, setComplementMapVisible] = useState(false);
   const [isChildModalVisible, setChildModalVisible] = useState(false);
   const [isComplementModalVisible, setComplementModalVisible] = useState(false);
   const [isEditPlanVisible, setEditPlanVisible] = useState(false);
@@ -273,6 +274,21 @@ type Props = {
     }
   };
 
+  const handleComplementMapPress = () => {
+    if (!complement?.latitude || !complement.longitude) return;
+
+    const url = Platform.select({
+      ios: `maps:${complement.latitude},${complement.longitude}?q=${complement.latitude},${complement.longitude}`,
+      android: `geo:${complement.latitude},${complement.longitude}?q=${complement.latitude},${complement.longitude}`,
+    });
+
+    if (url) {
+      Linking.openURL(url).catch(() => {
+        Alert.alert("Erreur", "Impossible d'ouvrir l'application de cartographie.");
+      });
+    }
+  };
+
   // list/grid items rendered inline elsewhere
 
    const renderMapView = () => (
@@ -296,6 +312,31 @@ type Props = {
             }}
         >
             <Marker coordinate={{ latitude: item!.latitude!, longitude: item!.longitude! }} />
+        </MapView>
+    </>
+   );
+
+   const renderComplementMapView = () => (
+    <>
+        <View style={styles.header}>
+            <Pressable onPress={() => setComplementMapVisible(false)} style={styles.closeBtn}>
+                <Ionicons name="arrow-back" size={24} color="#f87b1b" />
+            </Pressable>
+            <View style={styles.headerTitles}>
+                <Text style={styles.title}>Localisation de la Photo Corrective</Text>
+            </View>
+            <View style={{ width: 40 }} />
+        </View>
+        <MapView
+            style={{ flex: 1 }}
+            initialRegion={{
+                latitude: complement!.latitude!,
+                longitude: complement!.longitude!,
+                latitudeDelta: 0.01,
+                longitudeDelta: 0.01,
+            }}
+        >
+            <Marker coordinate={{ latitude: complement!.latitude!, longitude: complement!.longitude! }} />
         </MapView>
     </>
    );
@@ -702,6 +743,15 @@ type Props = {
                           <Ionicons name={isPlayingComp ? 'pause-circle' : 'play-circle'} size={28} color="#11224e" />
                         </TouchableOpacity>
                       ) : null}
+                      {complement.latitude && complement.longitude ? (
+                        <TouchableOpacity
+                          style={styles.compactAudio}
+                          onPress={handleComplementMapPress}
+                          accessibilityLabel="Voir la localisation de la photo corrective"
+                        >
+                          <Image source={ICONS.map} style={styles.actionIcon} />
+                        </TouchableOpacity>
+                      ) : null}
                       {typeof complement.commentaire === 'string' && complement.commentaire.trim().length > 0 ? (
                         <Text style={styles.compDescriptionFull}>
                           {complement.commentaire}
@@ -834,6 +884,8 @@ type Props = {
           />
         ) : isMapDetailVisible ? (
           renderMapView()
+        ) : isComplementMapVisible ? (
+          renderComplementMapView()
         ) : (
           renderDetailView()
         )}
