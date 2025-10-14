@@ -128,7 +128,8 @@ class QualiPhotoService {
     const zones = await this.makeRequest<QualiZone[]>(`/projects/${projectId}/zones`, token, { method: 'GET' });
     return zones.map(zone => ({
       ...zone,
-      logo: this.toAbsoluteUrl(zone.logo),
+      // Don't override backend absolute URLs - the backend already provides absolute URLs
+      logo: zone.logo, // Keep the backend's absolute URL as-is
     }));
   }
 

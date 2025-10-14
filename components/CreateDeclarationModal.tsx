@@ -39,6 +39,9 @@ interface CreateDeclarationModalProps {
     longitude?: number;
     photoPath?: string; // relative path like /uploads/qualiphoto/...
     photoUri?: string; // full URI if already absolute
+    title?: string;
+    description?: string;
+    disableFields?: boolean; // if true, disable zone, project, and location fields
   };
 }
 
@@ -98,11 +101,11 @@ export default function CreateDeclarationModal({
     if (!visible) return;
 
     const initialFormData: Omit<CreateDeclarationData, 'code_declaration'> = {
-      title: manifolderDetails ? `Déclaration pour ${manifolderDetails.manifolderDetail.questionTitle}` : '',
+      title: manifolderDetails ? `Déclaration pour ${manifolderDetails.manifolderDetail.questionTitle}` : (prefill?.title || ''),
       id_declaration_type: '',
       severite: 5,
       id_zone: manifolderDetails ? manifolderDetails.manifolder.defaultZoneId : '' ,
-      description: manifolderDetails ? `Lié à la question du manifolder: ${manifolderDetails.manifolderDetail.questionTitle}` : '',
+      description: manifolderDetails ? `Lié à la question du manifolder: ${manifolderDetails.manifolderDetail.questionTitle}` : (prefill?.description || ''),
       date_declaration: toISODate(new Date()),
       id_declarent: currentUser?.id,
       latitude: undefined,
@@ -542,11 +545,17 @@ export default function CreateDeclarationModal({
             {/* Unified Card */}
             <View style={styles.card}>
               {/* --- CONTEXT SECTION --- */}
-              <TouchableOpacity style={styles.inputContainer} onPress={() => setShowProjectDropdown(!showProjectDropdown)}>
+              <TouchableOpacity 
+                style={[styles.inputContainer, prefill?.disableFields && styles.inputDisabled]} 
+                onPress={() => !prefill?.disableFields && setShowProjectDropdown(!showProjectDropdown)}
+                disabled={prefill?.disableFields}
+              >
                 <Text style={[styles.inputText, !formData.id_project && styles.placeholderText]}>
                   {getProjectTitle(formData.id_project || '')}
                 </Text>
-                <Ionicons name={showProjectDropdown ? 'chevron-up' : 'chevron-down'} size={20} color="#9ca3af" />
+                {!prefill?.disableFields && (
+                  <Ionicons name={showProjectDropdown ? 'chevron-up' : 'chevron-down'} size={20} color="#9ca3af" />
+                )}
               </TouchableOpacity>
               {showProjectDropdown && (
                 <View style={styles.dropdownList}>
@@ -562,14 +571,20 @@ export default function CreateDeclarationModal({
               )}
 
               {/* Zone */}
-              <TouchableOpacity style={[styles.inputContainer, { marginTop: 12 }, errors.id_zone && styles.inputError]} onPress={() => setShowZoneDropdown(!showZoneDropdown)}>
+              <TouchableOpacity 
+                style={[styles.inputContainer, { marginTop: 12 }, errors.id_zone && styles.inputError, prefill?.disableFields && styles.inputDisabled]} 
+                onPress={() => !prefill?.disableFields && setShowZoneDropdown(!showZoneDropdown)}
+                disabled={prefill?.disableFields}
+              >
                  {formData.id_zone && getZoneLogo(formData.id_zone) && (
                     <Image source={{ uri: getZoneLogo(formData.id_zone)! }} style={styles.zoneLogo} />
                   )}
                 <Text style={[styles.inputText, !formData.id_zone && styles.placeholderText]}>
                   {getZoneTitle(formData.id_zone)}
                 </Text>
-                <Ionicons name={showZoneDropdown ? 'chevron-up' : 'chevron-down'} size={20} color="#9ca3af" />
+                {!prefill?.disableFields && (
+                  <Ionicons name={showZoneDropdown ? 'chevron-up' : 'chevron-down'} size={20} color="#9ca3af" />
+                )}
               </TouchableOpacity>
               {showZoneDropdown && (
                 <View style={styles.dropdownList}>
@@ -709,7 +724,11 @@ export default function CreateDeclarationModal({
                   <Text style={styles.cardHint}>Coordonnées géographiques (optionnel)</Text>
                 </View>
               </View>
-              <TouchableOpacity style={styles.mapButton} onPress={handleLocationToggle}>
+              <TouchableOpacity 
+                style={[styles.mapButton, prefill?.disableFields && styles.inputDisabled]} 
+                onPress={() => !prefill?.disableFields && handleLocationToggle()}
+                disabled={prefill?.disableFields}
+              >
                 <View style={styles.miniMapPreview}>
                   <WebView
                     source={{ html: getMiniMapHtml() }}
@@ -996,6 +1015,10 @@ const styles = StyleSheet.create({
   },
   inputError: {
     borderColor: '#FF3B30',
+  },
+  inputDisabled: {
+    backgroundColor: '#f8fafc',
+    opacity: 0.7,
   },
   textInput: {
     paddingVertical: 14,

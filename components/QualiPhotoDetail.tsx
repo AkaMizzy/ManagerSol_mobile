@@ -687,6 +687,9 @@ type Props = {
                               id_project: (item as any).id_project,
                               latitude: (item as any).latitude,
                               longitude: (item as any).longitude,
+                              title: initialItem?.title || '',
+                              description: initialItem?.commentaire || '',
+                              disableFields: true,
                               ...prefillPhoto,
                             });
                             setDeclModalVisible(true);
