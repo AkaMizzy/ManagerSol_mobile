@@ -105,6 +105,7 @@ export default function QualiPhotoGalleryScreen() {
     }
   }, [token, selectedProject, selectedZone, limit]);
 
+
   const handleLoadMore = () => {
     if (isLoadingMore || !hasMore) return;
     fetchPhotos(page + 1, true);
@@ -180,6 +181,7 @@ export default function QualiPhotoGalleryScreen() {
           <Text style={styles.metaText} numberOfLines={1}>{item.project_title || ''}</Text>
           {item.zone_title ? <Text style={styles.metaSubText} numberOfLines={1}>{item.zone_title}</Text> : null}
         </View>
+        
       </View>
     </View>
   ), []);
@@ -348,6 +350,8 @@ export default function QualiPhotoGalleryScreen() {
         item={selectedItem}
         onClose={() => { setDetailVisible(false); setSelectedItem(null); }}
       />
+
+      
     </SafeAreaView>
   );
 }

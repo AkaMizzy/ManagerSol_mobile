@@ -32,6 +32,14 @@ interface CreateDeclarationModalProps {
   currentUser: CompanyUser;
   isLoading?: boolean;
   manifolderDetails?: ManifolderDetailsForDeclaration;
+  prefill?: {
+    id_zone?: string;
+    id_project?: string;
+    latitude?: number;
+    longitude?: number;
+    photoPath?: string; // relative path like /uploads/qualiphoto/...
+    photoUri?: string; // full URI if already absolute
+  };
 }
 
 const { width } = Dimensions.get('window');
@@ -47,6 +55,7 @@ export default function CreateDeclarationModal({
   currentUser,
   isLoading = false,
   manifolderDetails,
+  prefill,
 }: CreateDeclarationModalProps) {
   const [formData, setFormData] = useState<Omit<CreateDeclarationData, 'code_declaration'>>({
     title: '',
@@ -86,27 +95,54 @@ export default function CreateDeclarationModal({
   };
 
   useEffect(() => {
-    if (visible) {
-      const initialFormData: Omit<CreateDeclarationData, 'code_declaration'> = {
-        title: manifolderDetails ? `Déclaration pour ${manifolderDetails.manifolderDetail.questionTitle}` : '',
-        id_declaration_type: '',
-        severite: 5,
-        id_zone: manifolderDetails ? manifolderDetails.manifolder.defaultZoneId : '',
-        description: manifolderDetails ? `Lié à la question du manifolder: ${manifolderDetails.manifolderDetail.questionTitle}` : '',
-        date_declaration: toISODate(new Date()),
-        id_declarent: currentUser?.id,
-        latitude: undefined,
-        longitude: undefined,
-        id_manifold: manifolderDetails ? manifolderDetails.manifolder.id : undefined,
-        id_manifold_detail: manifolderDetails ? manifolderDetails.manifolderDetail.id : undefined,
-      };
-      
-      setFormData(initialFormData);
-      setErrors({});
-      setSelectedPhotos([]);
-      setShowLocationInput(false);
+    if (!visible) return;
+
+    const initialFormData: Omit<CreateDeclarationData, 'code_declaration'> = {
+      title: manifolderDetails ? `Déclaration pour ${manifolderDetails.manifolderDetail.questionTitle}` : '',
+      id_declaration_type: '',
+      severite: 5,
+      id_zone: manifolderDetails ? manifolderDetails.manifolder.defaultZoneId : '' ,
+      description: manifolderDetails ? `Lié à la question du manifolder: ${manifolderDetails.manifolderDetail.questionTitle}` : '',
+      date_declaration: toISODate(new Date()),
+      id_declarent: currentUser?.id,
+      latitude: undefined,
+      longitude: undefined,
+      id_manifold: manifolderDetails ? manifolderDetails.manifolder.id : undefined,
+      id_manifold_detail: manifolderDetails ? manifolderDetails.manifolderDetail.id : undefined,
+      id_project: undefined,
+    } as any;
+
+    // Apply prefill overrides if provided
+    const withPrefill = {
+      ...initialFormData,
+      id_zone: prefill?.id_zone ? String(prefill.id_zone) : initialFormData.id_zone,
+      id_project: prefill?.id_project ? String(prefill.id_project) : initialFormData.id_project,
+      latitude: prefill?.latitude !== undefined && prefill?.latitude !== null ? Number(prefill.latitude) : initialFormData.latitude,
+      longitude: prefill?.longitude !== undefined && prefill?.longitude !== null ? Number(prefill.longitude) : initialFormData.longitude,
+    } as Omit<CreateDeclarationData, 'code_declaration'>;
+
+    setFormData(withPrefill);
+    setErrors({});
+    setSelectedPhotos([]);
+    setShowLocationInput(false);
+
+    // Prefill photo if provided
+    const absolutePhotoUri = prefill?.photoUri
+      || (prefill?.photoPath ? `${API_CONFIG.BASE_URL}${prefill.photoPath}` : undefined);
+    if (absolutePhotoUri) {
+      const name = (() => {
+        try {
+          const url = new URL(absolutePhotoUri);
+          const last = url.pathname.split('/').pop() || 'qualiphoto.jpg';
+          return last;
+        } catch {
+          const parts = absolutePhotoUri.split('/');
+          return parts[parts.length - 1] || 'qualiphoto.jpg';
+        }
+      })();
+      setSelectedPhotos([{ uri: absolutePhotoUri, type: 'image/jpeg', name }]);
     }
-  }, [visible, currentUser?.id, manifolderDetails]);
+  }, [visible, currentUser?.id, manifolderDetails, prefill]);
 
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
@@ -200,8 +236,10 @@ export default function CreateDeclarationModal({
   };
 
   const getCoordinateDisplay = () => {
-    if (formData.latitude && formData.longitude) {
-      return `${formData.latitude.toFixed(6)}, ${formData.longitude.toFixed(6)}`;
+    const lat = formData.latitude !== undefined && formData.latitude !== null ? Number(formData.latitude) : undefined;
+    const lng = formData.longitude !== undefined && formData.longitude !== null ? Number(formData.longitude) : undefined;
+    if (Number.isFinite(lat as number) && Number.isFinite(lng as number)) {
+      return `${(lat as number).toFixed(6)}, ${(lng as number).toFixed(6)}`;
     }
     return 'Appuyez pour sélectionner la localisation';
   };
@@ -335,8 +373,10 @@ export default function CreateDeclarationModal({
 
   // Mini map HTML for preview
   const getMiniMapHtml = () => {
-    const lat = formData.latitude ?? 33.5731; // Casablanca default
-    const lng = formData.longitude ?? -7.5898;
+    const latNum = formData.latitude !== undefined && formData.latitude !== null ? Number(formData.latitude) : undefined;
+    const lngNum = formData.longitude !== undefined && formData.longitude !== null ? Number(formData.longitude) : undefined;
+    const lat = Number.isFinite(latNum as number) ? (latNum as number) : 33.5731; // Casablanca default
+    const lng = Number.isFinite(lngNum as number) ? (lngNum as number) : -7.5898;
     return `
       <!DOCTYPE html>
       <html>

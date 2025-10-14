@@ -1,8 +1,10 @@
 // removed modal editor in favor of full-screen editor
 import API_CONFIG from '@/app/config/api';
+import CreateDeclarationModal from '@/components/CreateDeclarationModal';
 import ZonePictureEditor from '@/components/ZonePictureEditor';
 import { ICONS } from '@/constants/Icons';
 import { useAuth } from '@/contexts/AuthContext';
+import declarationService from '@/services/declarationService';
 import qualiphotoService, { Comment, QualiPhotoItem } from '@/services/qualiphotoService';
 import { Ionicons } from '@expo/vector-icons';
 import { Audio } from 'expo-av';
@@ -96,6 +98,13 @@ type Props = {
   const [isActionsVisible, setActionsVisible] = useState(false);
   const [layoutMode, setLayoutMode] = useState<'grid' | 'list'>('list');
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
+  const [isDeclModalVisible, setDeclModalVisible] = useState(false);
+  const [declLoading, setDeclLoading] = useState(false);
+  const [declTypes, setDeclTypes] = useState<any[]>([]);
+  const [declZones, setDeclZones] = useState<any[]>([]);
+  const [declProjects, setDeclProjects] = useState<any[]>([]);
+  const [declCompanyUsers, setDeclCompanyUsers] = useState<any[]>([]);
+  const [declPrefill, setDeclPrefill] = useState<any | null>(null);
 
   useEffect(() => {
     setItem(initialItem || null);
@@ -104,6 +113,34 @@ type Props = {
     setLayoutMode('list');
     setComplement(null);
   }, [initialItem]);
+
+  // Load declaration dropdowns when modal opens
+  useEffect(() => {
+    if (!token || !isDeclModalVisible) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const [types, zonesRes, projectsRes, users] = await Promise.all([
+          declarationService.getDeclarationTypes(token!),
+          declarationService.getZones(token!),
+          declarationService.getCompanyProjects(token!),
+          declarationService.getCompanyUsers(token!),
+        ]);
+        if (cancelled) return;
+        setDeclTypes(types);
+        setDeclZones(zonesRes);
+        setDeclProjects(projectsRes);
+        setDeclCompanyUsers(users);
+      } catch {
+        if (cancelled) return;
+        setDeclTypes([]);
+        setDeclZones([]);
+        setDeclProjects([]);
+        setDeclCompanyUsers([]);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [token, isDeclModalVisible]);
 
   useEffect(() => {
     if (item && item.id && token) {
@@ -590,6 +627,7 @@ type Props = {
               )}
             </View>
           </ScrollView>
+          
         </>
       );
     } else {
@@ -634,6 +672,28 @@ type Props = {
                       {item.after === 1 && (
                         <TouchableOpacity style={styles.actionButton} onPress={() => setCommentModalVisible(true)}>
                           <Ionicons name="add-circle-outline" size={32} color="#11224e" />
+                        </TouchableOpacity>
+                      )}
+                      {item.id_qualiphoto_parent && (
+                        <TouchableOpacity
+                          style={styles.actionButton}
+                          onPress={() => {
+                            const isAbsolute = typeof item.photo === 'string' && /^(https?:)?\/\//.test(item.photo);
+                            const prefillPhoto = isAbsolute
+                              ? { photoUri: item.photo }
+                              : { photoPath: (item as any).photo_path || item.photo };
+                            setDeclPrefill({
+                              id_zone: (item as any).id_zone,
+                              id_project: (item as any).id_project,
+                              latitude: (item as any).latitude,
+                              longitude: (item as any).longitude,
+                              ...prefillPhoto,
+                            });
+                            setDeclModalVisible(true);
+                          }}
+                          accessibilityLabel="Créer une déclaration depuis cette photo"
+                        >
+                          <Image source={ICONS.declaration} style={styles.actionIcon} />
                         </TouchableOpacity>
                       )}
                     </View>
@@ -889,6 +949,32 @@ type Props = {
         ) : (
           renderDetailView()
         )}
+        <CreateDeclarationModal
+          visible={isDeclModalVisible}
+          onClose={() => setDeclModalVisible(false)}
+          onSubmit={async (data) => {
+            if (!token) return;
+            try {
+              setDeclLoading(true);
+              await declarationService.createDeclaration(data, token);
+              setDeclModalVisible(false);
+            } finally {
+              setDeclLoading(false);
+            }
+          }}
+          declarationTypes={declTypes}
+          zones={declZones}
+          projects={declProjects}
+          companyUsers={declCompanyUsers}
+          currentUser={{
+            id: user?.id || '',
+            firstname: user?.firstname || '',
+            lastname: user?.lastname || '',
+            email: user?.email || '',
+          }}
+          isLoading={declLoading}
+          prefill={declPrefill || undefined}
+        />
         {item && item.id_qualiphoto_parent && (
           <CreateComplementaireQualiPhotoModal
             visible={isComplementModalVisible}
