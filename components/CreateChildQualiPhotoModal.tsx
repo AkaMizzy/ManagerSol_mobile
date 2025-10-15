@@ -279,9 +279,11 @@ export function CreateChildQualiPhotoForm({ onClose, onSuccess, parentItem }: Fo
                 </Text>
               </View>
             </View>
-            <View style={styles.parentPhotoContainer}>
-              <Image source={{ uri: parentItem.photo }} style={styles.parentPhoto} />
-            </View>
+            {parentItem.photo ? (
+              <View style={styles.parentPhotoContainer}>
+                <Image source={{ uri: parentItem.photo }} style={styles.parentPhoto} />
+              </View>
+            ) : null}
           
             <View style={styles.separator} />
 
