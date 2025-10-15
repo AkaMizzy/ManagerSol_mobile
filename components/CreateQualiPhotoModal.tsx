@@ -125,7 +125,7 @@ export default function CreateQualiPhotoModal({ visible, onClose, onSuccess, ini
       .finally(() => setLoadingZones(false));
   }, [token, selectedProject, initialZoneId]);
 
-  const canSave = useMemo(() => !!selectedProject && !!selectedZone && !!photo && !submitting, [selectedProject, selectedZone, photo, submitting]);
+  const canSave = useMemo(() => !!selectedProject && !!selectedZone && title.trim().length > 0 && !submitting, [selectedProject, selectedZone, title, submitting]);
 
   const handlePickPhoto = async () => {
     try {
@@ -149,7 +149,7 @@ export default function CreateQualiPhotoModal({ visible, onClose, onSuccess, ini
     setError(null);
     if (!selectedProject) { setError('Veuillez choisir un projet.'); return; }
     if (!selectedZone) { setError('Veuillez choisir une zone.'); return; }
-    if (!photo) { setError('Veuillez capturer ou choisir une photo.'); return; }
+    if (!title || title.trim().length === 0) { setError('Veuillez saisir un titre.'); return; }
     setSubmitting(true);
     try {
       const created = await qualiphotoService.create({
@@ -158,7 +158,7 @@ export default function CreateQualiPhotoModal({ visible, onClose, onSuccess, ini
         title: title || undefined,
         commentaire: comment || undefined,
         date_taken: dateTaken || undefined,
-        photo,
+        photo: photo || undefined,
         voice_note: voiceNote || undefined,
         latitude: latitude || undefined,
         longitude: longitude || undefined,

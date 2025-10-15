@@ -4,7 +4,7 @@ export type QualiPhotoItem = {
   id: string;
   id_project: string;
   id_zone: string;
-  photo: string;
+  photo: string | null;
   photo_comp?: string | null;
   photo_plan?: string | null;
   title: string | null;
@@ -55,7 +55,7 @@ type CreateQualiPhotoPayload = {
   title?: string;
   commentaire?: string;
   date_taken?: string;
-  photo: { uri: string; name: string; type: string };
+  photo?: { uri: string; name: string; type: string };
   voice_note?: { uri: string; name: string; type: string };
   latitude?: number;
   longitude?: number;
@@ -76,7 +76,7 @@ class QualiPhotoService {
   private normalizeQualiPhotoItem(item: Partial<QualiPhotoItem>): Partial<QualiPhotoItem> {
     return {
       ...item,
-      photo: this.toAbsoluteUrl(item.photo) ?? '',
+      photo: this.toAbsoluteUrl(item.photo) ?? null,
       photo_comp: this.toAbsoluteUrl(item.photo_comp ?? null),
       photo_plan: this.toAbsoluteUrl(item.photo_plan ?? null),
       voice_note: this.toAbsoluteUrl(item.voice_note),
@@ -191,11 +191,13 @@ class QualiPhotoService {
     if (payload.longitude) formData.append('longitude', String(payload.longitude));
     if (payload.id_qualiphoto_parent) formData.append('id_qualiphoto_parent', payload.id_qualiphoto_parent);
 
-    formData.append('photo', {
-      uri: payload.photo.uri,
-      name: payload.photo.name,
-      type: payload.photo.type,
-    } as any);
+    if (payload.photo) {
+      formData.append('photo', {
+        uri: payload.photo.uri,
+        name: payload.photo.name,
+        type: payload.photo.type,
+      } as any);
+    }
 
     if (payload.voice_note) {
       formData.append('voice_note', {
