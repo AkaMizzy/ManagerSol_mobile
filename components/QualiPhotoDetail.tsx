@@ -47,7 +47,15 @@ const ChildPhotoCard: React.FC<ChildPhotoCardProps> = ({ child, onPress, mode, h
       {/* HIDE/SHOW feature disabled: always show image */}
       <TouchableOpacity onPress={onPress}>
         <>
-          <Image source={{ uri: child.photo }} style={styles.childThumbnail} />
+          {child.photo ? (
+            <Image source={{ uri: child.photo as string }} style={styles.childThumbnail} />
+          ) : (
+            <View style={styles.hiddenImagePlaceholder}>
+              <Ionicons name="image-outline" size={28} color="#9ca3af" />
+              <Text style={styles.hiddenImageText}>Aucune image</Text>
+              <Text style={styles.hiddenImageSubText}>Appuyez pour voir les détails</Text>
+            </View>
+          )}
           <View style={styles.childGridOverlay}>
             {child.title && <Text style={styles.childGridTitle} numberOfLines={1}>{child.title}</Text>}
             {child.date_taken && <Text style={styles.childGridDate}>{formatDate(child.date_taken)}</Text>}
@@ -456,11 +464,19 @@ type Props = {
         <>
           {header}
           <View style={{ paddingHorizontal: 12, paddingTop: 12, paddingBottom: 12 }}>
-            <TouchableOpacity onPress={() => setImagePreviewVisible(true)} activeOpacity={0.9}>
-              <View style={styles.imageWrap}>
-                <Image source={{ uri: item.photo }} style={styles.image} />
+            {item.photo ? (
+              <TouchableOpacity onPress={() => setImagePreviewVisible(true)} activeOpacity={0.9}>
+                <View style={styles.imageWrap}>
+                  <Image source={{ uri: item.photo as string }} style={styles.image} />
+                </View>
+              </TouchableOpacity>
+            ) : (
+              <View style={styles.hiddenImagePlaceholder}>
+                <Ionicons name="image-outline" size={36} color="#9ca3af" />
+                <Text style={styles.hiddenImageText}>Aucune image principale</Text>
+                <Text style={styles.hiddenImageSubText}>Ajoutez une photo d&apos;évolution ou un complément</Text>
               </View>
-            </TouchableOpacity>
+            )}
             {hasActionsOrDescription && (
               <TouchableOpacity
                 style={styles.toggleActionsButton}
@@ -526,7 +542,12 @@ type Props = {
                           {(complement.photo_comp || complement.photo) ? (
                             <TouchableOpacity onPress={() => setImagePreviewVisible(true)} activeOpacity={0.9}>
                               <View style={styles.imageWrap}>
-                                <Image source={{ uri: complement.photo_comp || complement.photo }} style={styles.image} />
+                              {(() => {
+                                const uri = (complement.photo_comp || complement.photo) || undefined;
+                                return uri ? (
+                                  <Image source={{ uri }} style={styles.image} />
+                                ) : null;
+                              })()}
                               </View>
                             </TouchableOpacity>
                           ) : null}
@@ -639,11 +660,19 @@ type Props = {
             <View style={styles.content}>
 
               <View>
-                <TouchableOpacity onPress={() => setImagePreviewVisible(true)} activeOpacity={0.9}>
-                  <View style={styles.imageWrap}>
-                    <Image source={{ uri: item.photo }} style={styles.image} />
+                {item.photo ? (
+                  <TouchableOpacity onPress={() => setImagePreviewVisible(true)} activeOpacity={0.9}>
+                    <View style={styles.imageWrap}>
+                      <Image source={{ uri: item.photo as string }} style={styles.image} />
+                    </View>
+                  </TouchableOpacity>
+                ) : (
+                  <View style={styles.hiddenImagePlaceholder}>
+                    <Ionicons name="image-outline" size={36} color="#9ca3af" />
+                    <Text style={styles.hiddenImageText}>Aucune image</Text>
+                    <Text style={styles.hiddenImageSubText}>Ajoutez une photo</Text>
                   </View>
-                </TouchableOpacity>
+                )}
                 {hasActionsOrDescription && (
                   <TouchableOpacity
                     style={styles.toggleActionsButton}
@@ -780,7 +809,12 @@ type Props = {
                           activeOpacity={0.85}
                           accessibilityLabel="Agrandir la photo complémentaire"
                         >
-                          <Image source={{ uri: complement.photo_comp || complement.photo }} style={styles.compImage} />
+                          {(() => {
+                            const compUri = (complement.photo_comp || complement.photo) || undefined;
+                            return compUri ? (
+                              <Image source={{ uri: compUri }} style={styles.compImage} />
+                            ) : null;
+                          })()}
                         </TouchableOpacity>
                       </View>
                     ) : null}
@@ -921,17 +955,21 @@ type Props = {
     </Modal>
   );
 
-  const renderImagePreview = () => (
-    <View style={styles.previewContainer}>
-      <Image source={{ uri: previewImageUri || (item ? item.photo : '') }} style={styles.previewImage} resizeMode="contain" />
-      <TouchableOpacity
-        style={[styles.previewCloseButton, { top: insets.top + 10 }]}
-        onPress={() => { setImagePreviewVisible(false); setPreviewImageUri(null); }}
-      >
-        <Ionicons name="close" size={32} color="#fff" />
-      </TouchableOpacity>
-    </View>
-  );
+  const renderImagePreview = () => {
+    const uri = previewImageUri || (item && item.photo) || undefined;
+    if (!uri) return null;
+    return (
+      <View style={styles.previewContainer}>
+        <Image source={{ uri: uri }} style={styles.previewImage} resizeMode="contain" />
+        <TouchableOpacity
+          style={[styles.previewCloseButton, { top: insets.top + 10 }]}
+          onPress={() => { setImagePreviewVisible(false); setPreviewImageUri(null); }}
+        >
+          <Ionicons name="close" size={32} color="#fff" />
+        </TouchableOpacity>
+      </View>
+    );
+  };
 
    return (
     <Modal visible={visible} onRequestClose={onClose} animationType="slide" presentationStyle="fullScreen">
