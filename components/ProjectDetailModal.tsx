@@ -8,6 +8,7 @@ import {
     Alert,
     Animated,
     Easing,
+    Image,
     LayoutAnimation,
     Modal,
     Platform,
@@ -22,6 +23,7 @@ import {
     View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import CreateZoneModal from './CreateZoneModal';
 
 type Props = {
   visible: boolean;
@@ -40,6 +42,18 @@ export default function ProjectDetailModal({ visible, onClose, project, onUpdate
   const [owner, setOwner] = useState<Owner>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [zones, setZones] = useState<{
+    id: string;
+    title: string;
+    code?: string | null;
+    logo?: string | null;
+    zone_logo?: string | null;
+    level?: number | null;
+    zone_type_title?: string | null;
+  }[]>([]);
+  const [zonesLoading, setZonesLoading] = useState(false);
+  const [zonesError, setZonesError] = useState<string | null>(null);
+  const [isCreateZoneOpen, setIsCreateZoneOpen] = useState(false);
 
   function isActiveFromStatus(status: unknown) {
     return status === 1 || status === '1' || status === true;
@@ -155,6 +169,37 @@ export default function ProjectDetailModal({ visible, onClose, project, onUpdate
   }, [project]);
 
   useEffect(() => {
+    let cancelled = false;
+    async function loadZones() {
+      if (!visible || !project?.id) { setZones([]); setZonesError(null); return; }
+      setZonesLoading(true);
+      setZonesError(null);
+      try {
+        const res = await fetch(`${API_CONFIG.BASE_URL}/user/projects/${project.id}/zones`, {
+          headers: token ? { Authorization: `Bearer ${token}` } : undefined as any,
+        });
+        const data = await res.json();
+        if (!cancelled) {
+          if (res.ok && Array.isArray(data)) setZones(data);
+          else {
+            setZones([]);
+            setZonesError(typeof data?.error === 'string' ? data.error : 'Chargement des zones échoué');
+          }
+        }
+      } catch (e: any) {
+        if (!cancelled) {
+          setZones([]);
+          setZonesError(e?.message || 'Chargement des zones échoué');
+        }
+      } finally {
+        if (!cancelled) setZonesLoading(false);
+      }
+    }
+    loadZones();
+    return () => { cancelled = true; };
+  }, [visible, project?.id, token]);
+
+  useEffect(() => {
     async function loadUsers() {
       if (!project || !project.id_company) { setCompanyUsers([]); return; }
       setLoadingUsers(true);
@@ -175,6 +220,14 @@ export default function ProjectDetailModal({ visible, onClose, project, onUpdate
   }, [isEditing, project, token]);
 
   if (!project) return null;
+
+  function getZoneLogoUrl(z: { logo?: string | null; zone_logo?: string | null }) {
+    const raw = z.zone_logo ?? z.logo ?? null;
+    if (!raw) return null;
+    if (raw.startsWith('http://') || raw.startsWith('https://')) return raw;
+    const path = raw.startsWith('/') ? raw : `/${raw}`;
+    return `${API_CONFIG.BASE_URL}${path}`;
+  }
 
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
@@ -360,19 +413,71 @@ export default function ProjectDetailModal({ visible, onClose, project, onUpdate
             )}
           </View>
 
-          {/* More (placeholder for future) */}
+          {/* Zones du projet */}
           <View style={styles.card}>
-            <Pressable onPress={() => toggleSection('more')} style={styles.cardHeader} android_ripple={{ color: '#f3f4f6' }}>
-              <Text style={styles.cardTitle}>Plus</Text>
-              <Chevron section="more" />
-            </Pressable>
-            {openMore && (
-              <View style={{ marginTop: 8, gap: 6 }}>
-                <Text style={styles.meta}>Aucune donnée supplémentaire</Text>
-              </View>
-            )}
+            <View style={styles.cardHeader}>
+              <Text style={styles.cardTitle}>Zones du projet</Text>
+              <TouchableOpacity onPress={() => setIsCreateZoneOpen(true)} style={[styles.ctaButton, { paddingVertical: 6, paddingHorizontal: 10 }]}> 
+                <Ionicons name="add" size={16} color="#f87b1b" />
+                <Text style={styles.ctaText}>Ajouter</Text>
+              </TouchableOpacity>
+            </View>
+            <View style={{ marginTop: 8, gap: 8 }}>
+              {zonesLoading ? (
+                <View style={{ padding: 12, alignItems: 'center' }}>
+                  <ActivityIndicator color="#11224e" />
+                </View>
+              ) : zonesError ? (
+                <View style={styles.alertBanner}>
+                  <Ionicons name="warning" size={16} color="#b45309" />
+                  <Text style={styles.alertBannerText}>{zonesError}</Text>
+                  <TouchableOpacity onPress={() => setZonesError(null)}>
+                    <Ionicons name="close" size={16} color="#b45309" />
+                  </TouchableOpacity>
+                </View>
+              ) : zones.length === 0 ? (
+                <Text style={styles.meta}>Aucune zone pour ce projet</Text>
+              ) : (
+                <View style={styles.zonesGrid}>
+                  {zones.map((z) => (
+                    <TouchableOpacity key={z.id} style={styles.zoneCard} activeOpacity={0.8}>
+                      <View style={styles.zoneHeader}>
+                        {getZoneLogoUrl(z) ? (
+                          <Image source={{ uri: getZoneLogoUrl(z) as string }} style={styles.zoneLogo} resizeMode="cover" />
+                        ) : (
+                          <View style={[styles.zoneLogo, styles.zoneLogoPlaceholder]}>
+                            <Ionicons name="image-outline" size={16} color="#9ca3af" />
+                          </View>
+                        )}
+                        <View style={{ flex: 1, marginLeft: 10 }}>
+                          <Text style={styles.zoneTitle} numberOfLines={1}>{z.title}</Text>
+                          <Text style={styles.zoneSub} numberOfLines={1}>{z.code || '—'}{z.zone_type_title ? ` · ${z.zone_type_title}` : ''}</Text>
+                        </View>
+                      </View>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              )}
+            </View>
           </View>
         </ScrollView>
+        <CreateZoneModal
+          visible={isCreateZoneOpen}
+          onClose={() => setIsCreateZoneOpen(false)}
+          projectId={String(project.id)}
+          onCreated={async () => {
+            // refresh zones list after creation
+            try {
+              setZonesLoading(true);
+              const res = await fetch(`${API_CONFIG.BASE_URL}/user/projects/${project.id}/zones`, {
+                headers: token ? { Authorization: `Bearer ${token}` } : undefined as any,
+              });
+              const data = await res.json();
+              if (res.ok && Array.isArray(data)) setZones(data);
+            } catch {}
+            finally { setZonesLoading(false); }
+          }}
+        />
       </SafeAreaView>
     </Modal>
   );
@@ -396,6 +501,13 @@ const styles = StyleSheet.create({
   ctaText: { color: '#f87b1b', fontWeight: '600', fontSize: 12 },
   cardHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   itemRow: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 6 },
+  zonesGrid: { flexDirection: 'row', flexWrap: 'wrap', marginHorizontal: -6 },
+  zoneCard: { width: '50%', paddingHorizontal: 6, paddingVertical: 6 },
+  zoneHeader: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', borderWidth: 1, borderColor: '#e5e7eb', borderRadius: 12, padding: 10 },
+  zoneLogo: { width: 36, height: 36, borderRadius: 8, backgroundColor: '#f3f4f6' },
+  zoneLogoPlaceholder: { alignItems: 'center', justifyContent: 'center' },
+  zoneTitle: { color: '#111827', fontWeight: '600' },
+  zoneSub: { color: '#6b7280', fontSize: 12, marginTop: 2 },
 });
 
 
