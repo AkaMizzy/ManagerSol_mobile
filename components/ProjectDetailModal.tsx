@@ -24,6 +24,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import CreateZoneModal from './CreateZoneModal';
+import ZoneDetailModal from './ZoneDetailModal';
 
 type Props = {
   visible: boolean;
@@ -54,6 +55,8 @@ export default function ProjectDetailModal({ visible, onClose, project, onUpdate
   const [zonesLoading, setZonesLoading] = useState(false);
   const [zonesError, setZonesError] = useState<string | null>(null);
   const [isCreateZoneOpen, setIsCreateZoneOpen] = useState(false);
+  const [isZoneDetailOpen, setIsZoneDetailOpen] = useState(false);
+  const [selectedZoneId, setSelectedZoneId] = useState<string | null>(null);
 
   function isActiveFromStatus(status: unknown) {
     return status === 1 || status === '1' || status === true;
@@ -440,7 +443,12 @@ export default function ProjectDetailModal({ visible, onClose, project, onUpdate
               ) : (
                 <View style={styles.zonesGrid}>
                   {zones.map((z) => (
-                    <TouchableOpacity key={z.id} style={styles.zoneCard} activeOpacity={0.8}>
+                    <TouchableOpacity
+                      key={z.id}
+                      style={styles.zoneCard}
+                      activeOpacity={0.8}
+                      onPress={() => { setSelectedZoneId(String(z.id)); setIsZoneDetailOpen(true); }}
+                    >
                       <View style={styles.zoneHeader}>
                         {getZoneLogoUrl(z) ? (
                           <Image source={{ uri: getZoneLogoUrl(z) as string }} style={styles.zoneLogo} resizeMode="cover" />
@@ -479,6 +487,11 @@ export default function ProjectDetailModal({ visible, onClose, project, onUpdate
             } catch {}
             finally { setZonesLoading(false); }
           }}
+        />
+        <ZoneDetailModal
+          visible={isZoneDetailOpen}
+          onClose={() => { setIsZoneDetailOpen(false); setSelectedZoneId(null); }}
+          zoneId={selectedZoneId || undefined}
         />
       </SafeAreaView>
     </Modal>
