@@ -36,8 +36,8 @@ const GRID_ITEMS: {
   { title: 'Inventaires', image: require('../../assets/icons/inventaire_article.png') },
   { title: 'Réception', image: require('../../assets/icons/reception.png') },
   { title: 'Fournisseurs', icon: 'business-outline' },
-  { title: 'Employés', icon: 'people-outline' },
-  { title: 'Paramètres', icon: 'settings-outline' },
+  { title: 'Zones',  image: require('../../assets/icons/zones.png') },
+  { title: 'Projets', image: require('../../assets/icons/projets.png') },
 ];
 
 // const GRID_ITEMS: { title: string; icon: keyof typeof Ionicons.glyphMap }[] = [
@@ -249,7 +249,7 @@ export default function DashboardScreen() {
                   router.push('/echantillon');
                 } else if (item.title === 'Inventaires') {
                   router.push('/inventaire');
-                } else if (item.title === 'Paramètres') {
+                } else if (item.title === 'Projets') {
                   router.push('/parametre');
                 } else {
                   Alert.alert('Bientôt disponible', `La fonctionnalité ${item.title} est en cours de développement.`);

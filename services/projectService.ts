@@ -17,8 +17,7 @@ type CreateProjectInput = {
   title: string;
   dd: string;
   df: string;
-  code?: string;
-  status?: string;
+  status?: 0 | 1;
   owner?: string; // user id FK
   project_type_id?: string;
   id_project_type?: string;
@@ -51,6 +50,26 @@ export async function createUserProject(token: string, body: CreateProjectInput)
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
     throw new Error(data.error || 'Failed to create project');
+  }
+  return data;
+}
+
+export async function updateUserProject(
+  token: string,
+  id: string | number,
+  body: { status?: 0 | 1; owner?: string | null }
+): Promise<{ message: string }>{
+  const res = await fetch(`${API_CONFIG.BASE_URL}/user/projects/${id}`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(body),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new Error(data.error || 'Failed to update project');
   }
   return data;
 }

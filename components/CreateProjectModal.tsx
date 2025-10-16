@@ -3,7 +3,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { createUserProject } from '@/services/projectService';
 import { Ionicons } from '@expo/vector-icons';
 import React, { useEffect, useMemo, useState } from 'react';
-import { Alert, KeyboardAvoidingView, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Alert, KeyboardAvoidingView, Modal, Platform, ScrollView, StyleSheet, Switch, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import DateTimePickerModal from 'react-native-modal-datetime-picker';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -19,12 +19,16 @@ export default function CreateProjectModal({ visible, onClose, onCreated }: Prop
   const [title, setTitle] = useState('');
   const [dd, setDd] = useState('');
   const [df, setDf] = useState('');
-  const [code, setCode] = useState('');
-  const [status, setStatus] = useState('');
+  // code is generated server-side; no local state
+  const [isActive, setIsActive] = useState(true);
   const [owner, setOwner] = useState('');
+  const [projectTypeId, setProjectTypeId] = useState('');
+  const [projectTypes, setProjectTypes] = useState<{ id: string; title: string }[]>([]);
+  const [projectTypeOpen, setProjectTypeOpen] = useState(false);
   const [companyUsers, setCompanyUsers] = useState<{ id: string; firstname?: string; lastname?: string; email?: string }[]>([]);
   const [loadingUsers, setLoadingUsers] = useState(false);
   const [ownerOpen, setOwnerOpen] = useState(false);
+  const [loadingTypes, setLoadingTypes] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isDdPickerVisible, setDdPickerVisible] = useState(false);
@@ -67,6 +71,28 @@ export default function CreateProjectModal({ visible, onClose, onCreated }: Prop
     loadUsers();
   }, [token, user?.company_id]);
 
+  useEffect(() => {
+    async function loadProjectTypes() {
+      setLoadingTypes(true);
+      try {
+        const res = await fetch(`${API_CONFIG.BASE_URL}/project-types`, {
+          headers: { 'Content-Type': 'application/json' },
+        });
+        const data = await res.json();
+        if (res.ok && Array.isArray(data)) {
+          setProjectTypes(data.map((t: any) => ({ id: String(t.id), title: t.title })));
+        } else {
+          setProjectTypes([]);
+        }
+      } catch {
+        setProjectTypes([]);
+      } finally {
+        setLoadingTypes(false);
+      }
+    }
+    loadProjectTypes();
+  }, []);
+
   async function onSubmit() {
     if (!token) return;
     const error = validate();
@@ -77,11 +103,11 @@ export default function CreateProjectModal({ visible, onClose, onCreated }: Prop
         title,
         dd,
         df,
-        code: code || undefined,
-        status: status || undefined,
+        status: isActive ? 1 : 0,
         owner: owner || undefined,
+        id_project_type: projectTypeId || undefined,
       });
-      setTitle(''); setDd(''); setDf(''); setCode(''); setStatus(''); setOwner(''); setError(null);
+      setTitle(''); setDd(''); setDf(''); setIsActive(true); setOwner(''); setProjectTypeId(''); setError(null);
       if (onCreated) await onCreated();
       onClose();
       Alert.alert('Succès', 'Projet créé avec succès');
@@ -144,15 +170,47 @@ export default function CreateProjectModal({ visible, onClose, onCreated }: Prop
                   <Text style={[stylesFS.input, { color: df ? '#111827' : '#9ca3af' }]}>{df || 'Fin (YYYY-MM-DD)'}</Text>
                 </TouchableOpacity>
               </View>
-              <View style={{ flexDirection: 'row', gap: 12, marginBottom: 16 }}>
-                <View style={[stylesFS.inputWrap, { flex: 1 }]}>
-                  <Ionicons name="pricetag-outline" size={16} color="#6b7280" />
-                  <TextInput placeholder="Code (optionnel)" placeholderTextColor="#9ca3af" value={code} onChangeText={setCode} style={stylesFS.input} />
-                </View>
-                <View style={[stylesFS.inputWrap, { flex: 1 }]}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
                   <Ionicons name="flag-outline" size={16} color="#6b7280" />
-                  <TextInput placeholder="Statut (optionnel)" placeholderTextColor="#9ca3af" value={status} onChangeText={setStatus} style={stylesFS.input} />
+                  <Text style={{ color: '#111827' }}>Status</Text>
+                  <Switch
+                    value={isActive}
+                    onValueChange={setIsActive}
+                    thumbColor={isActive ? '#f87b1b' : '#f4f3f4'}
+                    trackColor={{ false: '#d1d5db', true: '#fde7d4' }}
+                  />
                 </View>
+              </View>
+              {/* Project Type Select */}
+              <View style={{ gap: 8 }}>
+                <Text style={{ fontSize: 12, color: '#6b7280', marginLeft: 2 }}>Type de projet</Text>
+                <TouchableOpacity style={[stylesFS.inputWrap, { justifyContent: 'space-between' }]} onPress={() => setProjectTypeOpen(v => !v)}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1 }}>
+                    <Ionicons name="albums-outline" size={16} color="#6b7280" />
+                    <Text style={[stylesFS.input, { color: projectTypeId ? '#111827' : '#9ca3af' }]} numberOfLines={1}>
+                      {projectTypeId ? (projectTypes.find(pt => String(pt.id) === String(projectTypeId))?.title || projectTypeId) : 'Choisir un type'}
+                    </Text>
+                  </View>
+                  <Ionicons name={projectTypeOpen ? 'chevron-up' : 'chevron-down'} size={16} color="#9ca3af" />
+                </TouchableOpacity>
+                {projectTypeOpen && (
+                  <View style={{ maxHeight: 200, borderWidth: 1, borderColor: '#e5e7eb', borderRadius: 10, overflow: 'hidden' }}>
+                    <ScrollView keyboardShouldPersistTaps="handled">
+                      {loadingTypes ? (
+                        <View style={{ padding: 12 }}><Text style={{ color: '#6b7280' }}>Chargement...</Text></View>
+                      ) : projectTypes.length === 0 ? (
+                        <View style={{ padding: 12 }}><Text style={{ color: '#6b7280' }}>Aucun type</Text></View>
+                      ) : (
+                        projectTypes.map(pt => (
+                          <TouchableOpacity key={pt.id} onPress={() => { setProjectTypeId(String(pt.id)); setProjectTypeOpen(false); }} style={{ paddingHorizontal: 12, paddingVertical: 10, backgroundColor: String(projectTypeId) === String(pt.id) ? '#f1f5f9' : '#FFFFFF', borderBottomWidth: 1, borderBottomColor: '#f3f4f6' }}>
+                            <Text style={{ color: '#11224e' }}>{pt.title}</Text>
+                          </TouchableOpacity>
+                        ))
+                      )}
+                    </ScrollView>
+                  </View>
+                )}
               </View>
               <View style={{ gap: 8 }}>
                 <Text style={{ fontSize: 12, color: '#6b7280', marginLeft: 2 }}>Assigner à</Text>

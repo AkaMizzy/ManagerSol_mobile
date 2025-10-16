@@ -1,10 +1,11 @@
 import CreateProjectModal from '@/components/CreateProjectModal';
+import ProjectDetailModal from '@/components/ProjectDetailModal';
 import { useAuth } from '@/contexts/AuthContext';
 import { fetchUserProjects, Project } from '@/services/projectService';
+import Ionicons from '@expo/vector-icons/build/Ionicons';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, FlatList, SafeAreaView, Text, TouchableOpacity, useWindowDimensions, View } from 'react-native';
 import AppHeader from '../../components/AppHeader';
-import Ionicons from '@expo/vector-icons/build/Ionicons';
 
 export default function ParametreScreen() {
   const { token, user } = useAuth();
@@ -12,6 +13,8 @@ export default function ParametreScreen() {
   const [projects, setProjects] = useState<Project[]>([]);
   const { width } = useWindowDimensions();
   const [createVisible, setCreateVisible] = useState<boolean>(false);
+  const [detailVisible, setDetailVisible] = useState<boolean>(false);
+  const [selectedProject, setSelectedProject] = useState<Project | null>(null);
 
   useEffect(() => {
     if (!token) return;
@@ -41,13 +44,11 @@ export default function ParametreScreen() {
   const gap = 12;
   const cardWidth = (width - horizontalPadding * 2 - gap * (columnCount - 1)) / columnCount;
 
-  function getStatusStyle(s?: string | null) {
-    const statusLower = (s || '').toLowerCase();
-    if (statusLower === 'active') return { bg: '#e9f7ef', color: '#2ecc71', border: '#c6f0d9' };
-    if (statusLower === 'hold' || statusLower === 'on_hold') return { bg: '#fff4e6', color: '#f39c12', border: '#ffe1bf' };
-    if (statusLower === 'canceled' || statusLower === 'cancelled') return { bg: '#fdecea', color: '#e74c3c', border: '#f8c1bb' };
-    if (statusLower === 'pending') return { bg: '#f4f5f7', color: '#6b7280', border: '#e5e7eb' };
-    return { bg: '#e8f0fe', color: '#11224e', border: '#c6dafc' }; // default brand accent
+  function getStatusStyle(s?: unknown) {
+    const isActive = s === 1 || s === '1' || s === true;
+    return isActive
+      ? { bg: '#e9f7ef', color: '#2ecc71', border: '#c6f0d9', label: 'Actif' }
+      : { bg: '#f4f5f7', color: '#6b7280', border: '#e5e7eb', label: 'Inactif' };
   }
 
   return (
@@ -83,11 +84,11 @@ export default function ParametreScreen() {
             renderItem={({ item }) => {
               const badge = getStatusStyle(item.status);
               return (
-                <View style={[styles.card, { width: cardWidth, borderColor: '#e5e7eb', shadowColor: '#000' }]}>
+                <TouchableOpacity activeOpacity={0.8} onPress={() => { setSelectedProject(item); setDetailVisible(true); }} style={[styles.card, { width: cardWidth, borderColor: '#e5e7eb', shadowColor: '#000' }]}>
                   <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                     <Text style={styles.cardTitle} numberOfLines={1}>{item.title}</Text>
                     <View style={{ backgroundColor: badge.bg, borderColor: badge.border, borderWidth: 1, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 9999 }}>
-                      <Text style={{ color: badge.color, fontSize: 11, fontWeight: '600' }}>{item.status || '—'}</Text>
+                      <Text style={{ color: badge.color, fontSize: 11, fontWeight: '600' }}>{badge.label}</Text>
                     </View>
                   </View>
                   <View style={{ marginTop: 6 }}>
@@ -95,7 +96,7 @@ export default function ParametreScreen() {
                     <Text style={styles.cardSub}>Du {item.dd} au {item.df}</Text>
                     {item.project_type_title ? <Text style={styles.cardMeta}>Type · {item.project_type_title}</Text> : null}
                   </View>
-                </View>
+                </TouchableOpacity>
               );
             }}
           />
@@ -106,6 +107,12 @@ export default function ParametreScreen() {
       visible={createVisible}
       onClose={() => setCreateVisible(false)}
       onCreated={refreshProjects}
+    />
+    <ProjectDetailModal
+      visible={detailVisible}
+      onClose={() => { setDetailVisible(false); setSelectedProject(null); }}
+      project={selectedProject}
+      onUpdated={refreshProjects}
     />
     </>
   );
