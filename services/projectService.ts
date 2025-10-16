@@ -19,7 +19,7 @@ type CreateProjectInput = {
   df: string;
   code?: string;
   status?: string;
-  owner?: string;
+  owner?: string; // user id FK
   project_type_id?: string;
   id_project_type?: string;
 };
