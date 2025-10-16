@@ -5,6 +5,7 @@ import * as ImagePicker from 'expo-image-picker';
 import React, { useEffect, useMemo, useState } from 'react';
 import { Image, KeyboardAvoidingView, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { WebView } from 'react-native-webview';
 
 type Props = {
   visible: boolean;
@@ -27,6 +28,7 @@ export default function CreateZoneModal({ visible, onClose, projectId, onCreated
   const [pickedImage, setPickedImage] = useState<ImagePicker.ImagePickerAsset | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showLocationInput, setShowLocationInput] = useState(false);
 
   const isDisabled = useMemo(() => !title || !zoneTypeId || !token || !projectId, [title, zoneTypeId, token, projectId]);
 
@@ -89,6 +91,106 @@ export default function CreateZoneModal({ visible, onClose, projectId, onCreated
 
   function clearImage() {
     setPickedImage(null);
+  }
+
+  function handleLocationToggle() {
+    setShowLocationInput(!showLocationInput);
+  }
+
+  function getCoordinateDisplay() {
+    const lat = latitude ? Number(latitude) : undefined;
+    const lng = longitude ? Number(longitude) : undefined;
+    if (Number.isFinite(lat as number) && Number.isFinite(lng as number)) {
+      return `${(lat as number).toFixed(6)}, ${(lng as number).toFixed(6)}`;
+    }
+    return 'Appuyez pour sélectionner la localisation';
+  }
+
+  const mapHtml = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no\" />
+      <link rel=\"stylesheet\" href=\"https://unpkg.com/leaflet@1.9.4/dist/leaflet.css\" />
+      <script src=\"https://unpkg.com/leaflet@1.9.4/dist/leaflet.js\"></script>
+      <style>
+        body { margin: 0; padding: 0; }
+        #map { width: 100%; height: 100vh; }
+        .location-info { position: absolute; top: 10px; left: 10px; background: white; padding: 10px; border-radius: 5px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); z-index: 1000; font-family: Arial, sans-serif; font-size: 14px; }
+        .select-button { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); background: #f87b1b; color: white; border: none; padding: 12px 24px; border-radius: 25px; font-size: 16px; font-weight: bold; z-index: 1000; cursor: pointer; }
+      </style>
+    </head>
+    <body>
+      <div id=\"map\"></div>
+      <div class=\"location-info\">
+        <strong>Localisation Sélectionnée:</strong><br>
+        <span id=\"coordinates\">Appuyez sur la carte pour sélectionner</span>
+      </div>
+      <button class=\"select-button\" onclick=\"selectLocation()\">Sélectionner cette localisation</button>
+      <script>
+        let map, marker, selectedLat, selectedLng;
+        map = L.map('map').setView([33.5731, -7.5898], 13);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap contributors' }).addTo(map);
+        map.on('click', function(e) {
+          const lat = e.latlng.lat; const lng = e.latlng.lng;
+          if (marker) { map.removeLayer(marker); }
+          marker = L.marker([lat, lng]).addTo(map);
+          selectedLat = lat; selectedLng = lng;
+          document.getElementById('coordinates').innerHTML = lat.toFixed(6) + ', ' + lng.toFixed(6);
+        });
+        function selectLocation() {
+          if (selectedLat !== undefined && selectedLng !== undefined) {
+            window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'locationSelected', latitude: selectedLat, longitude: selectedLng }));
+          }
+        }
+        if (navigator.geolocation) {
+          navigator.geolocation.getCurrentPosition(function(position) {
+            const lat = position.coords.latitude; const lng = position.coords.longitude;
+            map.setView([lat, lng], 15);
+            L.marker([lat, lng]).addTo(map).bindPopup('Votre position').openPopup();
+          });
+        }
+      </script>
+    </body>
+    </html>
+  `;
+
+  function handleMapMessage(event: any) {
+    try {
+      const data = JSON.parse(event.nativeEvent.data);
+      if (data.type === 'locationSelected') {
+        setLatitude(String(data.latitude));
+        setLongitude(String(data.longitude));
+        setShowLocationInput(false);
+      }
+    } catch {}
+  }
+
+  function getMiniMapHtml() {
+    const latNum = latitude ? Number(latitude) : undefined;
+    const lngNum = longitude ? Number(longitude) : undefined;
+    const lat = Number.isFinite(latNum as number) ? (latNum as number) : 33.5731;
+    const lng = Number.isFinite(lngNum as number) ? (lngNum as number) : -7.5898;
+    return `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no\" />
+        <link rel=\"stylesheet\" href=\"https://unpkg.com/leaflet@1.9.4/dist/leaflet.css\" />
+        <script src=\"https://unpkg.com/leaflet@1.9.4/dist/leaflet.js\"></script>
+        <style> html, body, #miniMap { height: 100%; } body { margin: 0; padding: 0; } #miniMap { width: 100%; } </style>
+      </head>
+      <body>
+        <div id=\"miniMap\"></div>
+        <script>
+          const miniMap = L.map('miniMap', { zoomControl: false, attributionControl: false }).setView([${lat}, ${lng}], 14);
+          L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap contributors' }).addTo(miniMap);
+          L.marker([${lat}, ${lng}]).addTo(miniMap);
+          setTimeout(() => { miniMap.invalidateSize(); }, 100);
+        </script>
+      </body>
+      </html>
+    `;
   }
 
   useEffect(() => {
@@ -175,15 +277,16 @@ export default function CreateZoneModal({ visible, onClose, projectId, onCreated
                 <Ionicons name="git-branch-outline" size={16} color="#6b7280" />
                 <TextInput placeholder="Zone parente (ID) - optionnel" placeholderTextColor="#9ca3af" value={parentZoneId} onChangeText={setParentZoneId} style={styles.input} />
               </View>
-              <View style={{ flexDirection: 'row', gap: 12, marginBottom: 12 }}>
-                <View style={[styles.inputWrap, { flex: 1 }]}>
-                  <Ionicons name="navigate-outline" size={16} color="#6b7280" />
-                  <TextInput placeholder="Latitude" placeholderTextColor="#9ca3af" keyboardType="numeric" value={latitude} onChangeText={setLatitude} style={styles.input} />
-                </View>
-                <View style={[styles.inputWrap, { flex: 1 }]}>
-                  <Ionicons name="navigate-outline" size={16} color="#6b7280" />
-                  <TextInput placeholder="Longitude" placeholderTextColor="#9ca3af" keyboardType="numeric" value={longitude} onChangeText={setLongitude} style={styles.input} />
-                </View>
+              <View style={{ gap: 8, marginBottom: 12 }}>
+                <Text style={{ fontSize: 12, color: '#6b7280', marginLeft: 2 }}>Localisation (optionnel)</Text>
+                <TouchableOpacity style={[styles.inputWrap, { padding: 0, overflow: 'hidden', borderColor: '#e5e7eb' }]} onPress={handleLocationToggle}>
+                  <View style={{ height: 100, width: '100%', position: 'relative' }}>
+                    <WebView source={{ html: getMiniMapHtml() }} style={{ flex: 1 }} javaScriptEnabled scrollEnabled={false} />
+                    <View style={{ position: 'absolute', bottom: 6, right: 8, backgroundColor: 'rgba(255,255,255,0.9)', borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4 }}>
+                      <Text style={{ color: '#111827', fontSize: 12 }}>{getCoordinateDisplay()}</Text>
+                    </View>
+                  </View>
+                </TouchableOpacity>
               </View>
               <View style={{ gap: 8 }}>
                 <View style={{ flexDirection: 'row', gap: 12 }}>
@@ -224,6 +327,15 @@ export default function CreateZoneModal({ visible, onClose, projectId, onCreated
               )}
             </TouchableOpacity>
           </View>
+        {/* Full Screen Map */}
+        {showLocationInput && (
+          <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: '#FFFFFF' }}>
+            <WebView source={{ html: mapHtml }} style={{ flex: 1 }} onMessage={handleMapMessage} javaScriptEnabled startInLoadingState />
+            <TouchableOpacity style={{ position: 'absolute', top: 50, right: 20, backgroundColor: 'rgba(255,255,255,0.9)', borderRadius: 20, padding: 6 }} onPress={handleLocationToggle}>
+              <Ionicons name="close" size={28} color="#11224e" />
+            </TouchableOpacity>
+          </View>
+        )}
         </SafeAreaView>
       </KeyboardAvoidingView>
     </Modal>
