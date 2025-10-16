@@ -465,6 +465,8 @@ export default function ProjectDetailModal({ visible, onClose, project, onUpdate
           visible={isCreateZoneOpen}
           onClose={() => setIsCreateZoneOpen(false)}
           projectId={String(project.id)}
+          projectTitle={project.title}
+          projectCode={project.code || undefined}
           onCreated={async () => {
             // refresh zones list after creation
             try {

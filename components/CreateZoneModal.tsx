@@ -11,10 +11,12 @@ type Props = {
   visible: boolean;
   onClose: () => void;
   projectId: string;
+  projectTitle?: string;
+  projectCode?: string;
   onCreated?: () => Promise<void> | void;
 };
 
-export default function CreateZoneModal({ visible, onClose, projectId, onCreated }: Props) {
+export default function CreateZoneModal({ visible, onClose, projectId, projectTitle, projectCode, onCreated }: Props) {
   const { token } = useAuth();
 
   const [title, setTitle] = useState('');
@@ -22,7 +24,6 @@ export default function CreateZoneModal({ visible, onClose, projectId, onCreated
   const [zoneTypes, setZoneTypes] = useState<{ id: string; intitule: string }[]>([]);
   const [zoneTypeOpen, setZoneTypeOpen] = useState(false);
   const [loadingTypes, setLoadingTypes] = useState(false);
-  const [parentZoneId, setParentZoneId] = useState<string>('');
   const [latitude, setLatitude] = useState<string>('');
   const [longitude, setLongitude] = useState<string>('');
   const [pickedImage, setPickedImage] = useState<ImagePicker.ImagePickerAsset | null>(null);
@@ -48,7 +49,7 @@ export default function CreateZoneModal({ visible, onClose, projectId, onCreated
       form.append('title', title);
       form.append('id_project', String(projectId));
       form.append('zone_type_id', String(zoneTypeId));
-      if (parentZoneId) form.append('id_zone', String(parentZoneId));
+      
       if (latitude) form.append('latitude', String(Number(latitude)));
       if (longitude) form.append('longitude', String(Number(longitude)));
       if (pickedImage?.uri) {
@@ -67,7 +68,7 @@ export default function CreateZoneModal({ visible, onClose, projectId, onCreated
         const data = await res.json().catch(() => ({}));
         throw new Error(data?.error || 'Création de zone échouée');
       }
-      setTitle(''); setZoneTypeId(''); setParentZoneId(''); setLatitude(''); setLongitude(''); setPickedImage(null); setError(null);
+      setTitle(''); setZoneTypeId(''); setLatitude(''); setLongitude(''); setPickedImage(null); setError(null);
       if (onCreated) await onCreated();
       onClose();
     } catch (e: any) {
@@ -225,6 +226,14 @@ export default function CreateZoneModal({ visible, onClose, projectId, onCreated
             <View style={styles.placeholder} />
           </View>
 
+          {/* Project Context */}
+          <View style={{ backgroundColor: '#FFFBEB', paddingHorizontal: 16, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: '#FDE68A', flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            <Ionicons name="albums-outline" size={16} color="#f87b1b" />
+            <Text style={{ fontSize: 12, color: '#92400E', flex: 1 }} numberOfLines={1}>
+              Projet: {projectTitle || projectId}{projectCode ? ` (${projectCode})` : ''}
+            </Text>
+          </View>
+
           {/* Error Banner (only on failure per requirement) */}
           {error && (
             <View style={styles.alertBanner}>
@@ -273,10 +282,7 @@ export default function CreateZoneModal({ visible, onClose, projectId, onCreated
                   </View>
                 )}
               </View>
-              <View style={[styles.inputWrap, { marginBottom: 12 }]}>
-                <Ionicons name="git-branch-outline" size={16} color="#6b7280" />
-                <TextInput placeholder="Zone parente (ID) - optionnel" placeholderTextColor="#9ca3af" value={parentZoneId} onChangeText={setParentZoneId} style={styles.input} />
-              </View>
+              
               <View style={{ gap: 8, marginBottom: 12 }}>
                 <Text style={{ fontSize: 12, color: '#6b7280', marginLeft: 2 }}>Localisation (optionnel)</Text>
                 <TouchableOpacity style={[styles.inputWrap, { padding: 0, overflow: 'hidden', borderColor: '#e5e7eb' }]} onPress={handleLocationToggle}>
