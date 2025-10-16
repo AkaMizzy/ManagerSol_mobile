@@ -13,7 +13,7 @@ import {
     TouchableOpacity,
     View,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { WebView } from 'react-native-webview';
 
 type ZoneRecord = {
@@ -31,6 +31,11 @@ type ZoneRecord = {
   id_project?: string | number | null;
   project_title?: string | null;
   project_code?: string | null;
+  status?: number | boolean | null;
+  assigned_user?: string | null;
+  assigned_user_firstname?: string | null;
+  assigned_user_lastname?: string | null;
+  assigned_user_email?: string | null;
 };
 
 type Props = {
@@ -51,6 +56,7 @@ function getZoneLogoUrl(z?: { logo?: string | null; zone_logo?: string | null } 
 
 export default function ZoneDetailModal({ visible, onClose, zoneId }: Props) {
   const { token } = useAuth();
+  const insets = useSafeAreaInsets();
   const [zone, setZone] = useState<ZoneRecord | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -191,6 +197,16 @@ export default function ZoneDetailModal({ visible, onClose, zoneId }: Props) {
                 <Text style={styles.title} numberOfLines={1}>{zone?.title || '—'}</Text>
                 <Text style={styles.sub} numberOfLines={1}>{zone?.code || '—'}</Text>
               </View>
+              {/* Status badge */}
+              {(() => {
+                const raw = zone?.status as any;
+                const active = raw === 1 || raw === true || raw === '1';
+                return (
+                  <View style={{ backgroundColor: active ? '#e9f7ef' : '#f4f5f7', borderColor: active ? '#c6f0d9' : '#e5e7eb', borderWidth: 1, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 9999 }}>
+                    <Text style={{ color: active ? '#2ecc71' : '#6b7280', fontSize: 11, fontWeight: '600' }}>{active ? 'Actif' : 'Inactif'}</Text>
+                  </View>
+                );
+              })()}
             </View>
           </View>
 
@@ -204,6 +220,13 @@ export default function ZoneDetailModal({ visible, onClose, zoneId }: Props) {
               <MetaRow icon="business-outline" label="Projet" value={zone?.project_title ? `${zone.project_title}${zone.project_code ? ` · ${zone.project_code}` : ''}` : '—'} />
               <MetaRow icon="location-outline" label="Latitude" value={Number.isFinite(zone?.latitude as number) ? String(zone?.latitude) : '—'} />
               <MetaRow icon="location-outline" label="Longitude" value={Number.isFinite(zone?.longitude as number) ? String(zone?.longitude) : '—'} />
+              <MetaRow icon="person-outline" label="Assigné à" value={(() => {
+                const n = [zone?.assigned_user_firstname || '', zone?.assigned_user_lastname || ''].join(' ').trim();
+                if (n) return n;
+                if (zone?.assigned_user_email) return zone.assigned_user_email;
+                if (zone?.assigned_user) return String(zone.assigned_user);
+                return '—';
+              })()} />
             </View>
           </View>
 
@@ -233,7 +256,7 @@ export default function ZoneDetailModal({ visible, onClose, zoneId }: Props) {
         </ScrollView>
         {/* Full-screen Map Modal */}
         <Modal visible={isMapVisible} animationType="slide" presentationStyle="fullScreen" onRequestClose={() => setIsMapVisible(false)}>
-          <View style={{ flex: 1, backgroundColor: '#FFFFFF' }}>
+          <View style={{ flex: 1, backgroundColor: '#FFFFFF', paddingTop: insets.top }}>
             <View style={styles.header}>
               <TouchableOpacity onPress={() => setIsMapVisible(false)} style={styles.closeButton}>
                 <Ionicons name="close" size={24} color="#6b7280" />

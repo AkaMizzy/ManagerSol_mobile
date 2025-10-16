@@ -3,7 +3,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import React, { useEffect, useMemo, useState } from 'react';
-import { Image, KeyboardAvoidingView, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Image, KeyboardAvoidingView, Modal, Platform, ScrollView, StyleSheet, Switch, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { WebView } from 'react-native-webview';
 
@@ -17,7 +17,10 @@ type Props = {
 };
 
 export default function CreateZoneModal({ visible, onClose, projectId, projectTitle, projectCode, onCreated }: Props) {
-  const { token } = useAuth();
+  const { token, user } = useAuth();
+  const [companyUsers, setCompanyUsers] = useState<{ id: string; firstname?: string; lastname?: string; email?: string }[]>([]);
+  const [loadingUsers, setLoadingUsers] = useState(false);
+  const [assignOpen, setAssignOpen] = useState(false);
 
   const [title, setTitle] = useState('');
   const [zoneTypeId, setZoneTypeId] = useState('');
@@ -26,6 +29,8 @@ export default function CreateZoneModal({ visible, onClose, projectId, projectTi
   const [loadingTypes, setLoadingTypes] = useState(false);
   const [latitude, setLatitude] = useState<string>('');
   const [longitude, setLongitude] = useState<string>('');
+  const [status, setStatus] = useState<boolean>(true);
+  const [assignedUser, setAssignedUser] = useState<string>('');
   const [pickedImage, setPickedImage] = useState<ImagePicker.ImagePickerAsset | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -49,6 +54,8 @@ export default function CreateZoneModal({ visible, onClose, projectId, projectTi
       form.append('title', title);
       form.append('id_project', String(projectId));
       form.append('zone_type_id', String(zoneTypeId));
+      form.append('status', status ? '1' : '0');
+      if (assignedUser) form.append('assigned_user', assignedUser);
       
       if (latitude) form.append('latitude', String(Number(latitude)));
       if (longitude) form.append('longitude', String(Number(longitude)));
@@ -211,6 +218,30 @@ export default function CreateZoneModal({ visible, onClose, projectId, projectTi
     loadZoneTypes();
   }, []);
 
+  useEffect(() => {
+    let cancelled = false;
+    async function loadCompanyUsers() {
+      if (!visible || !token || !user?.company_id) { setCompanyUsers([]); return; }
+      try {
+        setLoadingUsers(true);
+        const res = await fetch(`${API_CONFIG.BASE_URL}/users/company/${user.company_id}`, {
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        });
+        const data = await res.json();
+        if (!cancelled) {
+          if (res.ok && Array.isArray(data)) setCompanyUsers(data);
+          else setCompanyUsers([]);
+        }
+      } catch {
+        if (!cancelled) setCompanyUsers([]);
+      } finally {
+        if (!cancelled) setLoadingUsers(false);
+      }
+    }
+    loadCompanyUsers();
+    return () => { cancelled = true; };
+  }, [visible, token, user?.company_id]);
+
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
@@ -293,6 +324,59 @@ export default function CreateZoneModal({ visible, onClose, projectId, projectTi
                     </View>
                   </View>
                 </TouchableOpacity>
+              </View>
+
+              {/* Status and Assignee */}
+              <View style={{ gap: 8, marginBottom: 12 }}>
+                <Text style={{ fontSize: 12, color: '#6b7280', marginLeft: 2 }}>Statut</Text>
+                <View style={[styles.inputWrap, { justifyContent: 'space-between' }]}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                    <Ionicons name="power-outline" size={16} color="#6b7280" />
+                    <Text style={{ color: '#111827' }}>Actif</Text>
+                  </View>
+                  <Switch
+                    value={status}
+                    onValueChange={setStatus}
+                    thumbColor={status ? '#f87b1b' : '#f4f3f4'}
+                    trackColor={{ false: '#d1d5db', true: '#fde7d4' }}
+                  />
+                </View>
+              </View>
+
+              <View style={{ gap: 8, marginBottom: 12 }}>
+                <Text style={{ fontSize: 12, color: '#6b7280', marginLeft: 2 }}>Assigné à (optionnel)</Text>
+                <TouchableOpacity style={[styles.inputWrap, { justifyContent: 'space-between' }]} onPress={() => setAssignOpen(v => !v)}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1 }}>
+                    <Ionicons name="person-outline" size={16} color="#6b7280" />
+                    <Text style={[styles.input, { color: assignedUser ? '#111827' : '#9ca3af' }]} numberOfLines={1}>
+                      {assignedUser ? (companyUsers.find(u => String(u.id) === String(assignedUser))?.firstname ? `${companyUsers.find(u => String(u.id) === String(assignedUser))?.firstname} ${companyUsers.find(u => String(u.id) === String(assignedUser))?.lastname || ''}` : assignedUser) : 'Choisir un utilisateur'}
+                    </Text>
+                  </View>
+                  <Ionicons name={assignOpen ? 'chevron-up' : 'chevron-down'} size={16} color="#9ca3af" />
+                </TouchableOpacity>
+                {assignOpen && (
+                  <View style={{ maxHeight: 220, borderWidth: 1, borderColor: '#e5e7eb', borderRadius: 10, overflow: 'hidden' }}>
+                    <ScrollView keyboardShouldPersistTaps="handled">
+                      {loadingUsers ? (
+                        <View style={{ padding: 12 }}><Text style={{ color: '#6b7280' }}>Chargement...</Text></View>
+                      ) : companyUsers.length === 0 ? (
+                        <View style={{ padding: 12 }}><Text style={{ color: '#6b7280' }}>Aucun utilisateur</Text></View>
+                      ) : (
+                        <>
+                          <TouchableOpacity onPress={() => { setAssignedUser(''); setAssignOpen(false); }} style={{ paddingHorizontal: 12, paddingVertical: 10, backgroundColor: String(assignedUser) === '' ? '#f1f5f9' : '#FFFFFF', borderBottomWidth: 1, borderBottomColor: '#f3f4f6' }}>
+                            <Text style={{ color: '#11224e' }}>Aucun</Text>
+                          </TouchableOpacity>
+                          {companyUsers.map(u => (
+                            <TouchableOpacity key={u.id} onPress={() => { setAssignedUser(String(u.id)); setAssignOpen(false); }} style={{ paddingHorizontal: 12, paddingVertical: 10, backgroundColor: String(assignedUser) === String(u.id) ? '#f1f5f9' : '#FFFFFF', borderBottomWidth: 1, borderBottomColor: '#f3f4f6' }}>
+                              <Text style={{ color: '#11224e' }}>{u.firstname || ''} {u.lastname || ''}</Text>
+                              {u.email ? <Text style={{ color: '#6b7280', fontSize: 12 }}>{u.email}</Text> : null}
+                            </TouchableOpacity>
+                          ))}
+                        </>
+                      )}
+                    </ScrollView>
+                  </View>
+                )}
               </View>
               <View style={{ gap: 8 }}>
                 <View style={{ flexDirection: 'row', gap: 12 }}>
