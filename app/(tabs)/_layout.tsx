@@ -56,6 +56,12 @@ export default function TabLayout() {
           title: 'Inventaire',
         }}
       />
+      <Tabs.Screen
+        name="parametre"
+        options={{
+          title: 'Parametre',
+        }}
+      />
      
       {/* Profile tab removed; accessible via header icon */}
     </Tabs>

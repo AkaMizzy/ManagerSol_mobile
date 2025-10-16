@@ -249,6 +249,8 @@ export default function DashboardScreen() {
                   router.push('/echantillon');
                 } else if (item.title === 'Inventaires') {
                   router.push('/inventaire');
+                } else if (item.title === 'Paramètres') {
+                  router.push('/parametre');
                 } else {
                   Alert.alert('Bientôt disponible', `La fonctionnalité ${item.title} est en cours de développement.`);
                 }
