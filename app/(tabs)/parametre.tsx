@@ -4,6 +4,7 @@ import { fetchUserProjects, Project } from '@/services/projectService';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, FlatList, SafeAreaView, Text, TouchableOpacity, useWindowDimensions, View } from 'react-native';
 import AppHeader from '../../components/AppHeader';
+import Ionicons from '@expo/vector-icons/build/Ionicons';
 
 export default function ParametreScreen() {
   const { token, user } = useAuth();
@@ -59,8 +60,9 @@ export default function ParametreScreen() {
             <Text style={{ fontSize: 22, fontWeight: '700', color: '#11224e' }}>Projets</Text>
             <Text style={{ marginTop: 4, color: '#6b7280' }}>Gérez et consultez vos projets en cours</Text>
           </View>
-          <TouchableOpacity onPress={() => setCreateVisible(true)} style={[styles.button, { paddingVertical: 10, paddingHorizontal: 14 }]}>
-            <Text style={{ color: 'white', fontWeight: '700' }}>Créer</Text>
+          <TouchableOpacity onPress={() => setCreateVisible(true)} style={[styles.button]}>
+          <Ionicons name="add-circle" size={20} color="#f87b1b" />
+            <Text style={styles.ButtonText}>Créer</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -119,11 +121,29 @@ const styles = {
     backgroundColor: 'white',
   },
   button: {
-    backgroundColor: '#11224e',
-    borderRadius: 8,
-    paddingVertical: 12,
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#f87b1b',
+    borderRadius: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    marginLeft: 12,
+    shadowColor: '#f87b1b',
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.15,
+    shadowRadius: 3,
+    elevation: 2,
+  },
+  ButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#f87b1b',
+    marginLeft: 6,
   },
   buttonDisabled: {
     opacity: 0.6,
