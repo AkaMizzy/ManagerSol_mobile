@@ -1,3 +1,4 @@
+import CompanyManagement from '@/components/CompanyManagement';
 import CreateProjectModal from '@/components/CreateProjectModal';
 import ProjectDetailModal from '@/components/ProjectDetailModal';
 import UserManagement from '@/components/UserManagement';
@@ -8,7 +9,7 @@ import { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, FlatList, SafeAreaView, Text, TouchableOpacity, useWindowDimensions, View } from 'react-native';
 import AppHeader from '../../components/AppHeader';
 
-type TabType = 'projects' | 'users';
+type TabType = 'projects' | 'users' | 'company';
 
 export default function ParametreScreen() {
   const { token, user } = useAuth();
@@ -139,11 +140,14 @@ export default function ParametreScreen() {
         <View style={styles.tabContainer}>
           {renderTabButton('projects', 'Projets', 'folder-outline')}
           {renderTabButton('users', 'Utilisateurs', 'people-outline')}
+          {renderTabButton('company', 'Organisme', 'business-outline')}
         </View>
 
         {/* Tab Content */}
         <View style={{ flex: 1 }}>
-          {activeTab === 'projects' ? renderProjectsContent() : <UserManagement />}
+          {activeTab === 'projects' && renderProjectsContent()}
+          {activeTab === 'users' && <UserManagement />}
+          {activeTab === 'company' && <CompanyManagement />}
         </View>
       </SafeAreaView>
       
