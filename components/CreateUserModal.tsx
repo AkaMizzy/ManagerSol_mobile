@@ -52,6 +52,7 @@ export default function CreateUserModal({ visible, onClose, onUserCreated }: Cre
         role: 'user',
         status: 1, // Always active
       });
+      
       setErrors({});
     }
   }, [visible]);
