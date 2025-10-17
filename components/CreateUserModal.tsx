@@ -36,7 +36,7 @@ export default function CreateUserModal({ visible, onClose, onUserCreated }: Cre
     phone2: '',
     email_second: '',
     role: 'user',
-    status: 1, // Default to active
+    status: 1, // Always active
   });
 
   // Reset form when modal opens/closes
@@ -50,7 +50,7 @@ export default function CreateUserModal({ visible, onClose, onUserCreated }: Cre
         phone2: '',
         email_second: '',
         role: 'user',
-        status: 1, // Default to active
+        status: 1, // Always active
       });
       setErrors({});
     }
@@ -325,63 +325,6 @@ export default function CreateUserModal({ visible, onClose, onUserCreated }: Cre
                 )}
               </View>
 
-              {/* Status Switch */}
-              <View style={styles.formGroup}>
-                <Text style={styles.label}>Statut</Text>
-                <View style={styles.statusSwitchContainer}>
-                  <TouchableOpacity
-                    style={[
-                      styles.statusOption,
-                      formData.status === 1 && styles.statusOptionActive
-                    ]}
-                    onPress={() => setFormData({ ...formData, status: 1 })}
-                    disabled={loading}
-                  >
-                    <View style={[
-                      styles.statusIndicator,
-                      formData.status === 1 && styles.statusIndicatorActive
-                    ]}>
-                      <Ionicons 
-                        name="checkmark" 
-                        size={16} 
-                        color={formData.status === 1 ? 'white' : 'transparent'} 
-                      />
-                    </View>
-                    <Text style={[
-                      styles.statusOptionText,
-                      formData.status === 1 && styles.statusOptionTextActive
-                    ]}>
-                      Actif
-                    </Text>
-                  </TouchableOpacity>
-                  
-                  <TouchableOpacity
-                    style={[
-                      styles.statusOption,
-                      formData.status === 0 && styles.statusOptionActive
-                    ]}
-                    onPress={() => setFormData({ ...formData, status: 0 })}
-                    disabled={loading}
-                  >
-                    <View style={[
-                      styles.statusIndicator,
-                      formData.status === 0 && styles.statusIndicatorInactive
-                    ]}>
-                      <Ionicons 
-                        name="close" 
-                        size={16} 
-                        color={formData.status === 0 ? 'white' : 'transparent'} 
-                      />
-                    </View>
-                    <Text style={[
-                      styles.statusOptionText,
-                      formData.status === 0 && styles.statusOptionTextActive
-                    ]}>
-                      Inactif
-                    </Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
 
               {/* Role Info */}
               <View style={styles.infoCard}>
@@ -526,50 +469,6 @@ const styles = {
     fontSize: 14,
     color: '#1e40af',
     lineHeight: 20,
-  },
-  // Status switch styles
-  statusSwitchContainer: {
-    flexDirection: 'row' as const,
-    gap: 12,
-  },
-  statusOption: {
-    flex: 1,
-    flexDirection: 'row' as const,
-    alignItems: 'center' as const,
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-    borderRadius: 12,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    backgroundColor: 'white',
-  },
-  statusOptionActive: {
-    borderColor: '#f87b1b',
-    backgroundColor: '#fff7ed',
-  },
-  statusIndicator: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: '#e5e7eb',
-    alignItems: 'center' as const,
-    justifyContent: 'center' as const,
-    marginRight: 12,
-  },
-  statusIndicatorActive: {
-    backgroundColor: '#2ecc71',
-  },
-  statusIndicatorInactive: {
-    backgroundColor: '#ef4444',
-  },
-  statusOptionText: {
-    fontSize: 16,
-    fontWeight: '500' as const,
-    color: '#6b7280',
-  },
-  statusOptionTextActive: {
-    color: '#f87b1b',
-    fontWeight: '600' as const,
   },
   modalFooter: {
     flexDirection: 'row' as const,

@@ -16,6 +16,7 @@ import { useAuth } from '../contexts/AuthContext';
 import userService from '../services/userService';
 import { CompanyUser } from '../types/user';
 import CreateUserModal from './CreateUserModal';
+import UserDetailModal from './UserDetailModal';
 
 interface UserManagementProps {
   onUserCreated?: () => void;
@@ -29,6 +30,8 @@ export default function UserManagement({ onUserCreated }: UserManagementProps) {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [roleFilter, setRoleFilter] = useState<'all' | 'admin' | 'user'>('all');
+  const [showDetailModal, setShowDetailModal] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<CompanyUser | null>(null);
 
   const fetchUsers = useCallback(async () => {
     if (!token) return;
@@ -70,6 +73,16 @@ export default function UserManagement({ onUserCreated }: UserManagementProps) {
     onUserCreated?.();
   };
 
+  const handleUserCardPress = (user: CompanyUser) => {
+    setSelectedUser(user);
+    setShowDetailModal(true);
+  };
+
+  const handleCloseDetailModal = () => {
+    setShowDetailModal(false);
+    setSelectedUser(null);
+  };
+
   const getRoleStyle = (role: string) => {
     return role === 'admin'
       ? { bg: '#e3f2fd', color: '#1976d2', border: '#bbdefb', label: 'Admin' }
@@ -102,10 +115,14 @@ export default function UserManagement({ onUserCreated }: UserManagementProps) {
       : null;
     
     return (
-      <View style={[
-        styles.userCard,
-        item.role === 'admin' && styles.adminCard
-      ]}>
+      <TouchableOpacity 
+        style={[
+          styles.userCard,
+          item.role === 'admin' && styles.adminCard
+        ]}
+        onPress={() => handleUserCardPress(item)}
+        activeOpacity={0.7}
+      >
         <View style={styles.userHeader}>
           {/* Avatar */}
           <View style={styles.avatarContainer}>
@@ -148,7 +165,7 @@ export default function UserManagement({ onUserCreated }: UserManagementProps) {
             </View>
           </View>
         </View>
-      </View>
+      </TouchableOpacity>
     );
   };
 
@@ -250,6 +267,12 @@ export default function UserManagement({ onUserCreated }: UserManagementProps) {
         visible={showCreateModal}
         onClose={() => setShowCreateModal(false)}
         onUserCreated={handleUserCreated}
+      />
+
+      <UserDetailModal
+        visible={showDetailModal}
+        user={selectedUser}
+        onClose={handleCloseDetailModal}
       />
     </View>
   );
