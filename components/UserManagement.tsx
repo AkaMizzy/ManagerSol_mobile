@@ -7,6 +7,7 @@ import {
     FlatList,
     RefreshControl,
     Text,
+    TextInput,
     TouchableOpacity,
     View,
 } from 'react-native';
@@ -26,6 +27,8 @@ export default function UserManagement({ onUserCreated }: UserManagementProps) {
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [roleFilter, setRoleFilter] = useState<'all' | 'admin' | 'user'>('all');
 
   const fetchUsers = useCallback(async () => {
     if (!token) return;
@@ -79,6 +82,16 @@ export default function UserManagement({ onUserCreated }: UserManagementProps) {
       : { bg: '#f4f5f7', color: '#6b7280', border: '#e5e7eb', label: 'Inactif' };
   };
 
+  const filteredUsers = React.useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    return users.filter((u) => {
+      if (roleFilter !== 'all' && u.role !== roleFilter) return false;
+      if (!q) return true;
+      const hay = `${u.firstname} ${u.lastname} ${u.email} ${u.phone1 ?? ''} ${u.phone2 ?? ''}`.toLowerCase();
+      return hay.includes(q);
+    });
+  }, [users, searchQuery, roleFilter]);
+
   const renderUserCard = ({ item }: { item: CompanyUser }) => {
     const roleStyle = getRoleStyle(item.role);
     const statusStyle = getStatusStyle(item.status);
@@ -89,7 +102,10 @@ export default function UserManagement({ onUserCreated }: UserManagementProps) {
       : null;
     
     return (
-      <View style={styles.userCard}>
+      <View style={[
+        styles.userCard,
+        item.role === 'admin' && styles.adminCard
+      ]}>
         <View style={styles.userHeader}>
           {/* Avatar */}
           <View style={styles.avatarContainer}>
@@ -149,11 +165,23 @@ export default function UserManagement({ onUserCreated }: UserManagementProps) {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <View>
-          <Text style={styles.title}>Utilisateurs</Text>
-          <Text style={styles.subtitle}>
-            Gérez les utilisateurs de votre entreprise
-          </Text>
+        <View style={styles.headerSearchContainer}>
+          <Ionicons name="search" size={18} color="#6b7280" />
+          <View style={{ width: 8 }} />
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Rechercher (nom, email, tél)"
+            placeholderTextColor="#9ca3af"
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            autoCorrect={false}
+            autoCapitalize="none"
+          />
+          {searchQuery.length > 0 && (
+            <TouchableOpacity onPress={() => setSearchQuery('')}>
+              <Ionicons name="close-circle" size={18} color="#9ca3af" />
+            </TouchableOpacity>
+          )}
         </View>
         <TouchableOpacity
           style={styles.addButton}
@@ -164,8 +192,38 @@ export default function UserManagement({ onUserCreated }: UserManagementProps) {
         </TouchableOpacity>
       </View>
 
+        {/* Filters */}
+        <View style={styles.controlsContainer}>
+          <View style={styles.filtersRow}>
+            {/* Role chips */}
+            <View style={styles.filterGroup}>
+              <TouchableOpacity
+                style={[styles.chip, roleFilter === 'all' && styles.chipActive]}
+                onPress={() => setRoleFilter('all')}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.chipText, roleFilter === 'all' && styles.chipTextActive]}>Tous rôles</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.chip, roleFilter === 'admin' && styles.chipActive]}
+                onPress={() => setRoleFilter('admin')}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.chipText, roleFilter === 'admin' && styles.chipTextActive]}>Admin</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.chip, roleFilter === 'user' && styles.chipActive]}
+                onPress={() => setRoleFilter('user')}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.chipText, roleFilter === 'user' && styles.chipTextActive]}>Utilisateur</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+
       <FlatList
-        data={users}
+        data={filteredUsers}
         keyExtractor={(item) => item.id}
         renderItem={renderUserCard}
         contentContainerStyle={styles.listContainer}
@@ -208,6 +266,18 @@ const styles = {
     justifyContent: 'space-between' as const,
     padding: 16,
   },
+  headerSearchContainer: {
+    flex: 1,
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    backgroundColor: 'white',
+    marginRight: 12,
+  },
   title: {
     fontSize: 22,
     fontWeight: '700' as const,
@@ -217,6 +287,55 @@ const styles = {
     marginTop: 4,
     color: '#6b7280',
     fontSize: 14,
+  },
+  controlsContainer: {
+    paddingHorizontal: 16,
+    paddingBottom: 8,
+  },
+  searchContainer: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    backgroundColor: 'white',
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 14,
+    color: '#111827',
+  },
+  filtersRow: {
+    flexDirection: 'row' as const,
+    justifyContent: 'flex-start' as const,
+    marginTop: 12,
+  },
+  filterGroup: {
+    flexDirection: 'row' as const,
+    gap: 8,
+  },
+  chip: {
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    borderRadius: 16,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    backgroundColor: '#fff',
+  },
+  chipActive: {
+    borderColor: '#f87b1b',
+    backgroundColor: '#fff7ed',
+  },
+  chipText: {
+    fontSize: 12,
+    color: '#374151',
+    fontWeight: '500' as const,
+  },
+  chipTextActive: {
+    color: '#f87b1b',
+    fontWeight: '600' as const,
   },
   addButton: {
     flexDirection: 'row' as const,
@@ -261,6 +380,9 @@ const styles = {
     shadowOpacity: 0.1,
     shadowRadius: 2,
     elevation: 2,
+  },
+  adminCard: {
+    borderColor: '#f87b1b',
   },
   userHeader: {
     flexDirection: 'row' as const,
