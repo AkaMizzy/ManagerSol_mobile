@@ -1,5 +1,6 @@
 import CreateProjectModal from '@/components/CreateProjectModal';
 import ProjectDetailModal from '@/components/ProjectDetailModal';
+import UserManagement from '@/components/UserManagement';
 import { useAuth } from '@/contexts/AuthContext';
 import { fetchUserProjects, Project } from '@/services/projectService';
 import Ionicons from '@expo/vector-icons/build/Ionicons';
@@ -7,8 +8,11 @@ import { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, FlatList, SafeAreaView, Text, TouchableOpacity, useWindowDimensions, View } from 'react-native';
 import AppHeader from '../../components/AppHeader';
 
+type TabType = 'projects' | 'users';
+
 export default function ParametreScreen() {
   const { token, user } = useAuth();
+  const [activeTab, setActiveTab] = useState<TabType>('projects');
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [projects, setProjects] = useState<Project[]>([]);
   const { width } = useWindowDimensions();
@@ -51,10 +55,31 @@ export default function ParametreScreen() {
       : { bg: '#f4f5f7', color: '#6b7280', border: '#e5e7eb', label: 'Inactif' };
   }
 
-  return (
+  const renderTabButton = (tab: TabType, label: string, icon: string) => (
+    <TouchableOpacity
+      style={[
+        styles.tabButton,
+        activeTab === tab && styles.tabButtonActive
+      ]}
+      onPress={() => setActiveTab(tab)}
+      activeOpacity={0.7}
+    >
+      <Ionicons 
+        name={icon as any} 
+        size={20} 
+        color={activeTab === tab ? '#f87b1b' : '#6b7280'} 
+      />
+      <Text style={[
+        styles.tabButtonText,
+        activeTab === tab && styles.tabButtonTextActive
+      ]}>
+        {label}
+      </Text>
+    </TouchableOpacity>
+  );
+
+  const renderProjectsContent = () => (
     <>
-      <SafeAreaView style={{ flex: 1, backgroundColor: 'white' }}>
-        <AppHeader user={user || undefined} />
       <View style={{ padding: 16 }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
           <View>
@@ -62,8 +87,8 @@ export default function ParametreScreen() {
             <Text style={{ marginTop: 4, color: '#6b7280' }}>Gérez et consultez vos projets en cours</Text>
           </View>
           <TouchableOpacity onPress={() => setCreateVisible(true)} style={[styles.button]}>
-          <Ionicons name="add-circle" size={20} color="#f87b1b" />
-            <Text style={styles.ButtonText}>Créer</Text>
+            <Ionicons name="add-circle" size={20} color="#f87b1b" />
+            <Text style={styles.ButtonText}>Ajouter</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -102,18 +127,38 @@ export default function ParametreScreen() {
           />
         )}
       </View>
-    </SafeAreaView>
-    <CreateProjectModal
-      visible={createVisible}
-      onClose={() => setCreateVisible(false)}
-      onCreated={refreshProjects}
-    />
-    <ProjectDetailModal
-      visible={detailVisible}
-      onClose={() => { setDetailVisible(false); setSelectedProject(null); }}
-      project={selectedProject}
-      onUpdated={refreshProjects}
-    />
+    </>
+  );
+
+  return (
+    <>
+      <SafeAreaView style={{ flex: 1, backgroundColor: 'white' }}>
+        <AppHeader user={user || undefined} />
+        
+        {/* Tab Navigation */}
+        <View style={styles.tabContainer}>
+          {renderTabButton('projects', 'Projets', 'folder-outline')}
+          {renderTabButton('users', 'Utilisateurs', 'people-outline')}
+        </View>
+
+        {/* Tab Content */}
+        <View style={{ flex: 1 }}>
+          {activeTab === 'projects' ? renderProjectsContent() : <UserManagement />}
+        </View>
+      </SafeAreaView>
+      
+      {/* Modals */}
+      <CreateProjectModal
+        visible={createVisible}
+        onClose={() => setCreateVisible(false)}
+        onCreated={refreshProjects}
+      />
+      <ProjectDetailModal
+        visible={detailVisible}
+        onClose={() => { setDetailVisible(false); setSelectedProject(null); }}
+        project={selectedProject}
+        onUpdated={refreshProjects}
+      />
     </>
   );
 }
@@ -174,6 +219,44 @@ const styles = {
   cardMeta: {
     marginTop: 4,
     color: '#6b7280',
+  },
+  // Tab styles
+  tabContainer: {
+    flexDirection: 'row',
+    backgroundColor: '#f9fafb',
+    marginHorizontal: 16,
+    marginVertical: 8,
+    borderRadius: 12,
+    padding: 4,
+  },
+  tabButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    gap: 8,
+  },
+  tabButtonActive: {
+    backgroundColor: 'white',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  tabButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#6b7280',
+  },
+  tabButtonTextActive: {
+    color: '#f87b1b',
   },
 } as const;
 
