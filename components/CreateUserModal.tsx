@@ -23,8 +23,6 @@ interface CreateUserModalProps {
 export default function CreateUserModal({ visible, onClose, onUserCreated }: CreateUserModalProps) {
   const { token } = useAuth();
   const [loading, setLoading] = useState(false);
-  const [showPasswordModal, setShowPasswordModal] = useState(false);
-  const [generatedPassword, setGeneratedPassword] = useState<string>('');
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   // Form state
@@ -103,7 +101,7 @@ export default function CreateUserModal({ visible, onClose, onUserCreated }: Cre
 
     try {
       setLoading(true);
-      const response = await userService.createUser(token, {
+      await userService.createUser(token, {
         ...formData,
         firstname: formData.firstname.trim(),
         lastname: formData.lastname.trim(),
@@ -113,9 +111,8 @@ export default function CreateUserModal({ visible, onClose, onUserCreated }: Cre
         email_second: formData.email_second?.trim() || undefined,
       });
 
-      setGeneratedPassword(response.password);
-      setShowPasswordModal(true);
       onUserCreated();
+      onClose(); // Close the creation modal
       
     } catch (error) {
       console.error('Error creating user:', error);
@@ -131,59 +128,6 @@ export default function CreateUserModal({ visible, onClose, onUserCreated }: Cre
     }
   };
 
-  const renderPasswordModal = () => (
-    <Modal
-      visible={showPasswordModal}
-      animationType="fade"
-      transparent={true}
-      onRequestClose={() => setShowPasswordModal(false)}
-    >
-      <View style={styles.passwordModalOverlay}>
-        <View style={styles.passwordModalContent}>
-          <View style={styles.passwordModalHeader}>
-            <View style={styles.successIconContainer}>
-              <Ionicons name="checkmark-circle" size={48} color="#2ecc71" />
-            </View>
-            <Text style={styles.passwordModalTitle}>Utilisateur créé avec succès</Text>
-            <Text style={styles.passwordModalSubtitle}>
-              Le mot de passe généré automatiquement est :
-            </Text>
-          </View>
-          
-          <View style={styles.passwordContainer}>
-            <Text style={styles.passwordText}>{generatedPassword}</Text>
-            <TouchableOpacity
-              style={styles.copyButton}
-              onPress={() => {
-                // Copy to clipboard functionality would go here
-                Alert.alert('Copié', 'Mot de passe copié dans le presse-papiers');
-              }}
-            >
-              <Ionicons name="copy" size={20} color="#f87b1b" />
-              <Text style={styles.copyButtonText}>Copier</Text>
-            </TouchableOpacity>
-          </View>
-
-          <View style={styles.warningContainer}>
-            <Ionicons name="warning" size={16} color="#f59e0b" />
-            <Text style={styles.passwordWarning}>
-              Partagez ce mot de passe de manière sécurisée avec l&apos;utilisateur
-            </Text>
-          </View>
-
-          <TouchableOpacity
-            style={styles.passwordModalButton}
-            onPress={() => {
-              setShowPasswordModal(false);
-              handleClose();
-            }}
-          >
-            <Text style={styles.passwordModalButtonText}>Fermer</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-    </Modal>
-  );
 
   return (
     <>
@@ -369,7 +313,6 @@ export default function CreateUserModal({ visible, onClose, onUserCreated }: Cre
         </View>
       </Modal>
 
-      {renderPasswordModal()}
     </>
   );
 }
@@ -518,116 +461,5 @@ const styles = {
   },
   buttonDisabled: {
     opacity: 0.6,
-  },
-  // Password modal styles
-  passwordModalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.6)',
-    alignItems: 'center' as const,
-    justifyContent: 'center' as const,
-    padding: 20,
-  },
-  passwordModalContent: {
-    backgroundColor: 'white',
-    borderRadius: 20,
-    padding: 24,
-    width: '100%',
-    maxWidth: 400,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 10,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 20,
-    elevation: 10,
-  },
-  passwordModalHeader: {
-    alignItems: 'center' as const,
-    marginBottom: 24,
-  },
-  successIconContainer: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: '#f0fdf4',
-    alignItems: 'center' as const,
-    justifyContent: 'center' as const,
-    marginBottom: 16,
-  },
-  passwordModalTitle: {
-    fontSize: 22,
-    fontWeight: '700' as const,
-    color: '#11224e',
-    textAlign: 'center' as const,
-    marginBottom: 8,
-  },
-  passwordModalSubtitle: {
-    fontSize: 16,
-    color: '#6b7280',
-    textAlign: 'center' as const,
-    lineHeight: 22,
-  },
-  passwordContainer: {
-    backgroundColor: '#f9fafb',
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-    borderRadius: 12,
-    padding: 20,
-    marginBottom: 20,
-  },
-  passwordText: {
-    fontSize: 20,
-    fontWeight: '700' as const,
-    color: '#11224e',
-    textAlign: 'center' as const,
-    letterSpacing: 3,
-    marginBottom: 16,
-    fontFamily: 'monospace',
-  },
-  copyButton: {
-    flexDirection: 'row' as const,
-    alignItems: 'center' as const,
-    justifyContent: 'center' as const,
-    backgroundColor: 'white',
-    borderWidth: 1,
-    borderColor: '#f87b1b',
-    borderRadius: 8,
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-  },
-  copyButtonText: {
-    color: '#f87b1b',
-    fontSize: 14,
-    fontWeight: '600' as const,
-    marginLeft: 8,
-  },
-  warningContainer: {
-    flexDirection: 'row' as const,
-    alignItems: 'center' as const,
-    backgroundColor: '#fffbeb',
-    borderWidth: 1,
-    borderColor: '#fed7aa',
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 20,
-  },
-  passwordWarning: {
-    fontSize: 14,
-    color: '#f59e0b',
-    marginLeft: 8,
-    flex: 1,
-    lineHeight: 18,
-  },
-  passwordModalButton: {
-    backgroundColor: '#11224e',
-    borderRadius: 12,
-    paddingVertical: 14,
-    alignItems: 'center' as const,
-  },
-  passwordModalButtonText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: '600' as const,
   },
 } as const;

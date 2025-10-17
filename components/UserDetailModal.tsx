@@ -1,7 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
-import React from 'react';
+import React, { useState } from 'react';
 import {
+  Alert,
   Modal,
   ScrollView,
   Text,
@@ -9,16 +10,29 @@ import {
   View,
 } from 'react-native';
 import API_CONFIG from '../app/config/api';
+import { useAuth } from '../contexts/AuthContext';
+import userService from '../services/userService';
 import { CompanyUser } from '../types/user';
+import UpdateUserComp from './UpdateUserComp';
 
 interface UserDetailModalProps {
   visible: boolean;
   user: CompanyUser | null;
   onClose: () => void;
+  onUserUpdated?: (updatedUser: CompanyUser) => void;
+  onUserDeleted?: (userId: string) => void;
 }
 
-export default function UserDetailModal({ visible, user, onClose }: UserDetailModalProps) {
-  if (!user) return null;
+export default function UserDetailModal({ visible, user, onClose, onUserUpdated, onUserDeleted }: UserDetailModalProps) {
+  const { token } = useAuth();
+  const [showUpdateModal, setShowUpdateModal] = useState(false);
+  const [currentUser, setCurrentUser] = useState<CompanyUser | null>(user);
+
+  React.useEffect(() => {
+    setCurrentUser(user);
+  }, [user]);
+
+  if (!currentUser) return null;
 
   const getRoleStyle = (role: string) => {
     return role === 'admin'
@@ -32,13 +46,48 @@ export default function UserDetailModal({ visible, user, onClose }: UserDetailMo
       : { bg: '#f4f5f7', color: '#6b7280', border: '#e5e7eb', label: 'Inactif' };
   };
 
-  const roleStyle = getRoleStyle(user.role);
-  const statusStyle = getStatusStyle(user.status);
+  const roleStyle = getRoleStyle(currentUser.role);
+  const statusStyle = getStatusStyle(currentUser.status);
 
   // Build avatar URL if photo exists
-  const avatarUrl = user.photo 
-    ? `${API_CONFIG.BASE_URL}${user.photo}`
+  const avatarUrl = currentUser.photo 
+    ? `${API_CONFIG.BASE_URL}${currentUser.photo}`
     : null;
+
+  const handleUserUpdated = (updatedUser: CompanyUser) => {
+    setCurrentUser(updatedUser);
+    onUserUpdated?.(updatedUser);
+  };
+
+  const handleDeleteUser = async () => {
+    if (!currentUser || !token) return;
+
+    Alert.alert(
+      'Supprimer l\'utilisateur',
+      `Êtes-vous sûr de vouloir supprimer ${currentUser.firstname} ${currentUser.lastname} ? Cette action est irréversible.`,
+      [
+        {
+          text: 'Annuler',
+          style: 'cancel',
+        },
+        {
+          text: 'Supprimer',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await userService.deleteUser(token, currentUser.id);
+              onUserDeleted?.(currentUser.id);
+              onClose();
+              Alert.alert('Succès', 'Utilisateur supprimé avec succès');
+            } catch (error) {
+              console.error('Error deleting user:', error);
+              Alert.alert('Erreur', error instanceof Error ? error.message : 'Impossible de supprimer l\'utilisateur');
+            }
+          },
+        },
+      ]
+    );
+  };
 
   return (
     <Modal
@@ -54,7 +103,20 @@ export default function UserDetailModal({ visible, user, onClose }: UserDetailMo
             <Ionicons name="close" size={24} color="#11224e" />
           </TouchableOpacity>
           <Text style={styles.modalTitle}>Détails de l&apos;utilisateur</Text>
-          <View style={{ width: 24 }} />
+          <View style={styles.headerActions}>
+            <TouchableOpacity 
+              onPress={handleDeleteUser} 
+              style={styles.deleteButton}
+            >
+              <Ionicons name="trash" size={22} color="#ef4444" />
+            </TouchableOpacity>
+            <TouchableOpacity 
+              onPress={() => setShowUpdateModal(true)} 
+              style={styles.editButton}
+            >
+              <Ionicons name="pencil" size={22} color="#f87b1b" />
+            </TouchableOpacity>
+          </View>
         </View>
 
         {/* Content */}
@@ -76,9 +138,9 @@ export default function UserDetailModal({ visible, user, onClose }: UserDetailMo
               )}
             </View>
             <Text style={styles.userName}>
-              {user.firstname} {user.lastname}
+              {currentUser.firstname} {currentUser.lastname}
             </Text>
-            <Text style={styles.userEmail}>{user.email}</Text>
+            <Text style={styles.userEmail}>{currentUser.email}</Text>
           </View>
 
           {/* Status & Role Cards */}
@@ -115,42 +177,42 @@ export default function UserDetailModal({ visible, user, onClose }: UserDetailMo
                 </View>
                 <View style={styles.infoContent}>
                   <Text style={styles.infoLabel}>Email principal</Text>
-                  <Text style={styles.infoValue}>{user.email}</Text>
+                  <Text style={styles.infoValue}>{currentUser.email}</Text>
                 </View>
               </View>
 
-              {user.email_second && (
+              {currentUser.email_second && (
                 <View style={styles.infoItem}>
                   <View style={styles.infoIcon}>
                     <Ionicons name="mail-outline" size={18} color="#11224e" />
                   </View>
                   <View style={styles.infoContent}>
                     <Text style={styles.infoLabel}>Email secondaire</Text>
-                    <Text style={styles.infoValue}>{user.email_second}</Text>
+                    <Text style={styles.infoValue}>{currentUser.email_second}</Text>
                   </View>
                 </View>
               )}
 
-              {user.phone1 && (
+              {currentUser.phone1 && (
                 <View style={styles.infoItem}>
                   <View style={styles.infoIcon}>
                     <Ionicons name="call" size={18} color="#11224e" />
                   </View>
                   <View style={styles.infoContent}>
                     <Text style={styles.infoLabel}>Téléphone principal</Text>
-                    <Text style={styles.infoValue}>{user.phone1}</Text>
+                    <Text style={styles.infoValue}>{currentUser.phone1}</Text>
                   </View>
                 </View>
               )}
 
-              {user.phone2 && (
+              {currentUser.phone2 && (
                 <View style={styles.infoItem}>
                   <View style={styles.infoIcon}>
                     <Ionicons name="call-outline" size={18} color="#11224e" />
                   </View>
                   <View style={styles.infoContent}>
                     <Text style={styles.infoLabel}>Téléphone secondaire</Text>
-                    <Text style={styles.infoValue}>{user.phone2}</Text>
+                    <Text style={styles.infoValue}>{currentUser.phone2}</Text>
                   </View>
                 </View>
               )}
@@ -168,7 +230,7 @@ export default function UserDetailModal({ visible, user, onClose }: UserDetailMo
                 </View>
                 <View style={styles.infoContent}>
                   <Text style={styles.infoLabel}>Prénom</Text>
-                  <Text style={styles.infoValue}>{user.firstname}</Text>
+                  <Text style={styles.infoValue}>{currentUser.firstname}</Text>
                 </View>
               </View>
 
@@ -178,7 +240,7 @@ export default function UserDetailModal({ visible, user, onClose }: UserDetailMo
                 </View>
                 <View style={styles.infoContent}>
                   <Text style={styles.infoLabel}>Nom</Text>
-                  <Text style={styles.infoValue}>{user.lastname}</Text>
+                  <Text style={styles.infoValue}>{currentUser.lastname}</Text>
                 </View>
               </View>
 
@@ -188,13 +250,20 @@ export default function UserDetailModal({ visible, user, onClose }: UserDetailMo
                 </View>
                 <View style={styles.infoContent}>
                   <Text style={styles.infoLabel}>Entreprise</Text>
-                  <Text style={styles.infoValue}>{user.company_name || 'Non spécifiée'}</Text>
+                  <Text style={styles.infoValue}>{currentUser.company_name || 'Non spécifiée'}</Text>
                 </View>
               </View>
 
             </View>
           </View>
         </ScrollView>
+
+        <UpdateUserComp
+          visible={showUpdateModal}
+          user={currentUser}
+          onClose={() => setShowUpdateModal(false)}
+          onUserUpdated={handleUserUpdated}
+        />
       </View>
     </Modal>
   );
@@ -214,6 +283,16 @@ const styles = {
     borderBottomColor: '#e5e7eb',
   },
   closeButton: {
+    padding: 4,
+  },
+  headerActions: {
+    flexDirection: 'row' as const,
+    gap: 12,
+  },
+  deleteButton: {
+    padding: 4,
+  },
+  editButton: {
     padding: 4,
   },
   modalTitle: {

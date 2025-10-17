@@ -273,6 +273,15 @@ export default function UserManagement({ onUserCreated }: UserManagementProps) {
         visible={showDetailModal}
         user={selectedUser}
         onClose={handleCloseDetailModal}
+        onUserUpdated={(updatedUser) => {
+          // Update the user in the local state
+          setUsers(prevUsers => 
+            prevUsers.map(u => u.id === updatedUser.id ? updatedUser : u)
+          );
+        }}
+        onUserDeleted={(userId) => {
+          setUsers(prevUsers => prevUsers.filter(u => u.id !== userId));
+        }}
       />
     </View>
   );
