@@ -7,7 +7,7 @@ export interface CompanyUser {
   phone2?: string;
   email_second?: string;
   role: 'user' | 'admin';
-  status: 'active' | 'inactive';
+  status: 0 | 1; // 0 = inactive, 1 = active
   photo?: string;
   company_id: string;
 }
@@ -20,6 +20,7 @@ export interface CreateUserData {
   phone2?: string;
   email_second?: string;
   role?: 'user' | 'admin';
+  status?: 0 | 1; // 0 = inactive, 1 = active
 }
 
 export interface CreateUserResponse {
@@ -36,5 +37,5 @@ export interface UpdateUserData {
   phone2?: string;
   email_second?: string;
   role?: 'user' | 'admin';
-  status?: 'active' | 'inactive';
+  status?: 0 | 1; // 0 = inactive, 1 = active
 }
