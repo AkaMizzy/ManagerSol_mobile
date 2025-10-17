@@ -2,11 +2,11 @@ import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import React from 'react';
 import {
-    Modal,
-    ScrollView,
-    Text,
-    TouchableOpacity,
-    View,
+  Modal,
+  ScrollView,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import API_CONFIG from '../app/config/api';
 import { CompanyUser } from '../types/user';
@@ -187,20 +187,11 @@ export default function UserDetailModal({ visible, user, onClose }: UserDetailMo
                   <Ionicons name="business" size={18} color="#11224e" />
                 </View>
                 <View style={styles.infoContent}>
-                  <Text style={styles.infoLabel}>ID Entreprise</Text>
-                  <Text style={styles.infoValue}>{user.company_id}</Text>
+                  <Text style={styles.infoLabel}>Entreprise</Text>
+                  <Text style={styles.infoValue}>{user.company_name || 'Non spécifiée'}</Text>
                 </View>
               </View>
 
-              <View style={styles.infoItem}>
-                <View style={styles.infoIcon}>
-                  <Ionicons name="key" size={18} color="#11224e" />
-                </View>
-                <View style={styles.infoContent}>
-                  <Text style={styles.infoLabel}>ID Utilisateur</Text>
-                  <Text style={styles.infoValue}>{user.id}</Text>
-                </View>
-              </View>
             </View>
           </View>
         </ScrollView>

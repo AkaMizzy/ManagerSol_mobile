@@ -10,6 +10,7 @@ export interface CompanyUser {
   status: 0 | 1; // 0 = inactive, 1 = active
   photo?: string;
   company_id: string;
+  company_name?: string;
 }
 
 export interface CreateUserData {
