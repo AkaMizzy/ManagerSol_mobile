@@ -85,8 +85,8 @@ export default function UserManagement({ onUserCreated }: UserManagementProps) {
 
   const getRoleStyle = (role: string) => {
     return role === 'admin'
-      ? { bg: '#e3f2fd', color: '#1976d2', border: '#bbdefb', label: 'Admin' }
-      : { bg: '#f3e5f5', color: '#7b1fa2', border: '#e1bee7', label: 'Utilisateur' };
+      ? { bg: '#ffffff', color: '#11224e', border: '#11224e', label: 'Admin' }
+      : { bg: '#ffffff', color: '#f87b1b', border: '#f87b1b', label: 'Utilisateur' };
   };
 
   const getStatusStyle = (status: number) => {
