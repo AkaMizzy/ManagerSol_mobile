@@ -6,7 +6,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { fetchUserProjects, Project } from '@/services/projectService';
 import Ionicons from '@expo/vector-icons/build/Ionicons';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, FlatList, SafeAreaView, Text, TouchableOpacity, useWindowDimensions, View } from 'react-native';
+import { ActivityIndicator, Alert, FlatList, Text, TouchableOpacity, useWindowDimensions, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import AppHeader from '../../components/AppHeader';
 
 type TabType = 'projects' | 'users' | 'company';
