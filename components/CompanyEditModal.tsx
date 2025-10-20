@@ -4,16 +4,16 @@ import { Company } from '@/types/company';
 import Ionicons from '@expo/vector-icons/build/Ionicons';
 import React, { useEffect, useState } from 'react';
 import {
-    ActivityIndicator,
-    Alert,
-    KeyboardAvoidingView,
-    Modal,
-    Platform,
-    ScrollView,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Alert,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  ScrollView,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 
 interface CompanyEditModalProps {
@@ -22,6 +22,40 @@ interface CompanyEditModalProps {
   company: Company | null;
   onUpdated: (updatedCompany: Company) => void;
 }
+
+const InputField = ({
+    label,
+    value,
+    onChangeText,
+    placeholder,
+    keyboardType = 'default',
+    multiline = false,
+    required = false
+}: {
+    label: string;
+    value: string;
+    onChangeText: (text: string) => void;
+    placeholder: string;
+    keyboardType?: 'default' | 'email-address' | 'numeric' | 'phone-pad';
+    multiline?: boolean;
+    required?: boolean;
+}) => (
+    <View style={styles.inputContainer}>
+        <Text style={styles.inputLabel}>
+            {label} {required && <Text style={styles.required}>*</Text>}
+        </Text>
+        <TextInput
+            style={[styles.input, multiline && styles.multilineInput]}
+            value={value}
+            onChangeText={onChangeText}
+            placeholder={placeholder}
+            placeholderTextColor="#9ca3af"
+            keyboardType={keyboardType}
+            multiline={multiline}
+            numberOfLines={multiline ? 3 : 1}
+        />
+    </View>
+);
 
 export default function CompanyEditModal({
   visible,
@@ -117,40 +151,6 @@ export default function CompanyEditModal({
     }
   };
 
-  const InputField = ({ 
-    label, 
-    value, 
-    onChangeText, 
-    placeholder, 
-    keyboardType = 'default',
-    multiline = false,
-    required = false 
-  }: {
-    label: string;
-    value: string;
-    onChangeText: (text: string) => void;
-    placeholder: string;
-    keyboardType?: 'default' | 'email-address' | 'numeric' | 'phone-pad';
-    multiline?: boolean;
-    required?: boolean;
-  }) => (
-    <View style={styles.inputContainer}>
-      <Text style={styles.inputLabel}>
-        {label} {required && <Text style={styles.required}>*</Text>}
-      </Text>
-      <TextInput
-        style={[styles.input, multiline && styles.multilineInput]}
-        value={value}
-        onChangeText={onChangeText}
-        placeholder={placeholder}
-        placeholderTextColor="#9ca3af"
-        keyboardType={keyboardType}
-        multiline={multiline}
-        numberOfLines={multiline ? 3 : 1}
-      />
-    </View>
-  );
-
   return (
     <Modal
       visible={visible}
@@ -158,8 +158,8 @@ export default function CompanyEditModal({
       presentationStyle="pageSheet"
       onRequestClose={onClose}
     >
-      <KeyboardAvoidingView 
-        style={styles.container} 
+      <KeyboardAvoidingView
+        style={styles.container}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
         {/* Header */}
@@ -167,9 +167,9 @@ export default function CompanyEditModal({
           <TouchableOpacity onPress={onClose} style={styles.closeButton}>
             <Ionicons name="close" size={24} color="#6b7280" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Modifier l'organisme</Text>
-          <TouchableOpacity 
-            onPress={handleSave} 
+          <Text style={styles.headerTitle}>Modifier l&apos;organisme</Text>
+          <TouchableOpacity
+            onPress={handleSave}
             style={[styles.saveButton, isLoading && styles.saveButtonDisabled]}
             disabled={isLoading}
           >
@@ -185,7 +185,7 @@ export default function CompanyEditModal({
           {/* Company Information */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Informations générales</Text>
-            
+
             <InputField
               label="Nom de l'organisme"
               value={formData.title}
@@ -223,7 +223,7 @@ export default function CompanyEditModal({
           {/* Sector Information */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Informations du secteur</Text>
-            
+
             <InputField
               label="Téléphone principal"
               value={formData.phone1}

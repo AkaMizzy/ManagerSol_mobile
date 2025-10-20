@@ -4,6 +4,16 @@ import { Company } from '../types/company';
 class CompanyService {
   private baseUrl = `${API_CONFIG.BASE_URL}/api`;
 
+  private toAbsoluteUrl(path?: string): string | undefined {
+    if (!path) {
+      return undefined;
+    }
+    if (path.startsWith('http://') || path.startsWith('https://')) {
+      return path;
+    }
+    return `${API_CONFIG.BASE_URL}${path}`;
+  }
+
   async getCurrentUserCompany(token: string): Promise<Company> {
     const response = await fetch(`${this.baseUrl}/company/current-user`, {
       method: 'GET',
@@ -17,8 +27,9 @@ class CompanyService {
       const errorData = await response.json().catch(() => ({}));
       throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
     }
-
-    return response.json();
+    
+    const company: Company = await response.json();
+    return { ...company, logo: this.toAbsoluteUrl(company.logo) };
   }
 
   async getCompanyById(token: string, companyId: string): Promise<Company> {
@@ -35,7 +46,8 @@ class CompanyService {
       throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
     }
 
-    return response.json();
+    const company: Company = await response.json();
+    return { ...company, logo: this.toAbsoluteUrl(company.logo) };
   }
 
   async updateCompany(token: string, companyId: string, companyData: Partial<Company>): Promise<Company> {
@@ -52,8 +64,9 @@ class CompanyService {
       const errorData = await response.json().catch(() => ({}));
       throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
     }
-
-    return response.json();
+    
+    const company: Company = await response.json();
+    return { ...company, logo: this.toAbsoluteUrl(company.logo) };
   }
 }
 

@@ -41,7 +41,7 @@ export default function CompanyManagement() {
       : { bg: '#f4f5f7', color: '#6b7280', border: '#e5e7eb', label: 'Inactif' };
   };
 
-  const InfoRow = ({ icon, label, value, isLink = false }: { icon: string; label: string; value?: string | number; isLink?: boolean }) => {
+  const InfoRow = ({ icon, label, value, isLink = false }: { icon: string; label: string; value?: string | number | null; isLink?: boolean }) => {
     if (!value) return null;
     
     return (
