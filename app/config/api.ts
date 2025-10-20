@@ -1,11 +1,11 @@
 
 const API_CONFIG = {
-  BASE_URL: 'http://10.238.127.106:5000',
+  BASE_URL: 'https://back.muntadaa.online',
   
   // For web/emulator testing
   // BASE_URL: 'http://10.238.127.106:5000',
   
-  // For production (replace with your actual domain)
+  // For production
   // BASE_URL: 'https://back.muntadaa.online'
 };
 
