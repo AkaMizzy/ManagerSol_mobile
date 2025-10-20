@@ -134,7 +134,7 @@ export default function CreateQualiPhotoModal({ visible, onClose, onSuccess, ini
         Alert.alert('Permission', 'Camera permission is required.');
         return;
       }
-      const result = await ImagePicker.launchCameraAsync({ allowsEditing: true, aspect: [4,3], quality: 0.8 });
+      const result = await ImagePicker.launchCameraAsync({ allowsEditing: false, quality: 0.8 });
       if (!result.canceled && result.assets[0]) {
         const asset = result.assets[0];
         setPhoto({ uri: asset.uri, name: `qualiphoto_${Date.now()}.jpg`, type: 'image/jpeg' });
