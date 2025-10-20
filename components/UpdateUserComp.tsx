@@ -3,14 +3,14 @@ import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import React, { useState } from 'react';
 import {
-    ActivityIndicator,
-    Alert,
-    Modal,
-    ScrollView,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Alert,
+  Modal,
+  ScrollView,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import API_CONFIG from '../app/config/api';
 import { useAuth } from '../contexts/AuthContext';
@@ -106,7 +106,7 @@ export default function UpdateUserComp({ visible, user, onClose, onUserUpdated }
         setAvatarUri(result.assets[0].uri);
         setAvatarChanged(true);
       }
-    } catch (error) {
+    } catch {
       Alert.alert('Erreur', 'Impossible de sélectionner l&apos;image');
     }
   };
@@ -133,7 +133,7 @@ export default function UpdateUserComp({ visible, user, onClose, onUserUpdated }
       };
 
       // Update user information
-      const response = await userService.updateUser(token, user.id, updateData, avatarChanged ? avatarUri : undefined);
+      const response = await userService.updateUser(token, user.id, updateData, avatarChanged ? avatarUri ?? undefined : undefined);
 
       // Use the updated user data from the backend response
       onUserUpdated(response.user);
@@ -399,33 +399,33 @@ export default function UpdateUserComp({ visible, user, onClose, onUserUpdated }
               </View>
             </View>
           </View>
-
-          {/* Action Buttons */}
-          <View style={styles.actionButtons}>
-            <TouchableOpacity
-              style={styles.cancelButton}
-              onPress={onClose}
-              disabled={loading}
-            >
-              <Text style={styles.cancelButtonText}>Annuler</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[styles.submitButton, loading && styles.submitButtonDisabled]}
-              onPress={handleSubmit}
-              disabled={loading}
-            >
-              {loading ? (
-                <ActivityIndicator color="white" size="small" />
-              ) : (
-                <>
-                  <Ionicons name="checkmark" size={20} color="white" />
-                  <Text style={styles.submitButtonText}>Sauvegarder</Text>
-                </>
-              )}
-            </TouchableOpacity>
-          </View>
         </ScrollView>
+
+        {/* Action Buttons */}
+        <View style={styles.modalFooter}>
+          <TouchableOpacity
+            style={styles.cancelButton}
+            onPress={onClose}
+            disabled={loading}
+          >
+            <Text style={styles.cancelButtonText}>Annuler</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.submitButton, loading && styles.submitButtonDisabled]}
+            onPress={handleSubmit}
+            disabled={loading}
+          >
+            {loading ? (
+              <ActivityIndicator color="white" size="small" />
+            ) : (
+              <>
+                <Ionicons name="checkmark" size={20} color="white" />
+                <Text style={styles.submitButtonText}>Sauvegarder</Text>
+              </>
+            )}
+          </TouchableOpacity>
+        </View>
       </View>
     </Modal>
   );
@@ -599,13 +599,13 @@ const styles = {
     color: '#ef4444',
     marginTop: 4,
   },
-  actionButtons: {
+  modalFooter: {
     flexDirection: 'row' as const,
     gap: 12,
-    marginTop: 24,
-    paddingTop: 24,
+    padding: 16,
     borderTopWidth: 1,
     borderTopColor: '#e5e7eb',
+    backgroundColor: '#f9fafb',
   },
   cancelButton: {
     flex: 1,

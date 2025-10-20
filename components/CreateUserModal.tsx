@@ -186,7 +186,6 @@ export default function CreateUserModal({ visible, onClose, onUserCreated }: Cre
                         setErrors({ ...errors, lastname: '' });
                       }
                     }}
-                    placeholder="Nom"
                     autoCapitalize="words"
                     editable={!loading}
                   />
@@ -228,7 +227,7 @@ export default function CreateUserModal({ visible, onClose, onUserCreated }: Cre
                   style={styles.input}
                   value={formData.phone1}
                   onChangeText={(text) => setFormData({ ...formData, phone1: text })}
-                  placeholder="+33 1 23 45 67 89"
+                  placeholder="+212 1 23 45 67 89"
                   keyboardType="phone-pad"
                   editable={!loading}
                 />
@@ -241,7 +240,7 @@ export default function CreateUserModal({ visible, onClose, onUserCreated }: Cre
                   style={styles.input}
                   value={formData.phone2}
                   onChangeText={(text) => setFormData({ ...formData, phone2: text })}
-                  placeholder="+33 1 23 45 67 89"
+                  placeholder="+212 1 23 45 67 89"
                   keyboardType="phone-pad"
                   editable={!loading}
                 />
