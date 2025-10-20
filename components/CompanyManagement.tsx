@@ -84,7 +84,11 @@ export default function CompanyManagement() {
 
   return (
     <>
-      <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+      <ScrollView 
+        style={styles.container} 
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: 100 }}
+      >
         {/* Header Section */}
         <View style={styles.header}>
           <View style={styles.logoContainer}>

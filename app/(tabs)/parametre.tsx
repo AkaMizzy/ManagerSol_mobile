@@ -102,7 +102,7 @@ export default function ParametreScreen() {
           </View>
         ) : (
           <FlatList
-            contentContainerStyle={{ paddingBottom: 24 }}
+            contentContainerStyle={{ paddingBottom: 100 }}
             data={projects}
             numColumns={columnCount}
             columnWrapperStyle={{ gap }}

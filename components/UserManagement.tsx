@@ -395,7 +395,7 @@ const styles = {
   },
   listContainer: {
     paddingHorizontal: 16,
-    paddingBottom: 24,
+    paddingBottom: 100,
   },
   userCard: {
     backgroundColor: 'white',
