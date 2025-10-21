@@ -1,4 +1,3 @@
-// removed modal editor in favor of full-screen editor
 import API_CONFIG from '@/app/config/api';
 import CreateDeclarationModal from '@/components/CreateDeclarationModal';
 import ZonePictureEditor from '@/components/ZonePictureEditor';
@@ -470,25 +469,27 @@ type Props = {
         {!!item?.date_taken && <Text style={styles.subtitle}>{formatDate(item.date_taken)}</Text>}
         </View>
         <View style={styles.headerActionsContainer}>
-          {item?.id_qualiphoto_parent ? (
-            <View style={{ flexDirection: 'row' }}>
-              <TouchableOpacity style={styles.headerAction} onPress={() => setEditPlanVisible(true)} accessibilityLabel="Éditer le plan de zone">
-                <Image source={require('@/assets/icons/plan.png')} style={styles.headerActionIcon} />
-              </TouchableOpacity>
-            </View>
-          ) : (
-            <View style={{ width: 40 }} />
-          )}
-
           {/* PDF Generation Button (only for main/parent) */}
           {item && !item.id_qualiphoto_parent && (
-              <TouchableOpacity style={[styles.headerAction, { marginLeft: 8 }]} onPress={handleGeneratePdf} disabled={isGeneratingPdf} accessibilityLabel="Générer le PDF">
+              <TouchableOpacity style={styles.headerAction} onPress={handleGeneratePdf} disabled={isGeneratingPdf} accessibilityLabel="Générer le PDF">
                   {isGeneratingPdf ? (
                       <ActivityIndicator color="#f87b1b" />
                   ) : (
                       <Image source={ICONS.pdf} style={styles.headerActionIcon} />
                   )}
               </TouchableOpacity>
+          )}
+
+          {/* Plan Button (only for main/parent) */}
+          {item && !item.id_qualiphoto_parent && (
+              <TouchableOpacity style={[styles.headerAction, { marginLeft: 8 }]} onPress={() => setEditPlanVisible(true)} accessibilityLabel="Éditer le plan de zone">
+                  <Image source={require('@/assets/icons/plan.png')} style={styles.headerActionIcon} />
+              </TouchableOpacity>
+          )}
+
+          {/* Spacer for child items */}
+          {item?.id_qualiphoto_parent && (
+            <View style={{ width: 40 }} />
           )}
         </View>
       </View>
@@ -657,7 +658,7 @@ type Props = {
                     )}
                     <TouchableOpacity
                       onPress={() => setChildModalVisible(true)}
-                      accessibilityLabel="Ajouter une photo d'évolution"
+                      accessibilityLabel="Ajouter une photo après"
                       style={styles.cameraCTA}
                     >
                       <Image source={cameraIcon} style={styles.cameraCTAIcon} />
@@ -1090,8 +1091,8 @@ type Props = {
             parentTitle={initialItem?.title || initialItem?.project_title || undefined}
           />
         )}
-        {item && item.id_qualiphoto_parent && isEditPlanVisible && (
-          <View style={StyleSheet.absoluteFillObject} pointerEvents="box-none">
+        {item && isEditPlanVisible && (
+          <View style={StyleSheet.absoluteFillObject} pointerEvents="auto">
             <ZonePictureEditor
               child={item}
               onClose={() => setEditPlanVisible(false)}
