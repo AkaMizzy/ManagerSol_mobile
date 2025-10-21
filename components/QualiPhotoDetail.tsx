@@ -130,6 +130,7 @@ type Props = {
   const [comments, setComments] = useState<Comment[]>([]);
   const [isLoadingComments, setIsLoadingComments] = useState(false);
   const [isActionsVisible, setActionsVisible] = useState(false);
+  const [isComplementActionsVisible, setComplementActionsVisible] = useState(false);
   const [layoutMode, setLayoutMode] = useState<'grid' | 'list'>('list');
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
   const [isDeclModalVisible, setDeclModalVisible] = useState(false);
@@ -144,6 +145,7 @@ type Props = {
     setItem(initialItem || null);
     setSortOrder('desc'); // Reset sort order when item changes
     setActionsVisible(false);
+    setComplementActionsVisible(false);
     setLayoutMode('list');
     setComplement(null);
   }, [initialItem]);
@@ -292,6 +294,7 @@ type Props = {
       setIsPlaying(false);
       setImagePreviewVisible(false);
       setActionsVisible(false);
+      setComplementActionsVisible(false);
     }
   }, [visible, sound]);
 
@@ -329,6 +332,13 @@ type Props = {
     const hasDescription = typeof item.commentaire === 'string' && item.commentaire.trim().length > 0;
     return hasActions || hasDescription;
   }, [item, children]);
+
+  const hasComplementActionsOrDescription = useMemo(() => {
+    if (!complement) return false;
+    const hasActions = complement.voice_note || (complement.latitude && complement.longitude);
+    const hasDescription = typeof complement.commentaire === 'string' && complement.commentaire.trim().length > 0;
+    return hasActions || hasDescription;
+  }, [complement]);
 
   const handleMapPress = () => {
     if (!item?.latitude || !item.longitude) return;
@@ -826,25 +836,6 @@ type Props = {
                   <ActivityIndicator style={{ marginVertical: 12 }} />
                 ) : complement ? (
                   <>
-                    {(complement.user_name || complement.date_taken) && (
-                      <View style={styles.inlineMetaRow}>
-                        <View style={styles.inlineMetaItem}>
-                          {complement.user_name && (
-                            <Text numberOfLines={1}>
-                              <Text style={styles.metaMuted}>Prise par </Text>
-                              <Text style={styles.metaValue}>{`${complement.user_name} ${complement.user_lastname || ''}`.trim()}</Text>
-                            </Text>
-                          )}
-                        </View>
-                        <View style={[styles.inlineMetaItem, { alignItems: 'flex-end' }]}>
-                          {complement.date_taken && (
-                            <Text style={styles.metaValue} numberOfLines={1}>
-                              {`${formatDate(complement.date_taken)}`}
-                            </Text>
-                          )}
-                        </View>
-                      </View>
-                    )}
                     {(complement.photo_comp || complement.photo) ? (
                       (() => {
                         const compUri = complement.photo_comp || complement.photo;
@@ -858,47 +849,77 @@ type Props = {
                             >
                               <Image source={{ uri: compUri }} style={styles.compImage} />
                             </TouchableOpacity>
+                            {hasComplementActionsOrDescription && (
+                              <TouchableOpacity
+                                style={styles.toggleActionsButton}
+                                onPress={() => setComplementActionsVisible(v => !v)}
+                                accessibilityLabel={isComplementActionsVisible ? 'Masquer les actions' : 'Afficher les actions'}
+                              >
+                                <Ionicons name={isComplementActionsVisible ? 'close' : 'ellipsis-horizontal'} size={24} color="#FFFFFF" />
+                              </TouchableOpacity>
+                            )}
                           </View>
                         );
                       })()
-                    ) : null}
-                    <View style={styles.compRowBelow}>
-                      {complement.voice_note ? (
-                        <TouchableOpacity
-                          style={styles.compactAudio}
-                          onPress={async () => {
-                            try {
-                              if (isPlayingComp && compSound) { await compSound.pauseAsync(); setIsPlayingComp(false); return; }
-                              if (compSound) { await compSound.playAsync(); setIsPlayingComp(true); return; }
-                              const { sound: newSound } = await Audio.Sound.createAsync({ uri: complement.voice_note! });
-                              setCompSound(newSound);
-                              setIsPlayingComp(true);
-                              newSound.setOnPlaybackStatusUpdate((status) => {
-                                if (status.isLoaded && status.didJustFinish) { setIsPlayingComp(false); newSound.setPositionAsync(0); }
-                              });
-                              await newSound.playAsync();
-                            } catch {}
-                          }}
-                          accessibilityLabel="Lire l'audio complémentaire"
-                        >
-                          <Ionicons name={isPlayingComp ? 'pause-circle' : 'play-circle'} size={28} color="#11224e" />
-                        </TouchableOpacity>
-                      ) : null}
-                      {complement.latitude && complement.longitude ? (
-                        <TouchableOpacity
-                          style={styles.compactAudio}
-                          onPress={handleComplementMapPress}
-                          accessibilityLabel="Voir la localisation de la photo corrective"
-                        >
-                          <Image source={ICONS.map} style={styles.actionIcon} />
-                        </TouchableOpacity>
-                      ) : null}
-                      {typeof complement.commentaire === 'string' && complement.commentaire.trim().length > 0 ? (
-                        <Text style={styles.compDescriptionFull}>
-                          {complement.commentaire}
-                        </Text>
-                      ) : null}
-                    </View>
+                    ) : (
+                      hasComplementActionsOrDescription ? (
+                        <View style={{ alignItems: 'flex-end', marginBottom: 8 }}>
+                          <TouchableOpacity
+                            style={styles.inlineActionsButton}
+                            onPress={() => setComplementActionsVisible(v => !v)}
+                            accessibilityLabel={isComplementActionsVisible ? 'Masquer les actions' : 'Afficher les actions'}
+                          >
+                            <Ionicons name={isComplementActionsVisible ? 'close' : 'ellipsis-horizontal'} size={20} color="#11224e" />
+                          </TouchableOpacity>
+                        </View>
+                      ) : null
+                    )}
+                    {isComplementActionsVisible && (
+                      <>
+                        {(complement.voice_note || (complement.latitude && complement.longitude)) && (
+                          <View style={styles.actionsContainer}>
+                            {complement.voice_note && (
+                              <TouchableOpacity style={styles.actionButton} onPress={async () => {
+                                try {
+                                  if (isPlayingComp && compSound) { await compSound.pauseAsync(); setIsPlayingComp(false); return; }
+                                  if (compSound) { await compSound.playAsync(); setIsPlayingComp(true); return; }
+                                  const { sound: newSound } = await Audio.Sound.createAsync({ uri: complement.voice_note! });
+                                  setCompSound(newSound);
+                                  setIsPlayingComp(true);
+                                  newSound.setOnPlaybackStatusUpdate((status) => {
+                                    if (status.isLoaded && status.didJustFinish) { setIsPlayingComp(false); newSound.setPositionAsync(0); }
+                                  });
+                                  await newSound.playAsync();
+                                } catch {}
+                              }}>
+                                <Ionicons name={isPlayingComp ? 'pause-circle' : 'play-circle'} size={32} color="#11224e" />
+                              </TouchableOpacity>
+                            )}
+                            {complement.latitude && complement.longitude && (
+                              <TouchableOpacity style={styles.actionButton} onPress={handleComplementMapPress}>
+                                <Image source={ICONS.map} style={styles.actionIcon} />
+                              </TouchableOpacity>
+                            )}
+                          </View>
+                        )}
+                        {(complement.user_name || (typeof complement.commentaire === 'string' && complement.commentaire.trim().length > 0)) ? (
+                          <View style={styles.metaCard}>
+                            {complement.user_name ? (
+                              <View style={[styles.metaRow, { borderTopWidth: 0, paddingTop: 0 }]}>
+                                <Text style={styles.metaLabel}>Prise par</Text>
+                                <Text style={styles.metaValue} numberOfLines={1}>{`${complement.user_name} ${complement.user_lastname || ''}`.trim()}</Text>
+                              </View>
+                            ) : null}
+                            {typeof complement.commentaire === 'string' && complement.commentaire.trim().length > 0 ? (
+                              <View style={[styles.metaRow, complement.user_name ? { borderTopWidth: 0, paddingTop: 0 } : null]}>
+                                <Text style={styles.metaLabel}>Description</Text>
+                                <Text style={[styles.metaValue, styles.metaMultiline]}>{complement.commentaire}</Text>
+                              </View>
+                            ) : null}
+                          </View>
+                        ) : null}
+                      </>
+                    )}
                   </>
                 ) : (
                   <Text style={styles.noChildrenText}>Aucune photo corrective.</Text>
