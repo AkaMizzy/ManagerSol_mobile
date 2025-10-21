@@ -39,6 +39,42 @@ const ChildPhotoCard: React.FC<ChildPhotoCardProps> = ({ child, onPress, mode, h
   //   setIsVisible(!isVisible);
   // };
 
+  const renderOverlayContent = () => {
+    if (mode === 'list') {
+      // List mode: Prise par on left, date on right
+      return (
+        <View style={[styles.childGridOverlay, { gap: 4 }]}>
+          {child.title && <Text style={styles.childGridTitle} numberOfLines={1}>{child.title}</Text>}
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+            <View style={{ flex: 1, marginRight: 8 }}>
+              {child.user_name && (
+                <Text style={styles.childGridDate} numberOfLines={1}>
+                  {`${child.user_name} ${child.user_lastname || ''}`.trim()}
+                </Text>
+              )}
+            </View>
+            <View style={{ flexShrink: 0 }}>
+              {child.date_taken && <Text style={styles.childGridDate}>{formatDate(child.date_taken)}</Text>}
+            </View>
+          </View>
+        </View>
+      );
+    } else {
+      // Grid mode: Stack vertically with limited space
+      return (
+        <View style={styles.childGridOverlay}>
+          {child.title && <Text style={styles.childGridTitle} numberOfLines={1}>{child.title}</Text>}
+          {child.user_name && (
+            <Text style={[styles.childGridDate, { fontSize: 9 }]} numberOfLines={1}>
+              {`${child.user_name} ${child.user_lastname || ''}`.trim()}
+            </Text>
+          )}
+          {child.date_taken && <Text style={styles.childGridDate}>{formatDate(child.date_taken)}</Text>}
+        </View>
+      );
+    }
+  };
+
   return (
     <View style={[
       styles.childGridItem,
@@ -49,10 +85,7 @@ const ChildPhotoCard: React.FC<ChildPhotoCardProps> = ({ child, onPress, mode, h
       <TouchableOpacity onPress={onPress}>
         <>
           <Image source={{ uri: child.photo }} style={styles.childThumbnail} />
-          <View style={styles.childGridOverlay}>
-            {child.title && <Text style={styles.childGridTitle} numberOfLines={1}>{child.title}</Text>}
-            {child.date_taken && <Text style={styles.childGridDate}>{formatDate(child.date_taken)}</Text>}
-          </View>
+          {renderOverlayContent()}
         </>
       </TouchableOpacity>
       {/* <TouchableOpacity onPress={toggleVisibility} style={styles.eyeIcon}>
@@ -600,7 +633,7 @@ type Props = {
                 </View>
               )}
               {item.before === 1 && (
-                <View style={styles.metaCard}>
+                <View style={styles.childPicturesContainer}>
                   <View style={styles.childListHeader}>
                     {children.length > 0 ? (
                       <TouchableOpacity 
@@ -1603,6 +1636,11 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     justifyContent: 'space-between',
     marginTop: 8,
+  },
+  childPicturesContainer: {
+    backgroundColor: '#FFFFFF',
+    paddingTop: 8,
+    paddingBottom: 8,
   },
 });
 
