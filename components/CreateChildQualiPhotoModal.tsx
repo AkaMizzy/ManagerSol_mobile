@@ -32,6 +32,7 @@ export function CreateChildQualiPhotoForm({ onClose, onSuccess, parentItem }: Fo
   const [latitude, setLatitude] = useState<number | null>(null);
   const [longitude, setLongitude] = useState<number | null>(null);
   const [locationStatus, setLocationStatus] = useState<'idle' | 'fetching' | 'success' | 'error'>('idle');
+  const [creationCount, setCreationCount] = useState(0);
 
   const [zones, setZones] = useState<QualiZone[]>([]);
   const [zonesLoading, setZonesLoading] = useState(false);
@@ -108,6 +109,7 @@ export function CreateChildQualiPhotoForm({ onClose, onSuccess, parentItem }: Fo
         voice_note: voiceNote || undefined,
       }, token);
       onSuccess(created);
+      setCreationCount(prev => prev + 1);
       resetForm();
     } catch (e: any) {
       setError(e?.message || 'Échec de l\'enregistrement de la photo "après".');
@@ -248,15 +250,18 @@ export function CreateChildQualiPhotoForm({ onClose, onSuccess, parentItem }: Fo
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
       <SafeAreaView style={styles.container}>
         <View style={styles.header}>
-          <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-            <Ionicons name="close" size={24} color="#f87b1b" />
+          <TouchableOpacity onPress={onClose} style={styles.headerStopButton}>
+            <Text style={styles.stopButtonText}>Arrêter</Text>
           </TouchableOpacity>
           <View style={styles.headerCenter}>
             <Text style={styles.headerTitle} numberOfLines={1}>
               {parentItem.title || `Titre de la dossier`}
             </Text>
           </View>
-          <View style={styles.placeholder} />
+          <View style={styles.counterContainer}>
+            <Text style={styles.counterText}>{creationCount}</Text>
+            <Ionicons name="images-outline" size={20} color="#11224e" />
+          </View>
         </View>
 
         {error && (
@@ -477,14 +482,26 @@ export default function CreateChildQualiPhotoModal({ visible, onClose, onSuccess
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F8FAFC' },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12, backgroundColor: '#FFFFFF', borderBottomWidth: 1, borderBottomColor: '#e5e7eb' },
-  closeButton: { padding: 8 },
-  headerCenter: { flex: 1, alignItems: 'center' },
+  headerStopButton: { padding: 8 },
+  stopButtonText: { color: '#f87b1b', fontWeight: '600', fontSize: 16 },
+  headerCenter: { flex: 1, alignItems: 'center', paddingHorizontal: 8 },
   headerTitle: { fontSize: 18, fontWeight: '600', color: '#11224e' },
-  placeholder: { width: 40 },
+  counterContainer: {
+    minWidth: 50,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    gap: 6,
+  },
+  counterText: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#11224e',
+  },
   content: { flex: 1, paddingHorizontal: 16 },
   alertBanner: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#fffbeb', borderColor: '#f59e0b', borderWidth: 1, paddingHorizontal: 12, paddingVertical: 8, marginHorizontal: 16, marginTop: 8, borderRadius: 10 },
   alertBannerText: { color: '#b45309', flex: 1, fontSize: 12 },
-  card: { backgroundColor: '#FFFFFF', borderRadius: 16, padding: 16, marginTop: 16, marginHorizontal: 8, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8, elevation: 2, borderWidth: 1, borderColor: '#f87b1b' },
+  card: { backgroundColor: '#FFFFFF', borderRadius: 16, padding: 16, marginTop: 16, marginHorizontal: 8, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8, elevation: 2 },
   cardHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginBottom: 10 },
   cardIconWrap: { width: 28, height: 28, borderRadius: 14, backgroundColor: '#eef2ff', justifyContent: 'center', alignItems: 'center', marginRight: 10 },
   cardHeaderText: { flex: 1, alignItems: 'center' },
