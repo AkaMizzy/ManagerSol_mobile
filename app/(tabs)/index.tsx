@@ -26,7 +26,7 @@ const GRID_ITEMS: {
   icon?: keyof typeof Ionicons.glyphMap;
   image?: any;
 }[] = [
-  { title: 'QualiPhoto', image: require('../../assets/icons/camera.png') },
+  { title: 'QualiPhoto', image: require('../../assets/icons/camera_p.png') },
   { title: 'Planning', image: require('../../assets/icons/planning.png') },
   { title: 'Calendrier', image: require('../../assets/icons/calendar.png') },
   { title: 'Manifold', image: require('../../assets/icons/manifolder.png') },

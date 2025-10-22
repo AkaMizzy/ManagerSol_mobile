@@ -4,7 +4,7 @@
 export const ICONS = {
   // PNG icons
   icon: require('@/assets/icons/icon.png'),
-  cameraPng: require('@/assets/icons/camera.png'),
+  cameraPng: require('@/assets/icons/camera_p.png'),
   planning: require('@/assets/icons/planning.png'),
   calendar: require('@/assets/icons/calendar.png'),
   manifolder: require('@/assets/icons/manifolder.png'),

@@ -1,7 +1,7 @@
 import { Tabs } from 'expo-router';
 import React from 'react';
 
-import { CustomTabBar } from '@/components/CustomTabBar';
+// import { CustomTabBar } from '@/components/CustomTabBar';
 
 export default function TabLayout() {
   return (
@@ -19,7 +19,7 @@ export default function TabLayout() {
         tabBarActiveTintColor: 'transparent',
         tabBarInactiveTintColor: 'transparent',
       }}
-      tabBar={(props) => <CustomTabBar {...props} />}
+      // tabBar={(props) => <CustomTabBar {...props} />}
     >
       <Tabs.Screen
         name="manifolder"

@@ -211,9 +211,6 @@ export function CreateChildQualiPhotoForm({ onClose, onSuccess, parentItem }: Fo
       try {
         const fetched = await qualiphotoService.getZonesByProject(parentItem.id_project, token);
         setZones(fetched);
-        // Ensure selected zone remains valid or fallback to parent's zone
-        const exists = fetched.some(z => z.id === selectedZoneId);
-        if (!exists) setSelectedZoneId(parentItem.id_zone);
       } catch (e: any) {
         setZonesError(e?.message || 'Impossible de charger les zones');
       } finally {
@@ -221,7 +218,7 @@ export function CreateChildQualiPhotoForm({ onClose, onSuccess, parentItem }: Fo
       }
     }
     loadZones();
-  }, [token, parentItem?.id_project, parentItem.id_zone, selectedZoneId]);
+  }, [token, parentItem?.id_project]);
 
   useEffect(() => {
     const fetchLocation = async () => {
@@ -294,34 +291,6 @@ export function CreateChildQualiPhotoForm({ onClose, onSuccess, parentItem }: Fo
             ) : null}
           
             <View style={styles.separator} />
-
-            {/* Zone Selector */}
-            <View style={{ gap: 8, marginBottom: 8 }}>
-              {zonesLoading ? (
-                <ActivityIndicator size="small" color="#11224e" />
-              ) : zonesError ? (
-                <View style={styles.alertBanner}>
-                  <Ionicons name="warning" size={16} color="#b45309" />
-                  <Text style={styles.alertBannerText}>{zonesError}</Text>
-                </View>
-              ) : (
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.zoneList}>
-                  {zones.map(zone => {
-                    const selected = zone.id === selectedZoneId;
-                    return (
-                      <TouchableOpacity key={zone.id} style={[styles.zoneItem, selected && styles.zoneItemSelected]} onPress={() => setSelectedZoneId(zone.id)}>
-                        {zone.logo ? (
-                          <Image source={{ uri: zone.logo }} style={styles.zoneLogo} />
-                        ) : (
-                          <View style={[styles.zoneLogo, { backgroundColor: '#e5e7eb' }]} />
-                        )}
-                        <Text style={[styles.zoneTitle, selected && { color: '#11224e' }]} numberOfLines={1}>{zone.title}</Text>
-                      </TouchableOpacity>
-                    );
-                  })}
-                </ScrollView>
-              )}
-            </View>
 
             {/* New Photo Card */}
           
@@ -426,6 +395,36 @@ export function CreateChildQualiPhotoForm({ onClose, onSuccess, parentItem }: Fo
                 </View>
               </View>
             </View>
+          </View>
+
+          <View style={styles.separator} />
+
+          {/* Zone Selector */}
+          <View style={{ gap: 8 }}>
+            {zonesLoading ? (
+              <ActivityIndicator size="small" color="#11224e" />
+            ) : zonesError ? (
+              <View style={styles.alertBanner}>
+                <Ionicons name="warning" size={16} color="#b45309" />
+                <Text style={styles.alertBannerText}>{zonesError}</Text>
+              </View>
+            ) : (
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.zoneList}>
+                {zones.map(zone => {
+                  const selected = zone.id === selectedZoneId;
+                  return (
+                    <TouchableOpacity key={zone.id} style={[styles.zoneItem, selected && styles.zoneItemSelected]} onPress={() => setSelectedZoneId(zone.id)}>
+                      {zone.logo ? (
+                        <Image source={{ uri: zone.logo }} style={styles.zoneLogo} />
+                      ) : (
+                        <View style={[styles.zoneLogo, { backgroundColor: '#e5e7eb' }]} />
+                      )}
+                      <Text style={[styles.zoneTitle, selected && { color: '#11224e' }]} numberOfLines={1}>{zone.title}</Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
+            )}
           </View>
         </ScrollView>
 
