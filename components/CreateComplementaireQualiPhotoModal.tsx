@@ -1,3 +1,4 @@
+import PictureAnnotator from '@/components/PictureAnnotator';
 import { useAuth } from '@/contexts/AuthContext';
 import qualiphotoService, { QualiPhotoItem } from '@/services/qualiphotoService';
 import { Ionicons } from '@expo/vector-icons';
@@ -35,16 +36,26 @@ export default function CreateComplementaireQualiPhotoModal({ visible, onClose, 
   const durationIntervalRef = useRef<number | null>(null);
   const scrollViewRef = useRef<ScrollView>(null);
 
+  const [isAnnotatorVisible, setAnnotatorVisible] = useState(false);
+  const [annotatorBaseUri, setAnnotatorBaseUri] = useState<string | null>(null);
+
   const canSave = useMemo(() => !!photo && !submitting, [photo, submitting]);
 
   const handlePickPhoto = async () => {
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
     if (status !== 'granted') return;
-    const result = await ImagePicker.launchCameraAsync({ allowsEditing: true, aspect: [4, 3], quality: 0.8 });
+    const result = await ImagePicker.launchCameraAsync({ allowsEditing: false, quality: 0.9 });
     if (!result.canceled && result.assets[0]) {
       const asset = result.assets[0];
-      setPhoto({ uri: asset.uri, name: `qualiphoto_comp_${Date.now()}.jpg`, type: 'image/jpeg' });
+      setAnnotatorBaseUri(asset.uri);
+      setAnnotatorVisible(true);
     }
+  };
+
+  const openAnnotatorForExisting = () => {
+    if (!photo) return;
+    setAnnotatorBaseUri(photo.uri);
+    setAnnotatorVisible(true);
   };
 
   const handleSubmit = async () => {
@@ -184,7 +195,7 @@ export default function CreateComplementaireQualiPhotoModal({ visible, onClose, 
                 {(childItem.project_title || 'Projet') + ' • ' + (childItem.zone_title || 'Zone') + (childItem.date_taken ? ' • ' + formatDate(childItem.date_taken) : '')}
               </Text>
               <View style={styles.parentPhotoWrap}>
-                <Image source={{ uri: childItem.photo }} style={styles.parentPhoto} />
+                {childItem.photo && <Image source={{ uri: childItem.photo }} style={styles.parentPhoto} />}
               </View>
             </View>
             {photo ? (
@@ -193,6 +204,9 @@ export default function CreateComplementaireQualiPhotoModal({ visible, onClose, 
                 <View style={styles.imageActions}>
                   <TouchableOpacity style={[styles.iconButton, styles.iconButtonSecondary]} onPress={handlePickPhoto}>
                     <Ionicons name="camera-reverse-outline" size={20} color="#11224e" />
+                  </TouchableOpacity>
+                  <TouchableOpacity style={[styles.iconButton, styles.iconButtonSecondary]} onPress={openAnnotatorForExisting}>
+                    <Ionicons name="create-outline" size={20} color="#11224e" />
                   </TouchableOpacity>
                   <TouchableOpacity style={[styles.iconButton, styles.iconButtonSecondary]} onPress={() => setPhoto(null)}>
                     <Ionicons name="trash-outline" size={20} color="#dc2626" />
@@ -299,6 +313,23 @@ export default function CreateComplementaireQualiPhotoModal({ visible, onClose, 
         </SafeAreaView>
         </TouchableWithoutFeedback>
       </KeyboardAvoidingView>
+      {isAnnotatorVisible && annotatorBaseUri && (
+        <Modal
+          animationType="fade"
+          visible={isAnnotatorVisible}
+          onRequestClose={() => setAnnotatorVisible(false)}
+        >
+          <PictureAnnotator
+            baseImageUri={annotatorBaseUri}
+            onClose={() => setAnnotatorVisible(false)}
+            onSaved={(image) => {
+              setPhoto(image);
+              setAnnotatorVisible(false);
+            }}
+            title="Annoter la photo complémentaire"
+          />
+        </Modal>
+      )}
     </Modal>
   );
 }

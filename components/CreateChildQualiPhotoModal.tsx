@@ -431,7 +431,11 @@ export function CreateChildQualiPhotoForm({ onClose, onSuccess, parentItem }: Fo
       </SafeAreaView>
     </KeyboardAvoidingView>
     {isAnnotatorVisible && annotatorBaseUri && (
-      <View style={StyleSheet.absoluteFillObject} pointerEvents="box-none">
+      <Modal
+        animationType="fade"
+        visible={isAnnotatorVisible}
+        onRequestClose={() => setAnnotatorVisible(false)}
+      >
         <PictureAnnotator
           baseImageUri={annotatorBaseUri}
           onClose={() => setAnnotatorVisible(false)}
@@ -441,7 +445,7 @@ export function CreateChildQualiPhotoForm({ onClose, onSuccess, parentItem }: Fo
           }}
           title="Annoter la photo"
         />
-      </View>
+      </Modal>
     )}
     </>
   );

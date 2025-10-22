@@ -133,6 +133,7 @@ type Props = {
   const [isComplementActionsVisible, setComplementActionsVisible] = useState(false);
   const [layoutMode, setLayoutMode] = useState<'grid' | 'list'>('list');
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
+  const [isSignatureModalVisible, setSignatureModalVisible] = useState(false);
   const [isDeclModalVisible, setDeclModalVisible] = useState(false);
   const [declLoading, setDeclLoading] = useState(false);
   const [declTypes, setDeclTypes] = useState<any[]>([]);
@@ -458,7 +459,7 @@ type Props = {
                 <Ionicons name="arrow-back" size={24} color="#f87b1b" />
             </Pressable>
             <View style={styles.headerTitles}>
-                <Text style={styles.title}>Localisation de la Photo Corrective</Text>
+                <Text style={styles.title}>Localisation de la Photo après</Text>
             </View>
             <View style={{ width: 40 }} />
         </View>
@@ -534,17 +535,18 @@ type Props = {
                   )}
               </TouchableOpacity>
           )}
-
-          {/* Plan Button (only for main/parent) */}
+          {/* Signature Button */}
           {item && !item.id_qualiphoto_parent && (
-              <TouchableOpacity style={[styles.headerAction, { marginLeft: 8 }]} onPress={() => setEditPlanVisible(true)} accessibilityLabel="Éditer le plan de zone">
-                  <Image source={require('@/assets/icons/plan.png')} style={styles.headerActionIcon} />
-              </TouchableOpacity>
+            <TouchableOpacity style={styles.headerAction} onPress={() => setSignatureModalVisible(true)} accessibilityLabel="Signatures">
+              <Image source={ICONS.signature} style={styles.headerActionIcon} />
+            </TouchableOpacity>
           )}
 
-          {/* Spacer for child items */}
+          {/* Plan Button (only for child items) */}
           {item?.id_qualiphoto_parent && (
-            <View style={{ width: 40 }} />
+            <TouchableOpacity style={styles.headerAction} onPress={() => setEditPlanVisible(true)} accessibilityLabel="Éditer le plan de zone">
+                <Image source={require('@/assets/icons/plan.png')} style={styles.headerActionIcon} />
+            </TouchableOpacity>
           )}
         </View>
       </View>
@@ -590,38 +592,7 @@ type Props = {
           <ScrollView bounces>
             <View style={[styles.content, { paddingTop: 0 }]}>
               
-              <View style={styles.card}>
-                {isLoadingSignatures ? (
-                  <ActivityIndicator style={{ marginVertical: 20 }} />
-                ) : (
-                  <View style={styles.signatureFieldsContainer}>
-                    <SignatureField
-                      role="technicien"
-                      roleLabel="Technicien"
-                      onSignatureComplete={handleSignatureComplete}
-                      isCompleted={!!signatures.technicien}
-                      disabled={!!signatures.technicien}
-                      signerEmail={signatures.technicien?.email}
-                    />
-                    <SignatureField
-                      role="control"
-                      roleLabel="Contrôle"
-                      onSignatureComplete={handleSignatureComplete}
-                      isCompleted={!!signatures.control}
-                      disabled={!!signatures.control}
-                      signerEmail={signatures.control?.email}
-                    />
-                    <SignatureField
-                      role="admin"
-                      roleLabel="Admin"
-                      onSignatureComplete={handleSignatureComplete}
-                      isCompleted={!!signatures.admin}
-                      disabled={!!signatures.admin}
-                      signerEmail={signatures.admin?.email}
-                    />
-                  </View>
-                )}
-              </View>
+              
 
               {isActionsVisible && (
                 <>
@@ -667,7 +638,7 @@ type Props = {
                   ) : null}
                   {item.id_qualiphoto_parent && (
                     <View style={styles.metaCard}>
-                      <Text style={styles.sectionTitle}>Photo Corrective</Text>
+                      <Text style={styles.sectionTitle}>Photo après</Text>
                       {isLoadingComplement ? (
                         <ActivityIndicator style={{ marginVertical: 12 }} />
                       ) : complement ? (
@@ -711,7 +682,7 @@ type Props = {
                           ) : null}
                         </View>
                       ) : (
-                        <Text style={styles.noChildrenText}>Aucune photo corrective.</Text>
+                        <Text style={styles.noChildrenText}>Aucune photo après.</Text>
                       )}
                     </View>
                   )}
@@ -894,7 +865,7 @@ type Props = {
               {/* Complementary content - always visible on child */}
               <View style={styles.metaCard}>
                 <View style={styles.sectionHeaderRow}>
-                  <Text style={styles.sectionTitle}>Photo Corrective</Text>
+                  <Text style={styles.sectionTitle}>Photo après</Text>
                   <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                     <TouchableOpacity
                       onPress={() => setComplementModalVisible(true)}
@@ -937,6 +908,21 @@ type Props = {
                               accessibilityLabel="Agrandir la photo complémentaire"
                             >
                               <Image source={{ uri: compUri }} style={styles.compImage} />
+                              <View style={[styles.childGridOverlay, { gap: 4 }]}>
+                                {complement.title && <Text style={styles.childGridTitle} numberOfLines={1}>{complement.title}</Text>}
+                                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                                  <View style={{ flex: 1, marginRight: 8 }}>
+                                    {complement.user_name && (
+                                      <Text style={styles.childGridDate} numberOfLines={1}>
+                                        {`${complement.user_name} ${complement.user_lastname || ''}`.trim()}
+                                      </Text>
+                                    )}
+                                  </View>
+                                  <View style={{ flexShrink: 0 }}>
+                                    {complement.date_taken && <Text style={styles.childGridDate}>{formatDate(complement.date_taken)}</Text>}
+                                  </View>
+                                </View>
+                              </View>
                             </TouchableOpacity>
                             {hasComplementActionsOrDescription && (
                               <TouchableOpacity
@@ -993,12 +979,6 @@ type Props = {
                         )}
                         {(complement.user_name || (typeof complement.commentaire === 'string' && complement.commentaire.trim().length > 0)) ? (
                           <View style={styles.metaCard}>
-                            {complement.user_name ? (
-                              <View style={[styles.metaRow, { borderTopWidth: 0, paddingTop: 0 }]}>
-                                <Text style={styles.metaLabel}>Prise par</Text>
-                                <Text style={styles.metaValue} numberOfLines={1}>{`${complement.user_name} ${complement.user_lastname || ''}`.trim()}</Text>
-                              </View>
-                            ) : null}
                             {typeof complement.commentaire === 'string' && complement.commentaire.trim().length > 0 ? (
                               <View style={[styles.metaRow, complement.user_name ? { borderTopWidth: 0, paddingTop: 0 } : null]}>
                                 <Text style={styles.metaLabel}>Description</Text>
@@ -1011,7 +991,7 @@ type Props = {
                     )}
                   </>
                 ) : (
-                  <Text style={styles.noChildrenText}>Aucune photo corrective.</Text>
+                  <Text style={styles.noChildrenText}>Aucune photo après.</Text>
                 )}
               </View>
 
@@ -1125,6 +1105,53 @@ type Props = {
     );
   };
 
+  const renderSignatureModal = () => (
+    <Modal
+      visible={isSignatureModalVisible}
+      transparent
+      animationType="fade"
+      onRequestClose={() => setSignatureModalVisible(false)}
+    >
+      <View style={styles.signatureModalContainer}>
+        <View style={styles.signatureModalContent}>
+          <View style={styles.signatureModalHeader}>
+            <Pressable onPress={() => setSignatureModalVisible(false)}>
+              <Ionicons name="close" size={28} color="#11224e" />
+            </Pressable>
+            <Text style={styles.title}>Signatures</Text>
+            <View style={{ width: 40 }} />
+          </View>
+          <View style={styles.signatureFieldsContainer}>
+            <SignatureField
+              role="technicien"
+              roleLabel="Technicien"
+              onSignatureComplete={handleSignatureComplete}
+              isCompleted={!!signatures.technicien}
+              disabled={!!signatures.technicien}
+              signerEmail={signatures.technicien?.email}
+            />
+            <SignatureField
+              role="control"
+              roleLabel="Contrôle"
+              onSignatureComplete={handleSignatureComplete}
+              isCompleted={!!signatures.control}
+              disabled={!!signatures.control}
+              signerEmail={signatures.control?.email}
+            />
+            <SignatureField
+              role="admin"
+              roleLabel="Admin"
+              onSignatureComplete={handleSignatureComplete}
+              isCompleted={!!signatures.admin}
+              disabled={!!signatures.admin}
+              signerEmail={signatures.admin?.email}
+            />
+          </View>
+        </View>
+      </View>
+    </Modal>
+  );
+
    return (
     <Modal visible={visible} onRequestClose={onClose} animationType="slide" presentationStyle="fullScreen">
       <View style={[styles.container, { paddingTop: insets.top }]}>
@@ -1180,19 +1207,24 @@ type Props = {
           />
         )}
         {item && isEditPlanVisible && (
-          <View style={StyleSheet.absoluteFillObject} pointerEvents="auto">
+          <Modal
+            animationType="fade"
+            visible={isEditPlanVisible}
+            onRequestClose={() => setEditPlanVisible(false)}
+          >
             <ZonePictureEditor
               child={item}
               onClose={() => setEditPlanVisible(false)}
-            onSaved={(res) => {
-              // update current item with new photo_plan and refresh children list
-              setItem(prev => prev ? { ...prev, photo_plan: res.photo_plan } as any : prev);
-              setEditPlanVisible(false);
-            }}
+              onSaved={(res) => {
+                // update current item with new photo_plan and refresh children list
+                setItem(prev => (prev ? ({ ...prev, photo_plan: res.photo_plan } as any) : prev));
+                setEditPlanVisible(false);
+              }}
             />
-          </View>
+          </Modal>
         )}
         {renderCommentModal()}
+        {renderSignatureModal()}
       </View>
     </Modal>
   );
@@ -1764,6 +1796,24 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     gap: 8,
+  },
+  signatureModalContainer: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  signatureModalContent: {
+    backgroundColor: 'white',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    padding: 20,
+    paddingBottom: 40, // for safe area
+  },
+  signatureModalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20,
   },
 });
 
