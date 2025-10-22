@@ -7,7 +7,7 @@ import declarationService from '@/services/declarationService';
 import qualiphotoService, { Comment, QualiPhotoItem } from '@/services/qualiphotoService';
 import { Ionicons } from '@expo/vector-icons';
 import { Audio } from 'expo-av';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Alert, Image, Linking, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, UIManager, View } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -152,7 +152,7 @@ type Props = {
     control: null,
     admin: null,
   });
-  const [isLoadingSignatures, setIsLoadingSignatures] = useState(false);
+  const [, setIsLoadingSignatures] = useState(false);
 
   useEffect(() => {
     setItem(initialItem || null);
@@ -163,6 +163,24 @@ type Props = {
     setComplement(null);
     setSignatures({ technicien: null, control: null, admin: null });
   }, [initialItem]);
+
+  const loadSignatures = useCallback(async () => {
+    if (!item || !token) return;
+    setIsLoadingSignatures(true);
+    try {
+      const data = await qualiphotoService.getQualiPhotoSignatures(item.id, token);
+      const newSignatures = {
+        technicien: data.signatures.technicien ? { signature: '', email: data.signatures.technicien.email } : null,
+        control: data.signatures.control ? { signature: '', email: data.signatures.control.email } : null,
+        admin: data.signatures.admin ? { signature: '', email: data.signatures.admin.email } : null,
+      };
+      setSignatures(newSignatures);
+    } catch (err) {
+      console.error('Failed to load signatures:', err);
+    } finally {
+      setIsLoadingSignatures(false);
+    }
+  }, [item, token]);
 
   // Load declaration dropdowns when modal opens
   useEffect(() => {
@@ -255,25 +273,7 @@ type Props = {
       setComments([]);
       setComplement(null);
     }
-  }, [item, token, sortOrder]);
-
-  const loadSignatures = async () => {
-    if (!item || !token) return;
-    setIsLoadingSignatures(true);
-    try {
-      const data = await qualiphotoService.getQualiPhotoSignatures(item.id, token);
-      const newSignatures = {
-        technicien: data.signatures.technicien ? { signature: '', email: data.signatures.technicien.email } : null,
-        control: data.signatures.control ? { signature: '', email: data.signatures.control.email } : null,
-        admin: data.signatures.admin ? { signature: '', email: data.signatures.admin.email } : null,
-      };
-      setSignatures(newSignatures);
-    } catch (err) {
-      console.error('Failed to load signatures:', err);
-    } finally {
-      setIsLoadingSignatures(false);
-    }
-  };
+  }, [item, token, sortOrder, loadSignatures]);
 
   const handleSignatureComplete = async (role: string, signature: string, email: string) => {
     if (!item || !token) return;
@@ -564,6 +564,7 @@ type Props = {
                   <View style={styles.imageWrap}>
                     <Image source={{ uri: item.photo }} style={styles.image} />
                     <View style={[styles.childGridOverlay, { gap: 4 }]}>
+                       {item.title && <Text style={styles.childGridTitle} numberOfLines={1}>{item.title}</Text>}
                       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                         <View style={{ flex: 1, marginRight: 8 }}>
                           {item.user_name && (

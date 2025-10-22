@@ -31,7 +31,7 @@ export function CreateChildQualiPhotoForm({ onClose, onSuccess, parentItem }: Fo
   const [isTranscribing, setIsTranscribing] = useState(false);
   const [latitude, setLatitude] = useState<number | null>(null);
   const [longitude, setLongitude] = useState<number | null>(null);
-  const [locationStatus, setLocationStatus] = useState<'idle' | 'fetching' | 'success' | 'error'>('idle');
+  const [, setLocationStatus] = useState<'idle' | 'fetching' | 'success' | 'error'>('idle');
   const [creationCount, setCreationCount] = useState(0);
 
   const [zones, setZones] = useState<QualiZone[]>([]);
@@ -221,7 +221,7 @@ export function CreateChildQualiPhotoForm({ onClose, onSuccess, parentItem }: Fo
       }
     }
     loadZones();
-  }, [token, parentItem?.id_project]);
+  }, [token, parentItem?.id_project, parentItem.id_zone, selectedZoneId]);
 
   useEffect(() => {
     const fetchLocation = async () => {
@@ -287,6 +287,9 @@ export function CreateChildQualiPhotoForm({ onClose, onSuccess, parentItem }: Fo
             {parentItem.photo ? (
               <View style={styles.parentPhotoContainer}>
                 <Image source={{ uri: parentItem.photo }} style={styles.parentPhoto} />
+                <View style={styles.parentInfoOverlay}>
+                  <Text style={styles.parentInfoText} numberOfLines={1}>{parentItem.title || 'Photo "Avant"'}</Text>
+                </View>
               </View>
             ) : null}
           
@@ -336,6 +339,9 @@ export function CreateChildQualiPhotoForm({ onClose, onSuccess, parentItem }: Fo
                   <TouchableOpacity style={[styles.iconButton, styles.iconButtonSecondary]} onPress={() => setPhoto(null)}>
                     <Ionicons name="trash-outline" size={20} color="#dc2626" />
                   </TouchableOpacity>
+                </View>
+                <View style={styles.parentInfoOverlay}>
+                  <Text style={styles.parentInfoText} numberOfLines={1}>{title || parentItem.title || 'Photo "Après"'}</Text>
                 </View>
               </View>
             ) : (
@@ -391,7 +397,17 @@ export function CreateChildQualiPhotoForm({ onClose, onSuccess, parentItem }: Fo
                   </TouchableOpacity>
                 </View>
               )}
-              <View style={{ marginTop: 16 }}>
+              <View style={{ marginTop: 16, gap: 12 }}>
+                <View style={[styles.inputWrap]}>
+                  <Ionicons name="text-outline" size={16} color="#6b7280" />
+                  <TextInput
+                    placeholder="Titre"
+                    placeholderTextColor="#9ca3af"
+                    value={title}
+                    onChangeText={setTitle}
+                    style={styles.input}
+                  />
+                </View>
                 <View style={[styles.inputWrap, { alignItems: 'flex-start' }]}>
                   <Ionicons name="chatbubble-ellipses-outline" size={16} color="#6b7280" style={{ marginTop: 4 }} />
                   <TextInput
