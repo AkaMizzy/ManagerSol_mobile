@@ -780,6 +780,7 @@ type Props = {
                       <View style={styles.imageWrap}>
                         <Image source={{ uri: item.photo }} style={styles.image} />
                         <View style={[styles.childGridOverlay, { gap: 4 }]}>
+                          {item.title && <Text style={styles.childGridTitle} numberOfLines={1}>{item.title}</Text>}
                           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                             <View style={{ flex: 1, marginRight: 8 }}>
                               {item.user_name && (
