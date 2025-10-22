@@ -14,6 +14,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AppHeader from './AppHeader';
 import { CreateChildQualiPhotoForm } from './CreateChildQualiPhotoModal';
 import CreateComplementaireQualiPhotoModal from './CreateComplementaireQualiPhotoModal';
+import SignatureField from './SignatureField';
 
 const cameraIcon = require('@/assets/icons/camera.gif');
 
@@ -140,6 +141,18 @@ type Props = {
   const [declCompanyUsers, setDeclCompanyUsers] = useState<any[]>([]);
   const [declPrefill, setDeclPrefill] = useState<any | null>(null);
 
+  // Signature states
+  const [signatures, setSignatures] = useState<{
+    technicien: { signature: string; email: string } | null;
+    control: { signature: string; email: string } | null;
+    admin: { signature: string; email: string } | null;
+  }>({
+    technicien: null,
+    control: null,
+    admin: null,
+  });
+  const [isLoadingSignatures, setIsLoadingSignatures] = useState(false);
+
   useEffect(() => {
     setItem(initialItem || null);
     setSortOrder('desc'); // Reset sort order when item changes
@@ -147,6 +160,7 @@ type Props = {
     setComplementActionsVisible(false);
     setLayoutMode('list');
     setComplement(null);
+    setSignatures({ technicien: null, control: null, admin: null });
   }, [initialItem]);
 
   // Load declaration dropdowns when modal opens
@@ -232,12 +246,53 @@ type Props = {
       } else {
         setComplement(null);
       }
+      
+      // Load signatures
+      loadSignatures();
     } else {
       setChildren([]);
       setComments([]);
       setComplement(null);
     }
   }, [item, token, sortOrder]);
+
+  const loadSignatures = async () => {
+    if (!item || !token) return;
+    setIsLoadingSignatures(true);
+    try {
+      const data = await qualiphotoService.getQualiPhotoSignatures(item.id, token);
+      const newSignatures = {
+        technicien: data.signatures.technicien ? { signature: '', email: data.signatures.technicien.email } : null,
+        control: data.signatures.control ? { signature: '', email: data.signatures.control.email } : null,
+        admin: data.signatures.admin ? { signature: '', email: data.signatures.admin.email } : null,
+      };
+      setSignatures(newSignatures);
+    } catch (err) {
+      console.error('Failed to load signatures:', err);
+    } finally {
+      setIsLoadingSignatures(false);
+    }
+  };
+
+  const handleSignatureComplete = async (role: string, signature: string, email: string) => {
+    if (!item || !token) return;
+    try {
+      await qualiphotoService.saveSignature({
+        id_qualiphoto: item.id,
+        signature_role: role as 'technicien' | 'control' | 'admin',
+        signature,
+        signer_email: email,
+      }, token);
+      
+      // Optimistic update
+      setSignatures(prev => ({ ...prev, [role]: { signature, email } }));
+
+      // Reload to confirm
+      await loadSignatures();
+    } catch (err: any) {
+      Alert.alert('Error', err.message || 'Failed to save signature.');
+    }
+  };
 
   const subtitle = useMemo(() => {
     if (!item) return '';
@@ -535,6 +590,39 @@ type Props = {
           <ScrollView bounces>
             <View style={[styles.content, { paddingTop: 0 }]}>
               
+              <View style={styles.card}>
+                {isLoadingSignatures ? (
+                  <ActivityIndicator style={{ marginVertical: 20 }} />
+                ) : (
+                  <View style={styles.signatureFieldsContainer}>
+                    <SignatureField
+                      role="technicien"
+                      roleLabel="Technicien"
+                      onSignatureComplete={handleSignatureComplete}
+                      isCompleted={!!signatures.technicien}
+                      disabled={!!signatures.technicien}
+                      signerEmail={signatures.technicien?.email}
+                    />
+                    <SignatureField
+                      role="control"
+                      roleLabel="Contrôle"
+                      onSignatureComplete={handleSignatureComplete}
+                      isCompleted={!!signatures.control}
+                      disabled={!!signatures.control}
+                      signerEmail={signatures.control?.email}
+                    />
+                    <SignatureField
+                      role="admin"
+                      roleLabel="Admin"
+                      onSignatureComplete={handleSignatureComplete}
+                      isCompleted={!!signatures.admin}
+                      disabled={!!signatures.admin}
+                      signerEmail={signatures.admin?.email}
+                    />
+                  </View>
+                )}
+              </View>
+
               {isActionsVisible && (
                 <>
                   {(item.voice_note || (item.latitude && item.longitude) || item.after === 1) && (
@@ -1663,6 +1751,19 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     paddingTop: 8,
     paddingBottom: 8,
+  },
+  card: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#f87b1b',
+  },
+  signatureFieldsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 8,
   },
 });
 

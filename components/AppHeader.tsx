@@ -35,6 +35,18 @@ export default function AppHeader({
 }: AppHeaderProps) {
   const router = useRouter();
   const [imageError, setImageError] = useState(false);
+  const [currentDate, setCurrentDate] = useState(new Date());
+
+  // Update time every second for a real-time feel
+  useEffect(() => {
+    const timerId = setInterval(() => {
+      setCurrentDate(new Date());
+    }, 1000); // Update every second
+
+    return () => {
+      clearInterval(timerId);
+    };
+  }, []);
 
   // Reset image error when user changes
   useEffect(() => {
@@ -46,6 +58,14 @@ export default function AppHeader({
       onNavigate();
     }
     router.push(path);
+  };
+
+  const formatDateTime = (date: Date) => {
+    const day = date.getDate();
+    const month = date.toLocaleString('en-GB', { month: 'short' });
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    return `${day} ${month} - ${hours}:${minutes}`;
   };
 
   const handleNotificationPress = () => {
@@ -86,6 +106,7 @@ export default function AppHeader({
               : 'QualiSol'
             }
           </Text>
+          <Text style={styles.dateTime}>{formatDateTime(currentDate)}</Text>
         </View>
         
         {/* Right side - Action Icons */}
@@ -168,6 +189,12 @@ const styles = StyleSheet.create({
     fontWeight: '700', 
     color: '#11224e',
     textAlign: 'center'
+  },
+  dateTime: {
+    fontSize: 14,
+    color: '#11224e',
+    opacity: 0.9,
+    textAlign: 'center',
   },
   logo: {
     width: 50,

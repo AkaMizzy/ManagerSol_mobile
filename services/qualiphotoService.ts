@@ -282,6 +282,33 @@ class QualiPhotoService {
     if (!res.ok) throw new Error(data?.error || 'Failed to delete complementary photo');
     return data;
   }
+
+  // Signature-related methods
+  saveSignature(payload: {
+    id_qualiphoto: string;
+    signature_role: 'technicien' | 'control' | 'admin';
+    signature: string;
+    signer_email: string;
+  }, token: string): Promise<{ message: string; signatureId: string; }> {
+    return this.makeRequest('/qualiphoto-signatures', token, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+  }
+
+  getQualiPhotoSignatures(qualiphotoId: string, token: string): Promise<{
+    qualiphotoId: string;
+    signatures: {
+      technicien?: { id: string; email: string; date: string; };
+      control?: { id: string; email: string; date: string; };
+      admin?: { id: string; email: string; date: string; };
+    };
+    totalSignatures: number;
+    isComplete: boolean;
+  }> {
+    return this.makeRequest(`/qualiphoto-signatures/${qualiphotoId}`, token);
+  }
 }
 
 export default new QualiPhotoService();
