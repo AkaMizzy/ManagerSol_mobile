@@ -634,7 +634,7 @@ type Props = {
                       )}
                     </View>
                   )}
-                  {(item.user_name || (typeof item.commentaire === 'string' && item.commentaire.trim().length > 0)) ? (
+                  {(typeof item.commentaire === 'string' && item.commentaire.trim().length > 0) ? (
                     <View style={styles.metaCard}>
                       {typeof item.commentaire === 'string' && item.commentaire.trim().length > 0 ? (
                         <View style={[styles.metaRow, { borderTopWidth: 0, paddingTop: 0 }]}>
@@ -778,6 +778,20 @@ type Props = {
                     <TouchableOpacity onPress={() => { if (!item.photo) return; setImagePreviewVisible(true); }} activeOpacity={0.9}>
                       <View style={styles.imageWrap}>
                         <Image source={{ uri: item.photo }} style={styles.image} />
+                        <View style={[styles.childGridOverlay, { gap: 4 }]}>
+                          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <View style={{ flex: 1, marginRight: 8 }}>
+                              {item.user_name && (
+                                <Text style={styles.childGridDate} numberOfLines={1}>
+                                  {`${item.user_name} ${item.user_lastname || ''}`.trim()}
+                                </Text>
+                              )}
+                            </View>
+                            <View style={{ flexShrink: 0 }}>
+                              {item.date_taken && <Text style={styles.childGridDate}>{formatDate(item.date_taken)}</Text>}
+                            </View>
+                          </View>
+                        </View>
                       </View>
                     </TouchableOpacity>
                     {hasActionsOrDescription && (
@@ -851,16 +865,10 @@ type Props = {
                       )}
                     </View>
                   )}
-                  {(item.user_name || (typeof item.commentaire === 'string' && item.commentaire.trim().length > 0)) ? (
+                  {(typeof item.commentaire === 'string' && item.commentaire.trim().length > 0) ? (
                     <View style={styles.metaCard}>
-                      {item.user_name ? (
-                        <View style={[styles.metaRow, { borderTopWidth: 0, paddingTop: 0 }]}>
-                          <Text style={styles.metaLabel}>Prise par</Text>
-                          <Text style={styles.metaValue} numberOfLines={1}>{`${item.user_name} ${item.user_lastname || ''}`.trim()}</Text>
-                        </View>
-                      ) : null}
                       {typeof item.commentaire === 'string' && item.commentaire.trim().length > 0 ? (
-                        <View style={[styles.metaRow, item.user_name ? { borderTopWidth: 0, paddingTop: 0 } : null]}>
+                        <View style={[styles.metaRow, { borderTopWidth: 0, paddingTop: 0 }]}>
                           <Text style={styles.metaLabel}>Description</Text>
                           <Text style={[styles.metaValue, styles.metaMultiline]}>{item.commentaire}</Text>
                         </View>
