@@ -20,6 +20,7 @@ export const ICONS = {
   cameraGif: require('@/assets/icons/camera.gif'),
   constructionGif: require('@/assets/icons/construction.gif'),
   signature: require('@/assets/icons/sign.png'),
+  chatgpt: require('@/assets/icons/chatgpt.png'),
 } as const;
 
 export const ICONS_ASSETS = Object.values(ICONS);

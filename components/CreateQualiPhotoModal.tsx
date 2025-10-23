@@ -445,17 +445,6 @@ export default function CreateQualiPhotoModal({ visible, onClose, onSuccess, ini
                     <TouchableOpacity style={[styles.iconButton, styles.iconButtonSecondary]} onPress={handlePickPhoto}>
                       <Ionicons name="camera-reverse-outline" size={20} color="#11224e" />
                     </TouchableOpacity>
-                    <TouchableOpacity
-                      style={[styles.iconButton, styles.iconButtonSecondary, (isGeneratingDescription || !photo) && styles.buttonDisabled]}
-                      onPress={handleGenerateDescription}
-                      disabled={isGeneratingDescription || !photo}
-                    >
-                      {isGeneratingDescription ? (
-                        <ActivityIndicator size="small" color="#11224e" />
-                      ) : (
-                        <Ionicons name="sparkles-outline" size={20} color="#11224e" />
-                      )}
-                    </TouchableOpacity>
                     <TouchableOpacity style={[styles.iconButton, styles.iconButtonSecondary]} onPress={() => setPhoto(null)}>
                       <Ionicons name="trash-outline" size={20} color="#dc2626" />
                     </TouchableOpacity>
@@ -512,6 +501,21 @@ export default function CreateQualiPhotoModal({ visible, onClose, onSuccess, ini
                           <Ionicons name="arrow-forward-circle-outline" size={20} color="#11224e" />
                           <Ionicons name="document-text-outline" size={20} color="#11224e" />
                         </View>
+                      )}
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[
+                        styles.voiceRecordButton,
+                        styles.transcribeButton,
+                        (isGeneratingDescription || !photo) && styles.buttonDisabled,
+                      ]}
+                      onPress={handleGenerateDescription}
+                      disabled={isGeneratingDescription || !photo}
+                    >
+                      {isGeneratingDescription ? (
+                        <ActivityIndicator size="small" color="#11224e" />
+                      ) : (
+                        <Image source={require('@/assets/icons/chatgpt.png')} style={{ width: 24, height: 24 }} />
                       )}
                     </TouchableOpacity>
                   </View>
