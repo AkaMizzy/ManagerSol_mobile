@@ -56,6 +56,7 @@ type CreateQualiPhotoPayload = {
   commentaire?: string;
   date_taken?: string;
   photo?: { uri: string; name: string; type: string };
+  photo_plan?: { uri: string; name: string; type: string };
   voice_note?: { uri: string; name: string; type: string };
   latitude?: number;
   longitude?: number;
@@ -218,6 +219,14 @@ class QualiPhotoService {
         uri: payload.photo.uri,
         name: payload.photo.name,
         type: payload.photo.type,
+      } as any);
+    }
+
+    if (payload.photo_plan) {
+      formData.append('photo_plan', {
+        uri: payload.photo_plan.uri,
+        name: payload.photo_plan.name,
+        type: payload.photo_plan.type,
       } as any);
     }
 

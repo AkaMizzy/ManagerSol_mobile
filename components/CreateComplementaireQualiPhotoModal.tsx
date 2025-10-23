@@ -30,6 +30,7 @@ export default function CreateComplementaireQualiPhotoModal({ visible, onClose, 
   const [recordingDuration, setRecordingDuration] = useState(0);
   const [isTranscribing, setIsTranscribing] = useState(false);
   const [comment, setComment] = useState('');
+  const [isGeneratingDescription, setIsGeneratingDescription] = useState(false);
   const [latitude, setLatitude] = useState<number | null>(null);
   const [longitude, setLongitude] = useState<number | null>(null);
   const [locationStatus, setLocationStatus] = useState<'idle' | 'fetching' | 'success' | 'error'>('idle');
@@ -135,6 +136,22 @@ export default function CreateComplementaireQualiPhotoModal({ visible, onClose, 
       setError(e?.message || 'Échec de la transcription');
     } finally {
       setIsTranscribing(false);
+    }
+  };
+
+  const handleGenerateDescription = async () => {
+    if (!photo || !token) {
+      return;
+    }
+    setIsGeneratingDescription(true);
+    setError(null);
+    try {
+      const result = await qualiphotoService.describeImage(photo, token);
+      setComment(prev => prev ? `${prev}\n${result.description}` : result.description);
+    } catch (e: any) {
+      setError(e?.message || 'Failed to generate description');
+    } finally {
+      setIsGeneratingDescription(false);
     }
   };
 
@@ -260,6 +277,17 @@ export default function CreateComplementaireQualiPhotoModal({ visible, onClose, 
                         <Ionicons name="arrow-forward-circle-outline" size={20} color="#11224e" />
                         <Ionicons name="document-text-outline" size={20} color="#11224e" />
                       </View>
+                    )}
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.voiceRecordButton, styles.transcribeButton, (!photo || isGeneratingDescription) && styles.buttonDisabled]}
+                    onPress={handleGenerateDescription}
+                    disabled={!photo || isGeneratingDescription}
+                  >
+                    {isGeneratingDescription ? (
+                      <ActivityIndicator size="small" color="#11224e" />
+                    ) : (
+                      <Image source={require('@/assets/icons/chatgpt.png')} style={{ width: 24, height: 24 }} />
                     )}
                   </TouchableOpacity>
                 </View>

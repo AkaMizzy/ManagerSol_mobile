@@ -1,4 +1,5 @@
 import PictureAnnotator from '@/components/PictureAnnotator';
+import ZonePictureEditor from '@/components/ZonePictureEditor';
 import { useAuth } from '@/contexts/AuthContext';
 import qualiphotoService, { QualiPhotoItem, QualiZone } from '@/services/qualiphotoService';
 import { Ionicons } from '@expo/vector-icons';
@@ -35,6 +36,10 @@ export function CreateChildQualiPhotoForm({ onClose, onSuccess, parentItem }: Fo
   const [creationCount, setCreationCount] = useState(0);
   const [isGeneratingDescription, setIsGeneratingDescription] = useState(false);
 
+  const [annotatedPlan, setAnnotatedPlan] = useState<{ uri: string; name: string; type: string } | null>(null);
+  const [isPlanEditorVisible, setPlanEditorVisible] = useState(false);
+  const [currentZoneLogo, setCurrentZoneLogo] = useState<string | null>(null);
+
   const [zones, setZones] = useState<QualiZone[]>([]);
   const [zonesLoading, setZonesLoading] = useState(false);
   const [zonesError, setZonesError] = useState<string | null>(null);
@@ -54,6 +59,7 @@ export function CreateChildQualiPhotoForm({ onClose, onSuccess, parentItem }: Fo
     setPhoto(null);
     setVoiceNote(null);
     setRecording(null);
+    setAnnotatedPlan(null);
     if (sound) sound.unloadAsync();
     setSound(null);
     setIsPlaying(false);
@@ -119,9 +125,10 @@ export function CreateChildQualiPhotoForm({ onClose, onSuccess, parentItem }: Fo
       const created = await qualiphotoService.create({
         id_project: parentItem.id_project,
         id_zone: selectedZoneId,
-        title: title || undefined,
+        title: title || parentItem.title || undefined,
         commentaire: comment,
         photo,
+        photo_plan: annotatedPlan || undefined,
         latitude: latitude || undefined,
         longitude: longitude || undefined,
         id_qualiphoto_parent: parentItem.id,
@@ -303,9 +310,6 @@ export function CreateChildQualiPhotoForm({ onClose, onSuccess, parentItem }: Fo
             {parentItem.photo ? (
               <View style={styles.parentPhotoContainer}>
                 <Image source={{ uri: parentItem.photo }} style={styles.parentPhoto} />
-                <View style={styles.parentInfoOverlay}>
-                  <Text style={styles.parentInfoText} numberOfLines={1}>{parentItem.title || 'Photo "Avant"'}</Text>
-                </View>
               </View>
             ) : null}
           
@@ -327,9 +331,6 @@ export function CreateChildQualiPhotoForm({ onClose, onSuccess, parentItem }: Fo
                   <TouchableOpacity style={[styles.iconButton, styles.iconButtonSecondary]} onPress={() => setPhoto(null)}>
                     <Ionicons name="trash-outline" size={20} color="#dc2626" />
                   </TouchableOpacity>
-                </View>
-                <View style={styles.parentInfoOverlay}>
-                  <Text style={styles.parentInfoText} numberOfLines={1}>{title || parentItem.title || 'Photo "Après"'}</Text>
                 </View>
               </View>
             ) : (
@@ -429,36 +430,48 @@ export function CreateChildQualiPhotoForm({ onClose, onSuccess, parentItem }: Fo
                 </View>
               </View>
             </View>
-          </View>
 
-          <View style={styles.separator} />
-
-          {/* Zone Selector */}
-          <View style={{ gap: 8 }}>
-            {zonesLoading ? (
-              <ActivityIndicator size="small" color="#11224e" />
-            ) : zonesError ? (
-              <View style={styles.alertBanner}>
-                <Ionicons name="warning" size={16} color="#b45309" />
-                <Text style={styles.alertBannerText}>{zonesError}</Text>
-              </View>
-            ) : (
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.zoneList}>
-                {zones.map(zone => {
-                  const selected = zone.id === selectedZoneId;
-                  return (
-                    <TouchableOpacity key={zone.id} style={[styles.zoneItem, selected && styles.zoneItemSelected]} onPress={() => setSelectedZoneId(zone.id)}>
-                      {zone.logo ? (
-                        <Image source={{ uri: zone.logo }} style={styles.zoneLogo} />
-                      ) : (
-                        <View style={[styles.zoneLogo, { backgroundColor: '#e5e7eb' }]} />
-                      )}
-                      <Text style={[styles.zoneTitle, selected && { color: '#11224e' }]} numberOfLines={1}>{zone.title}</Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </ScrollView>
-            )}
+            {/* Zone Selector */}
+            <View style={{ gap: 8 }}>
+              {zonesLoading ? (
+                <ActivityIndicator size="small" color="#11224e" />
+              ) : zonesError ? (
+                <View style={styles.alertBanner}>
+                  <Ionicons name="warning" size={16} color="#b45309" />
+                  <Text style={styles.alertBannerText}>{zonesError}</Text>
+                </View>
+              ) : (
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.zoneList}>
+                  {zones.map(zone => {
+                    const selected = zone.id === selectedZoneId;
+                    return (
+                      <TouchableOpacity
+                        key={zone.id}
+                        style={[styles.zoneItem, selected && styles.zoneItemSelected]}
+                        onPress={() => {
+                          setSelectedZoneId(zone.id);
+                          if (zone.logo) {
+                            setCurrentZoneLogo(zone.logo);
+                            setPlanEditorVisible(true);
+                          } else {
+                            Alert.alert("Pas de plan", "Cette zone n'a pas de plan de zone à éditer.");
+                          }
+                        }}
+                      >
+                        {annotatedPlan && selected ? (
+                          <Image source={{ uri: annotatedPlan.uri }} style={styles.zoneLogo} />
+                        ) : zone.logo ? (
+                          <Image source={{ uri: zone.logo }} style={styles.zoneLogo} />
+                        ) : (
+                          <View style={[styles.zoneLogo, { backgroundColor: '#e5e7eb' }]} />
+                        )}
+                        <Text style={[styles.zoneTitle, selected && { color: '#11224e' }]} numberOfLines={1}>{zone.title}</Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </ScrollView>
+              )}
+            </View>
           </View>
         </ScrollView>
 
@@ -493,6 +506,23 @@ export function CreateChildQualiPhotoForm({ onClose, onSuccess, parentItem }: Fo
             setAnnotatorVisible(false);
           }}
           title="Annoter la photo"
+        />
+      </Modal>
+    )}
+    {isPlanEditorVisible && (
+      <Modal
+        animationType="slide"
+        visible={isPlanEditorVisible}
+        onRequestClose={() => setPlanEditorVisible(false)}
+      >
+        <ZonePictureEditor
+          baseImageUri={currentZoneLogo}
+          onClose={() => setPlanEditorVisible(false)}
+          onSaved={(image) => {
+            setAnnotatedPlan(image);
+            setPlanEditorVisible(false);
+          }}
+          title="Annoter le plan de zone"
         />
       </Modal>
     )}

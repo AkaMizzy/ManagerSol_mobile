@@ -528,7 +528,7 @@ export default function CreateQualiPhotoModal({ visible, onClose, onSuccess, ini
                       placeholderTextColor="#9ca3af"
                       value={comment}
                       onChangeText={setComment}
-                      style={[styles.input, { height: 250 }]}
+                      style={[styles.input, { height: 180 }]}
                       multiline
                       numberOfLines={6}
                       textAlignVertical="top"

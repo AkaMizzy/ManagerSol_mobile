@@ -1,28 +1,23 @@
-import { useAuth } from '@/contexts/AuthContext';
-import qualiphotoService, { QualiPhotoItem, QualiZone } from '@/services/qualiphotoService';
 import { Ionicons } from '@expo/vector-icons';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, Image, LayoutChangeEvent, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, Image, LayoutChangeEvent, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
 import ViewShot, { captureRef } from 'react-native-view-shot';
 
 type Props = {
-  child: QualiPhotoItem;
+  baseImageUri: string | null;
   onClose: () => void;
-  onSaved?: (updated: { id: string; photo_plan: string }) => void;
+  onSaved: (image: { uri: string; name: string; type: string }) => void;
+  title?: string;
 };
 
 type DrawPath = { color: string; width: number; d: string };
 
 const COLORS = ['#EF4444', '#F59E0B', '#10B981', '#3B82F6', '#8B5CF6', '#111827'];
 
-export default function ZonePictureEditor({ child, onClose, onSaved }: Props) {
-  const { token } = useAuth();
+export default function ZonePictureEditor({ baseImageUri, onClose, onSaved, title = "Éditer l'image" }: Props) {
   const insets = useSafeAreaInsets();
-  const [zones, setZones] = useState<QualiZone[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [selectedColor, setSelectedColor] = useState(COLORS[3]);
   const [strokeWidth, setStrokeWidth] = useState(4);
   const [paths, setPaths] = useState<DrawPath[]>([]);
@@ -34,16 +29,6 @@ export default function ZonePictureEditor({ child, onClose, onSaved }: Props) {
   const [imgH, setImgH] = useState<number | null>(null);
   const [areaW, setAreaW] = useState<number | null>(null);
   const [areaH, setAreaH] = useState<number | null>(null);
-
-  const zoneLogo = useMemo(() => {
-    const z = zones.find(zz => zz.id === child.id_zone);
-    return z?.logo || null;
-  }, [zones, child.id_zone]);
-
-  const baseImageUri = useMemo(() => {
-    if (child?.photo_plan) return child.photo_plan;
-    return zoneLogo;
-  }, [child?.photo_plan, zoneLogo]);
 
   useEffect(() => {
     if (!baseImageUri) return;
@@ -64,23 +49,6 @@ export default function ZonePictureEditor({ child, onClose, onSaved }: Props) {
     setAreaH(height);
   };
 
-  useEffect(() => {
-    async function load() {
-      if (!token || !child?.id_project) return;
-      setLoading(true);
-      setError(null);
-      try {
-        const fetched = await qualiphotoService.getZonesByProject(child.id_project, token);
-        setZones(fetched);
-      } catch (e: any) {
-        setError(e?.message || 'Impossible de charger la zone');
-      } finally {
-        setLoading(false);
-      }
-    }
-    load();
-  }, [token, child?.id_project]);
-
   const handlePanStart = useCallback((x: number, y: number) => {
     setCurrentPath(`M ${x} ${y}`);
   }, []);
@@ -99,16 +67,13 @@ export default function ZonePictureEditor({ child, onClose, onSaved }: Props) {
   const handleClear = () => { setPaths([]); setCurrentPath(''); };
 
   const onCaptureAndSave = async () => {
-    if (!token) return;
     if (!canvasRef.current) return;
     setSubmitting(true);
     try {
       const uri = await captureRef(canvasRef, { format: 'jpg', quality: 0.9, result: 'tmpfile' } as any);
-      const response = await qualiphotoService.uploadPlan(child.id, { uri, name: `plan-${Date.now()}.jpg`, type: 'image/jpeg' }, token);
-      onSaved?.(response);
-      onClose();
+      onSaved({ uri, name: `annotated-${Date.now()}.jpg`, type: 'image/jpeg' });
     } catch (e: any) {
-      Alert.alert('Erreur', e?.message || "Échec de l'enregistrement du plan");
+      Alert.alert('Erreur', e?.message || "Échec de l'enregistrement de l'image");
     } finally {
       setSubmitting(false);
     }
@@ -120,7 +85,7 @@ export default function ZonePictureEditor({ child, onClose, onSaved }: Props) {
         <TouchableOpacity onPress={onClose} style={styles.headerBtn} accessibilityLabel="Fermer">
           <Ionicons name="close" size={24} color="#f87b1b" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Éditer le plan de zone</Text>
+        <Text style={styles.headerTitle}>{title}</Text>
         <View style={{ width: 40 }} />
       </View>
 
@@ -147,14 +112,7 @@ export default function ZonePictureEditor({ child, onClose, onSaved }: Props) {
       </View>
 
       <View style={styles.content} onLayout={onAreaLayout}>
-        {loading ? (
-          <ActivityIndicator size="large" color="#11224e" />
-        ) : error ? (
-          <View style={styles.alertBanner}>
-            <Ionicons name="warning" size={16} color="#b45309" />
-            <Text style={styles.alertBannerText}>{error}</Text>
-          </View>
-        ) : (
+        {baseImageUri ? (
           <View style={styles.canvasFrame}>
             <View style={styles.centerWrap}>
               <ViewShot ref={canvasRef} style={[styles.canvasWrap, fitted ? { width: fitted.width, height: fitted.height } : null]} options={{ format: 'jpg', quality: 0.9 }}>
@@ -172,11 +130,7 @@ export default function ZonePictureEditor({ child, onClose, onSaved }: Props) {
                 }}
                 onResponderRelease={() => handlePanEnd()}
               >
-                {baseImageUri ? (
-                  <Image source={{ uri: baseImageUri }} style={styles.baseImage} />
-                ) : (
-                  <View style={[styles.baseImage, { backgroundColor: '#e5e7eb' }]} />
-                )}
+                <Image source={{ uri: baseImageUri }} style={styles.baseImage} />
                 <Svg style={StyleSheet.absoluteFill} pointerEvents="none">
                   {paths.map((p, idx) => (
                     <Path key={idx} d={p.d} stroke={p.color} strokeWidth={p.width} fill="none" strokeLinecap="round" strokeLinejoin="round" />
@@ -189,11 +143,16 @@ export default function ZonePictureEditor({ child, onClose, onSaved }: Props) {
               </ViewShot>
             </View>
           </View>
+        ) : (
+          <View style={styles.alertBanner}>
+            <Ionicons name="warning" size={16} color="#b45309" />
+            <Text style={styles.alertBannerText}>Aucune image de base fournie</Text>
+          </View>
         )}
       </View>
 
       <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 10) }]}>
-        <TouchableOpacity style={[styles.saveButton, submitting && styles.saveButtonDisabled]} onPress={onCaptureAndSave} disabled={submitting || loading}>
+        <TouchableOpacity style={[styles.saveButton, submitting && styles.saveButtonDisabled]} onPress={onCaptureAndSave} disabled={submitting}>
           {submitting ? (
             <>
               <Ionicons name="hourglass" size={16} color="#FFFFFF" />
@@ -202,7 +161,7 @@ export default function ZonePictureEditor({ child, onClose, onSaved }: Props) {
           ) : (
             <>
               <Ionicons name="save" size={16} color="#FFFFFF" />
-              <Text style={styles.saveButtonText}>Enregistrer le Plan</Text>
+              <Text style={styles.saveButtonText}>Enregistrer</Text>
             </>
           )}
         </TouchableOpacity>
