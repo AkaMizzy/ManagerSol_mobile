@@ -12,6 +12,7 @@ import { ActivityIndicator, Alert, Image, Linking, Modal, Platform, Pressable, S
 import MapView, { Marker } from 'react-native-maps';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AppHeader from './AppHeader';
+import ComparisonModal from './ComparisonModal';
 import { CreateChildQualiPhotoForm } from './CreateChildQualiPhotoModal';
 import CreateComplementaireQualiPhotoModal from './CreateComplementaireQualiPhotoModal';
 import SignatureField from './SignatureField';
@@ -141,6 +142,10 @@ type Props = {
   const [declProjects, setDeclProjects] = useState<any[]>([]);
   const [declCompanyUsers, setDeclCompanyUsers] = useState<any[]>([]);
   const [declPrefill, setDeclPrefill] = useState<any | null>(null);
+  const [isComparisonModalVisible, setComparisonModalVisible] = useState(false);
+  const [isComparing, setIsComparing] = useState(false);
+  const [comparisonDescription, setComparisonDescription] = useState<string | null>(null);
+  const [comparisonError, setComparisonError] = useState<string | null>(null);
 
   // Signature states
   const [signatures, setSignatures] = useState<{
@@ -163,6 +168,25 @@ type Props = {
     setComplement(null);
     setSignatures({ technicien: null, control: null, admin: null });
   }, [initialItem]);
+
+  const handleCompare = async (beforeUrl: string | null, afterUrl: string | null) => {
+    if (!token || !beforeUrl || !afterUrl) {
+      Alert.alert('Erreur', 'Les deux images sont requises pour la comparaison.');
+      return;
+    }
+    setComparisonDescription(null);
+    setComparisonError(null);
+    setIsComparing(true);
+    setComparisonModalVisible(true);
+    try {
+      const result = await qualiphotoService.compareImages(beforeUrl, afterUrl, token);
+      setComparisonDescription(result.description);
+    } catch (e: any) {
+      setComparisonError(e?.message || "Une erreur est survenue lors de la comparaison des images.");
+    } finally {
+      setIsComparing(false);
+    }
+  };
 
   const loadSignatures = useCallback(async () => {
     if (!item || !token) return;
@@ -896,6 +920,15 @@ type Props = {
                     </TouchableOpacity>
                     {complement && (
                       <TouchableOpacity
+                        onPress={() => handleCompare(item.photo, complement.photo_comp || complement.photo)}
+                        accessibilityLabel="Comparer les images"
+                        style={{ marginLeft: 12 }}
+                      >
+                        <Image source={ICONS.chatgpt} style={{ width: 22, height: 22 }} />
+                      </TouchableOpacity>
+                    )}
+                    {complement && (
+                      <TouchableOpacity
                         onPress={async () => {
                           if (!token || !complement?.id) return;
                           try {
@@ -1248,6 +1281,13 @@ type Props = {
         {renderCommentModal()}
         {renderSignatureModal()}
       </View>
+      <ComparisonModal
+        visible={isComparisonModalVisible}
+        onClose={() => setComparisonModalVisible(false)}
+        isLoading={isComparing}
+        description={comparisonDescription}
+        error={comparisonError}
+      />
     </Modal>
   );
 }
@@ -1572,6 +1612,31 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: '#6b7280',
     marginRight: 8,
+  },
+  complementaireContainer: {
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#e5e7eb',
+    flexDirection: 'row',
+  },
+  compareButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+    backgroundColor: '#fff7ed',
+    borderColor: '#f87b1b',
+    borderWidth: 1,
+    gap: 6,
+    alignSelf: 'flex-start',
+    marginTop: 8,
+  },
+  compareButtonText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#f87b1b',
   },
   childGridItem: {
     width: '49%',

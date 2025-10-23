@@ -203,6 +203,21 @@ class QualiPhotoService {
     return data;
   }
 
+  async compareImages(beforeImageUrl: string, afterImageUrl: string, token: string): Promise<{ description: string }> {
+    // Convert absolute URLs from the client to relative paths for the backend
+    const beforeRelativeUrl = beforeImageUrl.replace(this.baseUrl, '');
+    const afterRelativeUrl = afterImageUrl.replace(this.baseUrl, '');
+
+    return this.makeRequest<{ description: string }>('/qualiphoto/compare-images', token, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        beforeImageUrl: beforeRelativeUrl,
+        afterImageUrl: afterRelativeUrl,
+      }),
+    });
+  }
+
   async create(payload: CreateQualiPhotoPayload, token: string): Promise<Partial<QualiPhotoItem>> {
     const formData = new FormData();
     if (payload.id_project) formData.append('id_project', payload.id_project);
