@@ -9,6 +9,8 @@ export type Project = {
   code: string | null;
   status: string | null;
   owner: string | null;
+  control: string | null;
+  technicien: string | null;
   project_type_id: string | null;
   project_type_title?: string | null;
 };
@@ -19,6 +21,8 @@ type CreateProjectInput = {
   df: string;
   status?: 0 | 1;
   owner?: string; // user id FK
+  control: string; // user id FK
+  technicien: string; // user id FK
   project_type_id?: string;
   id_project_type?: string;
 };
@@ -57,7 +61,7 @@ export async function createUserProject(token: string, body: CreateProjectInput)
 export async function updateUserProject(
   token: string,
   id: string | number,
-  body: { status?: 0 | 1; owner?: string | null }
+  body: { status?: 0 | 1; owner?: string | null; control?: string | null; technicien?: string | null }
 ): Promise<{ message: string }>{
   const res = await fetch(`${API_CONFIG.BASE_URL}/user/projects/${id}`, {
     method: 'PUT',

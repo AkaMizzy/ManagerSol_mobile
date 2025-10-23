@@ -33,6 +33,7 @@ export function CreateChildQualiPhotoForm({ onClose, onSuccess, parentItem }: Fo
   const [longitude, setLongitude] = useState<number | null>(null);
   const [, setLocationStatus] = useState<'idle' | 'fetching' | 'success' | 'error'>('idle');
   const [creationCount, setCreationCount] = useState(0);
+  const [isGeneratingDescription, setIsGeneratingDescription] = useState(false);
 
   const [zones, setZones] = useState<QualiZone[]>([]);
   const [zonesLoading, setZonesLoading] = useState(false);
@@ -83,6 +84,24 @@ export function CreateChildQualiPhotoForm({ onClose, onSuccess, parentItem }: Fo
       const asset = result.assets[0];
       setAnnotatorBaseUri(asset.uri);
       setAnnotatorVisible(true);
+    }
+  };
+
+  const handleGenerateDescription = async () => {
+    if (!photo || !token) {
+      Alert.alert('Erreur', "Veuillez d'abord sélectionner une image.");
+      return;
+    }
+    setIsGeneratingDescription(true);
+    setError(null);
+    try {
+      const result = await qualiphotoService.describeImage(photo, token);
+      setComment(prev => prev ? `${prev}\\n${result.description}` : result.description);
+    } catch (e: any) {
+      setError(e?.message || 'Échec de la génération de la description');
+      Alert.alert('Erreur', e?.message || 'Une erreur est survenue lors de la génération de la description.');
+    } finally {
+      setIsGeneratingDescription(false);
     }
   };
 
@@ -301,6 +320,17 @@ export function CreateChildQualiPhotoForm({ onClose, onSuccess, parentItem }: Fo
                 <View style={styles.imageActions}>
                   <TouchableOpacity style={[styles.iconButton, styles.iconButtonSecondary]} onPress={handlePickPhoto}>
                     <Ionicons name="camera-reverse-outline" size={20} color="#11224e" />
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.iconButton, styles.iconButtonSecondary, (isGeneratingDescription || !photo) && styles.buttonDisabled]}
+                    onPress={handleGenerateDescription}
+                    disabled={isGeneratingDescription || !photo}
+                  >
+                    {isGeneratingDescription ? (
+                      <ActivityIndicator size="small" color="#11224e" />
+                    ) : (
+                      <Ionicons name="sparkles-outline" size={20} color="#11224e" />
+                    )}
                   </TouchableOpacity>
                   <TouchableOpacity style={[styles.iconButton, styles.iconButtonSecondary]} onPress={openAnnotatorForExisting}>
                     <Ionicons name="create-outline" size={20} color="#11224e" />

@@ -179,6 +179,29 @@ class QualiPhotoService {
     return data;
   }
 
+  async describeImage(image: { uri: string; name: string; type: string }, token: string): Promise<{ description: string }> {
+    const formData = new FormData();
+    formData.append('image', {
+      uri: image.uri,
+      name: image.name,
+      type: image.type,
+    } as any);
+
+    const res = await fetch(`${API_CONFIG.BASE_URL}/qualiphoto/describe-image`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      body: formData,
+    });
+
+    const data = await res.json();
+    if (!res.ok) {
+      throw new Error(data?.error || 'Failed to generate image description');
+    }
+    return data;
+  }
+
   async create(payload: CreateQualiPhotoPayload, token: string): Promise<Partial<QualiPhotoItem>> {
     const formData = new FormData();
     if (payload.id_project) formData.append('id_project', payload.id_project);

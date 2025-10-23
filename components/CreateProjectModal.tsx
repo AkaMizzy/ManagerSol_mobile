@@ -22,24 +22,30 @@ export default function CreateProjectModal({ visible, onClose, onCreated }: Prop
   // code is generated server-side; no local state
   const [isActive, setIsActive] = useState(true);
   const [owner, setOwner] = useState('');
+  const [control, setControl] = useState('');
+  const [technicien, setTechnicien] = useState('');
   const [projectTypeId, setProjectTypeId] = useState('');
   const [projectTypes, setProjectTypes] = useState<{ id: string; title: string }[]>([]);
   const [projectTypeOpen, setProjectTypeOpen] = useState(false);
   const [companyUsers, setCompanyUsers] = useState<{ id: string; firstname?: string; lastname?: string; email?: string }[]>([]);
   const [loadingUsers, setLoadingUsers] = useState(false);
   const [ownerOpen, setOwnerOpen] = useState(false);
+  const [controlOpen, setControlOpen] = useState(false);
+  const [technicienOpen, setTechnicienOpen] = useState(false);
   const [loadingTypes, setLoadingTypes] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isDdPickerVisible, setDdPickerVisible] = useState(false);
   const [isDfPickerVisible, setDfPickerVisible] = useState(false);
 
-  const isDisabled = useMemo(() => !title || !dd || !df || !token, [title, dd, df, token]);
+  const isDisabled = useMemo(() => !title || !dd || !df || !control || !technicien || !token, [title, dd, df, control, technicien, token]);
 
   function validate(): string | null {
     if (!title) return 'Le titre est requis';
     if (!dd) return 'La date de début est requise';
     if (!df) return 'La date de fin est requise';
+    if (!control) return 'Le contrôleur est requis';
+    if (!technicien) return 'Le technicien est requis';
     const start = new Date(dd);
     const end = new Date(df);
     if (isNaN(start.getTime()) || isNaN(end.getTime())) return 'Dates invalides';
@@ -105,9 +111,11 @@ export default function CreateProjectModal({ visible, onClose, onCreated }: Prop
         df,
         status: isActive ? 1 : 0,
         owner: owner || undefined,
+        control,
+        technicien,
         id_project_type: projectTypeId || undefined,
       });
-      setTitle(''); setDd(''); setDf(''); setIsActive(true); setOwner(''); setProjectTypeId(''); setError(null);
+      setTitle(''); setDd(''); setDf(''); setIsActive(true); setOwner(''); setControl(''); setTechnicien(''); setProjectTypeId(''); setError(null);
       if (onCreated) await onCreated();
       onClose();
       Alert.alert('Succès', 'Projet créé avec succès');
@@ -233,6 +241,68 @@ export default function CreateProjectModal({ visible, onClose, onCreated }: Prop
                       ) : (
                         companyUsers.map(u => (
                           <TouchableOpacity key={u.id} onPress={() => { setOwner(String(u.id)); setOwnerOpen(false); }} style={{ paddingHorizontal: 12, paddingVertical: 10, backgroundColor: String(owner) === String(u.id) ? '#f1f5f9' : '#FFFFFF', borderBottomWidth: 1, borderBottomColor: '#f3f4f6' }}>
+                            <Text style={{ color: '#11224e' }}>{u.firstname || ''} {u.lastname || ''}</Text>
+                            {u.email ? <Text style={{ color: '#6b7280', fontSize: 12 }}>{u.email}</Text> : null}
+                          </TouchableOpacity>
+                        ))
+                      )}
+                    </ScrollView>
+                  </View>
+                )}
+              </View>
+              {/* Control User Select */}
+              <View style={{ gap: 8 }}>
+                <Text style={{ fontSize: 12, color: '#6b7280', marginLeft: 2 }}>Contrôleur</Text>
+                <TouchableOpacity style={[stylesFS.inputWrap, { justifyContent: 'space-between' }]} onPress={() => setControlOpen(v => !v)}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1 }}>
+                    <Ionicons name="shield-checkmark-outline" size={16} color="#6b7280" />
+                    <Text style={[stylesFS.input, { color: control ? '#111827' : '#9ca3af' }]} numberOfLines={1}>
+                      {control ? (companyUsers.find(u => String(u.id) === String(control))?.firstname ? `${companyUsers.find(u => String(u.id) === String(control))?.firstname} ${companyUsers.find(u => String(u.id) === String(control))?.lastname || ''}` : control) : 'Choisir un contrôleur'}
+                    </Text>
+                  </View>
+                  <Ionicons name={controlOpen ? 'chevron-up' : 'chevron-down'} size={16} color="#9ca3af" />
+                </TouchableOpacity>
+                {controlOpen && (
+                  <View style={{ maxHeight: 200, borderWidth: 1, borderColor: '#e5e7eb', borderRadius: 10, overflow: 'hidden' }}>
+                    <ScrollView keyboardShouldPersistTaps="handled">
+                      {loadingUsers ? (
+                        <View style={{ padding: 12 }}><Text style={{ color: '#6b7280' }}>Chargement...</Text></View>
+                      ) : companyUsers.length === 0 ? (
+                        <View style={{ padding: 12 }}><Text style={{ color: '#6b7280' }}>Aucun utilisateur</Text></View>
+                      ) : (
+                        companyUsers.map(u => (
+                          <TouchableOpacity key={u.id} onPress={() => { setControl(String(u.id)); setControlOpen(false); }} style={{ paddingHorizontal: 12, paddingVertical: 10, backgroundColor: String(control) === String(u.id) ? '#f1f5f9' : '#FFFFFF', borderBottomWidth: 1, borderBottomColor: '#f3f4f6' }}>
+                            <Text style={{ color: '#11224e' }}>{u.firstname || ''} {u.lastname || ''}</Text>
+                            {u.email ? <Text style={{ color: '#6b7280', fontSize: 12 }}>{u.email}</Text> : null}
+                          </TouchableOpacity>
+                        ))
+                      )}
+                    </ScrollView>
+                  </View>
+                )}
+              </View>
+              {/* Technicien User Select */}
+              <View style={{ gap: 8 }}>
+                <Text style={{ fontSize: 12, color: '#6b7280', marginLeft: 2 }}>Technicien</Text>
+                <TouchableOpacity style={[stylesFS.inputWrap, { justifyContent: 'space-between' }]} onPress={() => setTechnicienOpen(v => !v)}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1 }}>
+                    <Ionicons name="construct-outline" size={16} color="#6b7280" />
+                    <Text style={[stylesFS.input, { color: technicien ? '#111827' : '#9ca3af' }]} numberOfLines={1}>
+                      {technicien ? (companyUsers.find(u => String(u.id) === String(technicien))?.firstname ? `${companyUsers.find(u => String(u.id) === String(technicien))?.firstname} ${companyUsers.find(u => String(u.id) === String(technicien))?.lastname || ''}` : technicien) : 'Choisir un technicien'}
+                    </Text>
+                  </View>
+                  <Ionicons name={technicienOpen ? 'chevron-up' : 'chevron-down'} size={16} color="#9ca3af" />
+                </TouchableOpacity>
+                {technicienOpen && (
+                  <View style={{ maxHeight: 200, borderWidth: 1, borderColor: '#e5e7eb', borderRadius: 10, overflow: 'hidden' }}>
+                    <ScrollView keyboardShouldPersistTaps="handled">
+                      {loadingUsers ? (
+                        <View style={{ padding: 12 }}><Text style={{ color: '#6b7280' }}>Chargement...</Text></View>
+                      ) : companyUsers.length === 0 ? (
+                        <View style={{ padding: 12 }}><Text style={{ color: '#6b7280' }}>Aucun utilisateur</Text></View>
+                      ) : (
+                        companyUsers.map(u => (
+                          <TouchableOpacity key={u.id} onPress={() => { setTechnicien(String(u.id)); setTechnicienOpen(false); }} style={{ paddingHorizontal: 12, paddingVertical: 10, backgroundColor: String(technicien) === String(u.id) ? '#f1f5f9' : '#FFFFFF', borderBottomWidth: 1, borderBottomColor: '#f3f4f6' }}>
                             <Text style={{ color: '#11224e' }}>{u.firstname || ''} {u.lastname || ''}</Text>
                             {u.email ? <Text style={{ color: '#6b7280', fontSize: 12 }}>{u.email}</Text> : null}
                           </TouchableOpacity>

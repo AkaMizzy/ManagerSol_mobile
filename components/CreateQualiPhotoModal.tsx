@@ -44,6 +44,7 @@ export default function CreateQualiPhotoModal({ visible, onClose, onSuccess, ini
   const [zoneOpen, setZoneOpen] = useState(false);
   const [isDatePickerVisible, setDatePickerVisible] = useState(false);
   const [isTranscribing, setIsTranscribing] = useState(false);
+  const [isGeneratingDescription, setIsGeneratingDescription] = useState(false);
 
   const scrollViewRef = useRef<ScrollView>(null);
   const durationIntervalRef = useRef<number | null>(null);
@@ -141,6 +142,24 @@ export default function CreateQualiPhotoModal({ visible, onClose, onSuccess, ini
       }
     } catch {
       Alert.alert('Error', 'Failed to open camera');
+    }
+  };
+
+  const handleGenerateDescription = async () => {
+    if (!photo || !token) {
+      Alert.alert('Erreur', "Veuillez d'abord sélectionner une image.");
+      return;
+    }
+    setIsGeneratingDescription(true);
+    setError(null);
+    try {
+      const result = await qualiphotoService.describeImage(photo, token);
+      setComment(prev => prev ? `${prev}\n${result.description}` : result.description);
+    } catch (e: any) {
+      setError(e?.message || 'Échec de la génération de la description');
+      Alert.alert('Erreur', e?.message || 'Une erreur est survenue lors de la génération de la description.');
+    } finally {
+      setIsGeneratingDescription(false);
     }
   };
 
@@ -425,6 +444,17 @@ export default function CreateQualiPhotoModal({ visible, onClose, onSuccess, ini
                   <View style={styles.imageActions}>
                     <TouchableOpacity style={[styles.iconButton, styles.iconButtonSecondary]} onPress={handlePickPhoto}>
                       <Ionicons name="camera-reverse-outline" size={20} color="#11224e" />
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[styles.iconButton, styles.iconButtonSecondary, (isGeneratingDescription || !photo) && styles.buttonDisabled]}
+                      onPress={handleGenerateDescription}
+                      disabled={isGeneratingDescription || !photo}
+                    >
+                      {isGeneratingDescription ? (
+                        <ActivityIndicator size="small" color="#11224e" />
+                      ) : (
+                        <Ionicons name="sparkles-outline" size={20} color="#11224e" />
+                      )}
                     </TouchableOpacity>
                     <TouchableOpacity style={[styles.iconButton, styles.iconButtonSecondary]} onPress={() => setPhoto(null)}>
                       <Ionicons name="trash-outline" size={20} color="#dc2626" />
