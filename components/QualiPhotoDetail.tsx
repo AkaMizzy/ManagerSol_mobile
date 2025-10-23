@@ -712,7 +712,9 @@ type Props = {
                 </View>
               )}
               {item.before === 1 && (
-                <View style={styles.childPicturesContainer}>
+                <>
+                  <View style={styles.sectionSeparator} />
+                  <View style={styles.childPicturesContainer}>
                   <View style={styles.childListHeader}>
                     {children.length > 0 ? (
                       <TouchableOpacity 
@@ -759,6 +761,7 @@ type Props = {
                     ))}
                   </View>
                 </View>
+                </>
               )}
             </View>
           </ScrollView>
@@ -881,7 +884,7 @@ type Props = {
               )}
 
               {/* Complementary content - always visible on child */}
-              <View style={styles.metaCard}>
+              <View>
                 <View style={styles.sectionHeaderRow}>
                   <Text style={styles.sectionTitle}>Photo après</Text>
                   <View style={{ flexDirection: 'row', alignItems: 'center' }}>
@@ -1231,13 +1234,14 @@ type Props = {
             onRequestClose={() => setEditPlanVisible(false)}
           >
             <ZonePictureEditor
-              child={item}
+              baseImageUri={item.photo_plan || null}
               onClose={() => setEditPlanVisible(false)}
               onSaved={(res) => {
                 // update current item with new photo_plan and refresh children list
-                setItem(prev => (prev ? ({ ...prev, photo_plan: res.photo_plan } as any) : prev));
+                setItem(prev => (prev ? ({ ...prev, photo_plan: res.uri } as any) : prev));
                 setEditPlanVisible(false);
               }}
+              title="Éditer le plan de zone"
             />
           </Modal>
         )}
@@ -1801,6 +1805,12 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     paddingTop: 8,
     paddingBottom: 8,
+  },
+  sectionSeparator: {
+    height: 1,
+    backgroundColor: '#f87b1b',
+    marginVertical: 16,
+    marginHorizontal: 12,
   },
   card: {
     backgroundColor: '#FFFFFF',
