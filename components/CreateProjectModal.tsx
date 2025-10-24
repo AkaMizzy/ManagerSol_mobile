@@ -221,12 +221,12 @@ export default function CreateProjectModal({ visible, onClose, onCreated }: Prop
                 )}
               </View>
               <View style={{ gap: 8 }}>
-                <Text style={{ fontSize: 12, color: '#6b7280', marginLeft: 2 }}>Assigner à</Text>
+                <Text style={{ fontSize: 12, color: '#6b7280', marginLeft: 2 }}>Admin</Text>
                 <TouchableOpacity style={[stylesFS.inputWrap, { justifyContent: 'space-between' }]} onPress={() => setOwnerOpen(v => !v)}>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1 }}>
-                    <Ionicons name="person-outline" size={16} color="#6b7280" />
+                    <Ionicons name="person-circle-outline" size={16} color="#6b7280" />
                     <Text style={[stylesFS.input, { color: owner ? '#111827' : '#9ca3af' }]} numberOfLines={1}>
-                      {owner ? (companyUsers.find(u => String(u.id) === String(owner))?.firstname ? `${companyUsers.find(u => String(u.id) === String(owner))?.firstname} ${companyUsers.find(u => String(u.id) === String(owner))?.lastname || ''}` : owner) : 'Choisir un utilisateur'}
+                      {owner ? (companyUsers.find(u => String(u.id) === String(owner))?.firstname ? `${companyUsers.find(u => String(u.id) === String(owner))?.firstname} ${companyUsers.find(u => String(u.id) === String(owner))?.lastname || ''}` : owner) : 'Choisir un admin'}
                     </Text>
                   </View>
                   <Ionicons name={ownerOpen ? 'chevron-up' : 'chevron-down'} size={16} color="#9ca3af" />

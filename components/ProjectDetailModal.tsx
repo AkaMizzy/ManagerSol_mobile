@@ -4,23 +4,23 @@ import { Project, updateUserProject } from '@/services/projectService';
 import { Ionicons } from '@expo/vector-icons';
 import React, { useEffect, useRef, useState } from 'react';
 import {
-    ActivityIndicator,
-    Alert,
-    Animated,
-    Easing,
-    Image,
-    LayoutAnimation,
-    Modal,
-    Platform,
-    Pressable,
-    ScrollView,
-    Share,
-    StyleSheet,
-    Switch,
-    Text,
-    TouchableOpacity,
-    UIManager,
-    View,
+  ActivityIndicator,
+  Alert,
+  Animated,
+  Easing,
+  Image,
+  LayoutAnimation,
+  Modal,
+  Platform,
+  Pressable,
+  ScrollView,
+  Share,
+  StyleSheet,
+  Switch,
+  Text,
+  TouchableOpacity,
+  UIManager,
+  View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import CreateZoneModal from './CreateZoneModal';
@@ -36,11 +36,15 @@ type Props = {
 
 type Company = { id: string; title?: string | null } | null;
 type Owner = { id: string; firstname?: string; lastname?: string; email?: string } | null;
+type Control = { id: string; firstname?: string; lastname?: string; email?: string } | null;
+type Technicien = { id: string; firstname?: string; lastname?: string; email?: string } | null;
 
 export default function ProjectDetailModal({ visible, onClose, project, onUpdated }: Props) {
   const { token } = useAuth();
   const [company, setCompany] = useState<Company>(null);
   const [owner, setOwner] = useState<Owner>(null);
+  const [control, setControl] = useState<Control>(null);
+  const [technicien, setTechnicien] = useState<Technicien>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [zones, setZones] = useState<{
@@ -76,7 +80,11 @@ export default function ProjectDetailModal({ visible, onClose, project, onUpdate
   const [isEditing, setIsEditing] = useState(false);
   const [editStatus, setEditStatus] = useState<boolean>(false);
   const [editOwner, setEditOwner] = useState<string>('');
+  const [editControl, setEditControl] = useState<string>('');
+  const [editTechnicien, setEditTechnicien] = useState<string>('');
   const [ownerOpen, setOwnerOpen] = useState(false);
+  const [controlOpen, setControlOpen] = useState(false);
+  const [technicienOpen, setTechnicienOpen] = useState(false);
   const [companyUsers, setCompanyUsers] = useState<{ id: string; firstname?: string; lastname?: string; email?: string }[]>([]);
   const [loadingUsers, setLoadingUsers] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -117,7 +125,7 @@ export default function ProjectDetailModal({ visible, onClose, project, onUpdate
   useEffect(() => {
     let cancelled = false;
     async function loadMeta() {
-      if (!project) { setCompany(null); setOwner(null); return; }
+      if (!project) { setCompany(null); setOwner(null); setControl(null); setTechnicien(null); return; }
       setIsLoading(true);
       setError(null);
       try {
@@ -150,6 +158,36 @@ export default function ProjectDetailModal({ visible, onClose, project, onUpdate
         } else {
           setOwner(null);
         }
+        if ((project as any).control) {
+          tasks.push((async () => {
+            try {
+              const res = await fetch(`${API_CONFIG.BASE_URL}/users/${(project as any).control}`, {
+                headers: token ? { Authorization: `Bearer ${token}` } : undefined as any,
+              });
+              const data = await res.json();
+              if (!cancelled) setControl(res.ok ? { id: String(data.id), firstname: data.firstname, lastname: data.lastname, email: data.email } : null);
+            } catch {
+              if (!cancelled) setControl(null);
+            }
+          })());
+        } else {
+          setControl(null);
+        }
+        if ((project as any).technicien) {
+          tasks.push((async () => {
+            try {
+              const res = await fetch(`${API_CONFIG.BASE_URL}/users/${(project as any).technicien}`, {
+                headers: token ? { Authorization: `Bearer ${token}` } : undefined as any,
+              });
+              const data = await res.json();
+              if (!cancelled) setTechnicien(res.ok ? { id: String(data.id), firstname: data.firstname, lastname: data.lastname, email: data.email } : null);
+            } catch {
+              if (!cancelled) setTechnicien(null);
+            }
+          })());
+        } else {
+          setTechnicien(null);
+        }
         await Promise.all(tasks);
       } catch (e: any) {
         if (!cancelled) setError(e?.message || 'Erreur de chargement');
@@ -168,6 +206,8 @@ export default function ProjectDetailModal({ visible, onClose, project, onUpdate
       setCurrentStatus(active);
       setEditStatus(active);
       setEditOwner(project.owner ? String(project.owner) : '');
+      setEditControl((project as any).control ? String((project as any).control) : '');
+      setEditTechnicien((project as any).technicien ? String((project as any).technicien) : '');
     }
   }, [project]);
 
@@ -299,11 +339,13 @@ export default function ProjectDetailModal({ visible, onClose, project, onUpdate
                 if (!project || !token) return;
                 try {
                   setIsSaving(true);
-                  await updateUserProject(token, project.id, { status: editStatus ? 1 : 0, owner: editOwner || null });
+                  await updateUserProject(token, project.id, { status: editStatus ? 1 : 0, owner: editOwner || null, control: editControl || null, technicien: editTechnicien || null });
                   setIsEditing(false);
                   // reflect local change quickly
                   setCurrentStatus(editStatus);
                   if (owner) setOwner(companyUsers.find(u => String(u.id) === String(editOwner)) || owner);
+                  if (control) setControl(companyUsers.find(u => String(u.id) === String(editControl)) || control);
+                  if (technicien) setTechnicien(companyUsers.find(u => String(u.id) === String(editTechnicien)) || technicien);
                   if (onUpdated) onUpdated();
                 } catch (e: any) {
                   Alert.alert('Erreur', e?.message || 'Mise à jour échouée');
@@ -318,7 +360,7 @@ export default function ProjectDetailModal({ visible, onClose, project, onUpdate
               <Text style={styles.ctaText}>{isSaving ? 'Sauvegarde...' : 'Enregistrer'}</Text>
             </Pressable>) : null}
             {isEditing ? (
-            <Pressable onPress={() => { setIsEditing(false); setOwnerOpen(false); if (project) { setEditStatus(isActiveFromStatus((project as any).status)); setEditOwner(project.owner ? String(project.owner) : ''); } }} android_ripple={{ color: '#fde7d4' }} style={styles.ctaButton}>
+            <Pressable onPress={() => { setIsEditing(false); setOwnerOpen(false); setControlOpen(false); setTechnicienOpen(false); if (project) { setEditStatus(isActiveFromStatus((project as any).status)); setEditOwner(project.owner ? String(project.owner) : ''); setEditControl((project as any).control ? String((project as any).control) : ''); setEditTechnicien((project as any).technicien ? String((project as any).technicien) : ''); } }} android_ripple={{ color: '#fde7d4' }} style={styles.ctaButton}>
               <Ionicons name="close-circle-outline" size={16} color="#f87b1b" />
               <Text style={styles.ctaText}>Annuler</Text>
             </Pressable>) : null}
@@ -402,6 +444,76 @@ export default function ProjectDetailModal({ visible, onClose, project, onUpdate
                         ) : (
                           companyUsers.map(u => (
                             <TouchableOpacity key={u.id} onPress={() => { setEditOwner(String(u.id)); setOwnerOpen(false); }} style={{ paddingHorizontal: 12, paddingVertical: 10, backgroundColor: String(editOwner) === String(u.id) ? '#f1f5f9' : '#FFFFFF', borderBottomWidth: 1, borderBottomColor: '#f3f4f6' }}>
+                              <Text style={{ color: '#11224e' }}>{u.firstname || ''} {u.lastname || ''}</Text>
+                              {u.email ? <Text style={{ color: '#6b7280', fontSize: 12 }}>{u.email}</Text> : null}
+                            </TouchableOpacity>
+                          ))
+                        )}
+                      </ScrollView>
+                    </View>
+                  )}
+                </View>
+                )}
+                {!isEditing ? (
+                <Pressable android_ripple={{ color: '#f3f4f6' }} style={styles.itemRow}>
+                  <Ionicons name="shield-checkmark-outline" size={16} color="#6b7280" />
+                  <Text style={styles.meta}>Contrôleur · {control ? `${control.firstname || ''} ${control.lastname || ''}`.trim() || control.email || control.id : '—'}</Text>
+                </Pressable>) : (
+                <View style={{ borderWidth: 1, borderColor: '#e5e7eb', borderRadius: 12, overflow: 'hidden' }}>
+                  <TouchableOpacity onPress={() => setControlOpen(v => !v)} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 12, paddingVertical: 10 }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                      <Ionicons name="shield-checkmark-outline" size={16} color="#6b7280" />
+                      <Text style={{ color: '#111827' }} numberOfLines={1}>
+                        {editControl ? (companyUsers.find(u => String(u.id) === String(editControl))?.firstname ? `${companyUsers.find(u => String(u.id) === String(editControl))?.firstname} ${companyUsers.find(u => String(u.id) === String(editControl))?.lastname || ''}` : editControl) : 'Choisir un contrôleur'}
+                      </Text>
+                    </View>
+                    <Ionicons name={controlOpen ? 'chevron-up' : 'chevron-down'} size={16} color="#9ca3af" />
+                  </TouchableOpacity>
+                  {controlOpen && (
+                    <View style={{ maxHeight: 220 }}>
+                      <ScrollView keyboardShouldPersistTaps="handled">
+                        {loadingUsers ? (
+                          <View style={{ padding: 12 }}><Text style={{ color: '#6b7280' }}>Chargement...</Text></View>
+                        ) : companyUsers.length === 0 ? (
+                          <View style={{ padding: 12 }}><Text style={{ color: '#6b7280' }}>Aucun utilisateur</Text></View>
+                        ) : (
+                          companyUsers.map(u => (
+                            <TouchableOpacity key={u.id} onPress={() => { setEditControl(String(u.id)); setControlOpen(false); }} style={{ paddingHorizontal: 12, paddingVertical: 10, backgroundColor: String(editControl) === String(u.id) ? '#f1f5f9' : '#FFFFFF', borderBottomWidth: 1, borderBottomColor: '#f3f4f6' }}>
+                              <Text style={{ color: '#11224e' }}>{u.firstname || ''} {u.lastname || ''}</Text>
+                              {u.email ? <Text style={{ color: '#6b7280', fontSize: 12 }}>{u.email}</Text> : null}
+                            </TouchableOpacity>
+                          ))
+                        )}
+                      </ScrollView>
+                    </View>
+                  )}
+                </View>
+                )}
+                {!isEditing ? (
+                <Pressable android_ripple={{ color: '#f3f4f6' }} style={styles.itemRow}>
+                  <Ionicons name="construct-outline" size={16} color="#6b7280" />
+                  <Text style={styles.meta}>Technicien · {technicien ? `${technicien.firstname || ''} ${technicien.lastname || ''}`.trim() || technicien.email || technicien.id : '—'}</Text>
+                </Pressable>) : (
+                <View style={{ borderWidth: 1, borderColor: '#e5e7eb', borderRadius: 12, overflow: 'hidden' }}>
+                  <TouchableOpacity onPress={() => setTechnicienOpen(v => !v)} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 12, paddingVertical: 10 }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                      <Ionicons name="construct-outline" size={16} color="#6b7280" />
+                      <Text style={{ color: '#111827' }} numberOfLines={1}>
+                        {editTechnicien ? (companyUsers.find(u => String(u.id) === String(editTechnicien))?.firstname ? `${companyUsers.find(u => String(u.id) === String(editTechnicien))?.firstname} ${companyUsers.find(u => String(u.id) === String(editTechnicien))?.lastname || ''}` : editTechnicien) : 'Choisir un technicien'}
+                      </Text>
+                    </View>
+                    <Ionicons name={technicienOpen ? 'chevron-up' : 'chevron-down'} size={16} color="#9ca3af" />
+                  </TouchableOpacity>
+                  {technicienOpen && (
+                    <View style={{ maxHeight: 220 }}>
+                      <ScrollView keyboardShouldPersistTaps="handled">
+                        {loadingUsers ? (
+                          <View style={{ padding: 12 }}><Text style={{ color: '#6b7280' }}>Chargement...</Text></View>
+                        ) : companyUsers.length === 0 ? (
+                          <View style={{ padding: 12 }}><Text style={{ color: '#6b7280' }}>Aucun utilisateur</Text></View>
+                        ) : (
+                          companyUsers.map(u => (
+                            <TouchableOpacity key={u.id} onPress={() => { setEditTechnicien(String(u.id)); setTechnicienOpen(false); }} style={{ paddingHorizontal: 12, paddingVertical: 10, backgroundColor: String(editTechnicien) === String(u.id) ? '#f1f5f9' : '#FFFFFF', borderBottomWidth: 1, borderBottomColor: '#f3f4f6' }}>
                               <Text style={{ color: '#11224e' }}>{u.firstname || ''} {u.lastname || ''}</Text>
                               {u.email ? <Text style={{ color: '#6b7280', fontSize: 12 }}>{u.email}</Text> : null}
                             </TouchableOpacity>
