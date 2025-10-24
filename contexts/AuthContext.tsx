@@ -64,7 +64,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // For now, we'll trust the stored data
         // In production, you might want to validate the token with the backend
         setAuthState({
-          user,
+          user: { ...user, id: String(user.id) },
           token,
           isLoading: false,
           isAuthenticated: true,
@@ -115,7 +115,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           ]);
 
           setAuthState({
-            user: data,
+            user: { ...data, id: String(data.id) },
             token: data.token,
             isLoading: false,
             isAuthenticated: true,

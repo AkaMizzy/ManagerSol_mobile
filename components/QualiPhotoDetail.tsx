@@ -15,7 +15,7 @@ import AppHeader from './AppHeader';
 import ComparisonModal from './ComparisonModal';
 import { CreateChildQualiPhotoForm } from './CreateChildQualiPhotoModal';
 import CreateComplementaireQualiPhotoModal from './CreateComplementaireQualiPhotoModal';
-import SignatureField from './SignatureField';
+import SignatureFieldQualiphoto from './SignatureFieldQualiphoto';
 
 const cameraIcon = require('@/assets/icons/camera.gif');
 
@@ -1176,29 +1176,29 @@ type Props = {
             <View style={{ width: 40 }} />
           </View>
           <View style={styles.signatureFieldsContainer}>
-            <SignatureField
+            <SignatureFieldQualiphoto
               role="technicien"
               roleLabel="Technicien"
               onSignatureComplete={handleSignatureComplete}
               isCompleted={!!signatures.technicien}
-              disabled={!!signatures.technicien}
-              signerEmail={signatures.technicien?.email}
+              disabled={!!signatures.technicien || String(user?.id) !== String(item?.project_technicien_id)}
+              signerName={signatures.technicien?.email}
             />
-            <SignatureField
+            <SignatureFieldQualiphoto
               role="control"
               roleLabel="Contrôle"
               onSignatureComplete={handleSignatureComplete}
               isCompleted={!!signatures.control}
-              disabled={!!signatures.control}
-              signerEmail={signatures.control?.email}
+              disabled={!!signatures.control || String(user?.id) !== String(item?.project_control_id)}
+              signerName={signatures.control?.email}
             />
-            <SignatureField
+            <SignatureFieldQualiphoto
               role="admin"
               roleLabel="Admin"
               onSignatureComplete={handleSignatureComplete}
               isCompleted={!!signatures.admin}
-              disabled={!!signatures.admin}
-              signerEmail={signatures.admin?.email}
+              disabled={!!signatures.admin || String(user?.id) !== String(item?.project_owner_id)}
+              signerName={signatures.admin?.email}
             />
           </View>
         </View>

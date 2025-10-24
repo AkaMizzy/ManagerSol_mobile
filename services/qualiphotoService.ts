@@ -21,6 +21,9 @@ export type QualiPhotoItem = {
   id_user?: string;
   user_name?: string;
   user_lastname?: string;
+  project_owner_id?: string | null;
+  project_control_id?: string | null;
+  project_technicien_id?: string | null;
 };
 
 export type Comment = {
