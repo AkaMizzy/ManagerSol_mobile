@@ -158,6 +158,7 @@ type Props = {
     admin: null,
   });
   const [, setIsLoadingSignatures] = useState(false);
+  const [projectUsers, setProjectUsers] = useState<{ [key: string]: { firstname: string; lastname: string } }>({});
 
   useEffect(() => {
     setItem(initialItem || null);
@@ -292,6 +293,33 @@ type Props = {
       
       // Load signatures
       loadSignatures();
+
+      // Load project users for signature display
+      if (item.project_owner_id || item.project_control_id || item.project_technicien_id) {
+        const userIds = [item.project_owner_id, item.project_control_id, item.project_technicien_id].filter(Boolean);
+        Promise.all(userIds.map(async (userId) => {
+          try {
+            const res = await fetch(`${API_CONFIG.BASE_URL}/users/${userId}`, {
+              headers: token ? { Authorization: `Bearer ${token}` } : undefined as any,
+            });
+            const data = await res.json();
+            if (res.ok) {
+              return { userId, firstname: data.firstname, lastname: data.lastname };
+            }
+            return null;
+          } catch {
+            return null;
+          }
+        })).then(results => {
+          const usersMap: { [key: string]: { firstname: string; lastname: string } } = {};
+          results.forEach(result => {
+            if (result && result.userId) {
+              usersMap[result.userId] = { firstname: result.firstname, lastname: result.lastname };
+            }
+          });
+          setProjectUsers(usersMap);
+        });
+      }
     } else {
       setChildren([]);
       setComments([]);
@@ -1181,7 +1209,7 @@ type Props = {
               onSignatureComplete={handleSignatureComplete}
               isCompleted={!!signatures.technicien}
               disabled={!!signatures.technicien || String(user?.id) !== String(item?.project_technicien_id)}
-              signerName={user?.firstname ? `${user.firstname} ${user.lastname || ''}`.trim() : undefined}
+              signerName={item?.project_technicien_id && projectUsers[item.project_technicien_id] ? `${projectUsers[item.project_technicien_id].firstname} ${projectUsers[item.project_technicien_id].lastname}`.trim() : undefined}
             />
             <SignatureFieldQualiphoto
               role="control"
@@ -1189,7 +1217,7 @@ type Props = {
               onSignatureComplete={handleSignatureComplete}
               isCompleted={!!signatures.control}
               disabled={!!signatures.control || String(user?.id) !== String(item?.project_control_id)}
-              signerName={user?.firstname ? `${user.firstname} ${user.lastname || ''}`.trim() : undefined}
+              signerName={item?.project_control_id && projectUsers[item.project_control_id] ? `${projectUsers[item.project_control_id].firstname} ${projectUsers[item.project_control_id].lastname}`.trim() : undefined}
             />
             <SignatureFieldQualiphoto
               role="admin"
@@ -1197,7 +1225,7 @@ type Props = {
               onSignatureComplete={handleSignatureComplete}
               isCompleted={!!signatures.admin}
               disabled={!!signatures.admin || String(user?.id) !== String(item?.project_owner_id)}
-              signerName={user?.firstname ? `${user.firstname} ${user.lastname || ''}`.trim() : undefined}
+              signerName={item?.project_owner_id && projectUsers[item.project_owner_id] ? `${projectUsers[item.project_owner_id].firstname} ${projectUsers[item.project_owner_id].lastname}`.trim() : undefined}
             />
           </View>
         </View>
