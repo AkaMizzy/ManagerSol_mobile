@@ -149,9 +149,9 @@ type Props = {
 
   // Signature states
   const [signatures, setSignatures] = useState<{
-    technicien: { signature: string; email: string } | null;
-    control: { signature: string; email: string } | null;
-    admin: { signature: string; email: string } | null;
+    technicien: { signature: string } | null;
+    control: { signature: string } | null;
+    admin: { signature: string } | null;
   }>({
     technicien: null,
     control: null,
@@ -194,9 +194,9 @@ type Props = {
     try {
       const data = await qualiphotoService.getQualiPhotoSignatures(item.id, token);
       const newSignatures = {
-        technicien: data.signatures.technicien ? { signature: '', email: data.signatures.technicien.email } : null,
-        control: data.signatures.control ? { signature: '', email: data.signatures.control.email } : null,
-        admin: data.signatures.admin ? { signature: '', email: data.signatures.admin.email } : null,
+        technicien: data.signatures.technicien ? { signature: '' } : null,
+        control: data.signatures.control ? { signature: '' } : null,
+        admin: data.signatures.admin ? { signature: '' } : null,
       };
       setSignatures(newSignatures);
     } catch (err) {
@@ -306,11 +306,10 @@ type Props = {
         id_qualiphoto: item.id,
         signature_role: role as 'technicien' | 'control' | 'admin',
         signature,
-        signer_email: email,
       }, token);
       
       // Optimistic update
-      setSignatures(prev => ({ ...prev, [role]: { signature, email } }));
+      setSignatures(prev => ({ ...prev, [role]: { signature } }));
 
       // Reload to confirm
       await loadSignatures();
@@ -1182,7 +1181,7 @@ type Props = {
               onSignatureComplete={handleSignatureComplete}
               isCompleted={!!signatures.technicien}
               disabled={!!signatures.technicien || String(user?.id) !== String(item?.project_technicien_id)}
-              signerName={signatures.technicien?.email}
+              signerName={user?.firstname ? `${user.firstname} ${user.lastname || ''}`.trim() : undefined}
             />
             <SignatureFieldQualiphoto
               role="control"
@@ -1190,7 +1189,7 @@ type Props = {
               onSignatureComplete={handleSignatureComplete}
               isCompleted={!!signatures.control}
               disabled={!!signatures.control || String(user?.id) !== String(item?.project_control_id)}
-              signerName={signatures.control?.email}
+              signerName={user?.firstname ? `${user.firstname} ${user.lastname || ''}`.trim() : undefined}
             />
             <SignatureFieldQualiphoto
               role="admin"
@@ -1198,7 +1197,7 @@ type Props = {
               onSignatureComplete={handleSignatureComplete}
               isCompleted={!!signatures.admin}
               disabled={!!signatures.admin || String(user?.id) !== String(item?.project_owner_id)}
-              signerName={signatures.admin?.email}
+              signerName={user?.firstname ? `${user.firstname} ${user.lastname || ''}`.trim() : undefined}
             />
           </View>
         </View>

@@ -338,7 +338,6 @@ class QualiPhotoService {
     id_qualiphoto: string;
     signature_role: 'technicien' | 'control' | 'admin';
     signature: string;
-    signer_email: string;
   }, token: string): Promise<{ message: string; signatureId: string; }> {
     return this.makeRequest('/qualiphoto-signatures', token, {
       method: 'POST',
@@ -350,9 +349,9 @@ class QualiPhotoService {
   getQualiPhotoSignatures(qualiphotoId: string, token: string): Promise<{
     qualiphotoId: string;
     signatures: {
-      technicien?: { id: string; email: string; date: string; };
-      control?: { id: string; email: string; date: string; };
-      admin?: { id: string; email: string; date: string; };
+      technicien?: { id: string; date: string; };
+      control?: { id: string; date: string; };
+      admin?: { id: string; date: string; };
     };
     totalSignatures: number;
     isComplete: boolean;
