@@ -44,6 +44,7 @@ export default function CreateQualiPhotoModal({ visible, onClose, onSuccess, ini
   const [zoneOpen, setZoneOpen] = useState(false);
   const [isDatePickerVisible, setDatePickerVisible] = useState(false);
   const [isTranscribing, setIsTranscribing] = useState(false);
+  const [isTranscribed, setIsTranscribed] = useState(false);
 
   const scrollViewRef = useRef<ScrollView>(null);
   const durationIntervalRef = useRef<number | null>(null);
@@ -215,6 +216,7 @@ export default function CreateQualiPhotoModal({ visible, onClose, onSuccess, ini
     const uri = recording.getURI();
     if (uri) {
       setVoiceNote({ uri, name: `voicenote-${Date.now()}.m4a`, type: 'audio/m4a' });
+      setIsTranscribed(false); 
     }
     setRecordingDuration(0);
     setRecording(null);
@@ -249,6 +251,7 @@ export default function CreateQualiPhotoModal({ visible, onClose, onSuccess, ini
     setVoiceNote(null);
     setSound(null);
     setIsPlaying(false);
+    setIsTranscribed(false);
   };
 
   const handleTranscribe = async () => {
@@ -261,6 +264,7 @@ export default function CreateQualiPhotoModal({ visible, onClose, onSuccess, ini
     try {
       const result = await qualiphotoService.transcribeVoiceNote(voiceNote, token);
       setComment(prev => prev ? `${prev}\n${result.transcription}` : result.transcription);
+      setIsTranscribed(true);
     } catch (e: any) {
       setError(e?.message || 'Échec de la transcription');
       Alert.alert('Erreur de Transcription', e?.message || 'Une erreur est survenue lors de la transcription.');
@@ -415,8 +419,8 @@ export default function CreateQualiPhotoModal({ visible, onClose, onSuccess, ini
                         <TouchableOpacity style={styles.playButton} onPress={playSound}>
                           <Ionicons name={isPlaying ? 'pause-circle' : 'play-circle'} size={28} color="#11224e" />
                         </TouchableOpacity>
-                        <TouchableOpacity style={styles.deleteButton} onPress={resetVoiceNote}>
-                          <Ionicons name="trash-outline" size={20} color="#dc2626" />
+                        <TouchableOpacity style={[styles.deleteButton, isTranscribed && styles.buttonDisabled]} onPress={resetVoiceNote} disabled={isTranscribed}>
+                          <Ionicons name="trash-outline" size={20} color={isTranscribed ? '#9ca3af' : '#dc2626'} />
                         </TouchableOpacity>
                       </View>
                     ) : (
@@ -455,7 +459,7 @@ export default function CreateQualiPhotoModal({ visible, onClose, onSuccess, ini
                       placeholderTextColor="#9ca3af"
                       value={comment}
                       onChangeText={setComment}
-                      style={[styles.input, { height: 180 }]}
+                      style={[styles.input, { height: 350 }]}
                       multiline
                       numberOfLines={6}
                       textAlignVertical="top"
@@ -500,7 +504,7 @@ const styles = StyleSheet.create({
   content: { flex: 1, paddingHorizontal: 16 },
   alertBanner: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#fffbeb', borderColor: '#f59e0b', borderWidth: 1, paddingHorizontal: 12, paddingVertical: 8, marginHorizontal: 16, marginTop: 8, borderRadius: 10 },
   alertBannerText: { color: '#b45309', flex: 1, fontSize: 12 },
-  card: { backgroundColor: '#FFFFFF', borderRadius: 16, padding: 16, marginTop: 16, marginHorizontal: 8, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8, elevation: 2, borderWidth: 1, borderColor: '#f87b1b' },
+  card: { backgroundColor: '#FFFFFF', borderRadius: 16, padding: 16, marginTop: 16, marginHorizontal: 8, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8, elevation: 2, borderWidth: 1, borderColor: '#e5e7eb' },
   cardDisabled: { opacity: 0.6 },
   cardHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 10 },
   cardIconWrap: { width: 28, height: 28, borderRadius: 14, backgroundColor: '#eef2ff', justifyContent: 'center', alignItems: 'center', marginRight: 10 },

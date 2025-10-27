@@ -93,16 +93,16 @@ export function CreateChildQualiPhotoForm({ onClose, onSuccess, parentItem }: Fo
     }
   }, []);
 
-  const handleGenerateDescription = async () => {
-    if (!photo || !token) {
+  const handleGenerateDescription = async (photoToDescribe: { uri: string; name: string; type: string }) => {
+    if (!photoToDescribe || !token) {
       Alert.alert('Erreur', "Veuillez d'abord sélectionner une image.");
       return;
     }
     setIsGeneratingDescription(true);
     setError(null);
     try {
-      const result = await qualiphotoService.describeImage(photo, token);
-      setComment(prev => prev ? `${prev}\\n${result.description}` : result.description);
+      const result = await qualiphotoService.describeImage(photoToDescribe, token);
+      setComment(prev => prev ? `${prev}\n${result.description}` : result.description);
     } catch (e: any) {
       setError(e?.message || 'Échec de la génération de la description');
       Alert.alert('Erreur', e?.message || 'Une erreur est survenue lors de la génération de la description.');
@@ -399,7 +399,7 @@ export function CreateChildQualiPhotoForm({ onClose, onSuccess, parentItem }: Fo
                       styles.transcribeButton,
                       (isGeneratingDescription || !photo) && styles.buttonDisabled,
                     ]}
-                    onPress={handleGenerateDescription}
+                    onPress={() => photo && handleGenerateDescription(photo)}
                     disabled={isGeneratingDescription || !photo}
                   >
                     {isGeneratingDescription ? (
@@ -513,6 +513,7 @@ export function CreateChildQualiPhotoForm({ onClose, onSuccess, parentItem }: Fo
           onSaved={(image) => {
             setPhoto(image);
             setAnnotatorVisible(false);
+            handleGenerateDescription(image);
           }}
           title="Annoter la photo"
         />

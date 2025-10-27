@@ -139,14 +139,14 @@ export default function CreateComplementaireQualiPhotoModal({ visible, onClose, 
     }
   };
 
-  const handleGenerateDescription = async () => {
-    if (!photo || !token) {
+  const handleGenerateDescription = async (photoToDescribe: { uri: string; name: string; type: string }) => {
+    if (!photoToDescribe || !token) {
       return;
     }
     setIsGeneratingDescription(true);
     setError(null);
     try {
-      const result = await qualiphotoService.describeImage(photo, token);
+      const result = await qualiphotoService.describeImage(photoToDescribe, token);
       setComment(prev => prev ? `${prev}\n${result.description}` : result.description);
     } catch (e: any) {
       setError(e?.message || 'Failed to generate description');
@@ -291,7 +291,7 @@ export default function CreateComplementaireQualiPhotoModal({ visible, onClose, 
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={[styles.voiceRecordButton, styles.transcribeButton, (!photo || isGeneratingDescription) && styles.buttonDisabled]}
-                    onPress={handleGenerateDescription}
+                    onPress={() => photo && handleGenerateDescription(photo)}
                     disabled={!photo || isGeneratingDescription}
                   >
                     {isGeneratingDescription ? (
@@ -362,6 +362,7 @@ export default function CreateComplementaireQualiPhotoModal({ visible, onClose, 
             onSaved={(image) => {
               setPhoto(image);
               setAnnotatorVisible(false);
+              handleGenerateDescription(image);
             }}
             title="Annoter la photo complémentaire"
           />
