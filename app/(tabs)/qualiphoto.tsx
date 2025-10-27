@@ -1,13 +1,13 @@
 import AppHeader from '@/components/AppHeader';
 import CreateQualiPhotoModal from '@/components/CreateQualiPhotoModal';
 import QualiPhotoDetail from '@/components/QualiPhotoDetail';
+import { ICONS } from '@/constants/Icons';
 import { useAuth } from '@/contexts/AuthContext';
 import qualiphotoService, { QualiPhotoItem, QualiProject, QualiZone } from '@/services/qualiphotoService';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, FlatList, Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-const cameraIcon = require('@/assets/icons/camera.gif');
 
 function formatDateForGrid(dateStr?: string | null): string {
   if (!dateStr) return '';
@@ -248,12 +248,12 @@ export default function QualiPhotoGalleryScreen() {
             <View style={styles.actionsWrapper}>
               <Pressable
                   accessibilityRole="button"
-                  accessibilityLabel="Ajouter une QualiPhoto"
+                  accessibilityLabel="Nouveau dossier"
                   onPress={() => setModalVisible(true)}
                   disabled={isCreateDisabled}
-                  style={[styles.addIconButton, isCreateDisabled && styles.addIconButtonDisabled]}
+                  style={[styles.addFolderButton, isCreateDisabled && styles.addFolderButtonDisabled]}
                 >
-                <Image source={cameraIcon} style={{ width: 40, height: 40 }} />
+                <Image source={ICONS.folder} style={{ width: 32, height: 32 }} />
               </Pressable>
             </View>
           </View>
@@ -266,6 +266,9 @@ export default function QualiPhotoGalleryScreen() {
       </View>
 
       <View style={styles.content}>
+        <View style={styles.titleContainer}>
+          <Text style={styles.titleText}>Mes Dossiers</Text>
+        </View>
         <FlatList
           data={photos}
           keyExtractor={keyExtractor}
@@ -367,10 +370,14 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#8E8E93',
   },
-  addIconButton: {
-    paddingLeft: 8,
+  addFolderButton: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 8,
+    backgroundColor: '#f87b1b',
+    borderRadius: 12,
   },
-  addIconButtonDisabled: {
+  addFolderButtonDisabled: {
     opacity: 0.4,
   },
   filterContainer: {
@@ -395,6 +402,16 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
+  },
+  titleContainer: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    alignItems: 'center',
+  },
+  titleText: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#f87b1b',
   },
   dropdownWrap: {
     position: 'relative',
@@ -575,7 +592,7 @@ const styles = StyleSheet.create({
     color: '#9ca3af',
     fontSize: 11,
     fontWeight: '500',
-    alignSelf: 'flex-end',
+    textAlign: 'center',
     paddingHorizontal: 8,
     marginTop: 2,
   },
