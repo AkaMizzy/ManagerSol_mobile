@@ -1,100 +1,28 @@
 import API_CONFIG from '@/app/config/api';
 import CreateDeclarationModal from '@/components/CreateDeclarationModal';
 import ZonePictureEditor from '@/components/ZonePictureEditor';
-import { ICONS } from '@/constants/Icons';
 import { useAuth } from '@/contexts/AuthContext';
 import declarationService from '@/services/declarationService';
 import qualiphotoService, { Comment, QualiPhotoItem } from '@/services/qualiphotoService';
 import { Ionicons } from '@expo/vector-icons';
 import { Audio } from 'expo-av';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Alert, Image, Linking, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, UIManager, View } from 'react-native';
+import { ActivityIndicator, Alert, Image, Linking, Modal, Platform, Pressable, StyleSheet, Text, TextInput, TouchableOpacity, UIManager, View } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AppHeader from './AppHeader';
+import { ChildQualiPhotoView } from './ChildQualiPhotoView';
 import ComparisonModal from './ComparisonModal';
 import { CreateChildQualiPhotoForm } from './CreateChildQualiPhotoModal';
 import CreateComplementaireQualiPhotoModal from './CreateComplementaireQualiPhotoModal';
+import { ParentQualiPhotoView } from './ParentQualiPhotoView';
 import SignatureFieldQualiphoto from './SignatureFieldQualiphoto';
-
-const cameraIcon = require('@/assets/icons/camera.gif');
 
 
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
 }
-
-type ChildPhotoCardProps = {
-  child: QualiPhotoItem;
-  onPress: () => void;
-  mode: 'grid' | 'list';
-  hasComplement?: boolean;
-};
-
-const ChildPhotoCard: React.FC<ChildPhotoCardProps> = ({ child, onPress, mode, hasComplement }) => {
-  if (!child.photo) return null;
-  // const [isVisible, setIsVisible] = useState(true); // hidden feature disabled for now
-  // const toggleVisibility = () => {
-  //   LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-  //   setIsVisible(!isVisible);
-  // };
-
-  const renderOverlayContent = () => {
-    if (mode === 'list') {
-      // List mode: Prise par on left, date on right
-      return (
-        <View style={[styles.childGridOverlay, { gap: 4 }]}>
-          {child.title && <Text style={styles.childGridTitle} numberOfLines={1}>{child.title}</Text>}
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-            <View style={{ flex: 1, marginRight: 8 }}>
-              {child.user_name && (
-                <Text style={styles.childGridDate} numberOfLines={1}>
-                  {`${child.user_name} ${child.user_lastname || ''}`.trim()}
-                </Text>
-              )}
-            </View>
-            <View style={{ flexShrink: 0 }}>
-              {child.date_taken && <Text style={styles.childGridDate}>{formatDate(child.date_taken)}</Text>}
-            </View>
-          </View>
-        </View>
-      );
-    } else {
-      // Grid mode: Stack vertically with limited space
-      return (
-        <View style={styles.childGridOverlay}>
-          {child.title && <Text style={styles.childGridTitle} numberOfLines={1}>{child.title}</Text>}
-          {child.user_name && (
-            <Text style={[styles.childGridDate, { fontSize: 9 }]} numberOfLines={1}>
-              {`${child.user_name} ${child.user_lastname || ''}`.trim()}
-            </Text>
-          )}
-          {child.date_taken && <Text style={styles.childGridDate}>{formatDate(child.date_taken)}</Text>}
-        </View>
-      );
-    }
-  };
-
-  return (
-    <View style={[
-      styles.childGridItem,
-      mode === 'list' && { width: '100%' },
-      hasComplement ? { borderColor: '#16a34a', borderWidth: 3 } : { borderColor: '#f87b1b', borderWidth: 3 }
-    ]}>
-      {/* HIDE/SHOW feature disabled: always show image */}
-      <TouchableOpacity onPress={onPress}>
-        <>
-          <Image source={{ uri: child.photo }} style={styles.childThumbnail} />
-          {renderOverlayContent()}
-        </>
-      </TouchableOpacity>
-      {/* <TouchableOpacity onPress={toggleVisibility} style={styles.eyeIcon}>
-        <Ionicons name={isVisible ? 'eye-outline' : 'eye-off-outline'} size={24} color="#fff" />
-      </TouchableOpacity> */}
-    </View>
-  );
-};
 
 type Props = {
   visible: boolean;
@@ -531,195 +459,43 @@ type Props = {
    const renderDetailView = () => {
     if (!item) return null;
 
-    const handleGeneratePdf = async () => {
-        if (!item || !token) return;
-        setIsGeneratingPdf(true);
-        try {
-            const { fileUrl } = await qualiphotoService.generatePdf(item.id, token);
-            const absoluteUrl = `${API_CONFIG.BASE_URL}${fileUrl}`;
-            
-            // Check if linking is supported
-            const supported = await Linking.canOpenURL(absoluteUrl);
-            if (supported) {
-                await Linking.openURL(absoluteUrl);
-                Alert.alert('Succès', 'PDF généré et ouvert avec succès.');
-            } else {
-                Alert.alert('Erreur', `Impossible d'ouvrir l'URL: ${absoluteUrl}`);
-            }
-            } catch (err) {
-            console.error("PDF Generation Error", err);
-            Alert.alert('Erreur', 'Échec de la génération du PDF.');
-        } finally {
-            setIsGeneratingPdf(false);
-        }
-    };
-
-    const header = (
-      <View style={styles.header}>
-        {item?.id_qualiphoto_parent ? (
-          <Pressable onPress={() => setItem(initialItem || null)} style={styles.closeBtn}>
-            <Ionicons name="arrow-back" size={28} color="#f87b1b" />
-          </Pressable>
-        ) : (
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Fermer les détails"
-            onPress={onClose}
-            style={styles.closeBtn}
-          >
-            <Ionicons name="arrow-back" size={28} color="#f87b1b" />
-          </Pressable>
-        )}
-        <View style={styles.headerTitles}>
-        {!!item?.title && <Text style={styles.title}>{item.title}</Text>}
-        {!!item && <Text numberOfLines={1} style={styles.subtitle}>{subtitle}</Text>}
-        {!!item?.date_taken && <Text style={styles.subtitle}>{formatDate(item.date_taken)}</Text>}
-        </View>
-        <View style={styles.headerActionsContainer}>
-          {/* PDF Generation Button (only for main/parent) */}
-          {item && !item.id_qualiphoto_parent && (
-              <TouchableOpacity style={styles.headerAction} onPress={handleGeneratePdf} disabled={isGeneratingPdf} accessibilityLabel="Générer le PDF">
-                  {isGeneratingPdf ? (
-                      <ActivityIndicator color="#f87b1b" />
-                  ) : (
-                      <Image source={ICONS.pdf} style={styles.headerActionIcon} />
-                  )}
-              </TouchableOpacity>
-          )}
-          {/* Signature Button */}
-          {item && !item.id_qualiphoto_parent && (
-            <TouchableOpacity style={styles.headerAction} onPress={() => setSignatureModalVisible(true)} accessibilityLabel="Signatures">
-              <Image source={ICONS.signature} style={styles.headerActionIcon} />
-            </TouchableOpacity>
-          )}
-
-          {item?.id_qualiphoto_parent && (
-            <TouchableOpacity style={styles.headerAction} onPress={() => setEditPlanVisible(true)} accessibilityLabel="Éditer le plan de zone">
-                <Image 
-                  source={item.photo_plan ? { uri: item.photo_plan } : require('@/assets/icons/plan.png')} 
-                  style={[styles.headerPlanIcon]} 
-                />
-            </TouchableOpacity>
-          )}
-        </View>
-      </View>
-    );
-
     if (item?.id === initialItem?.id) {
       return (
-        <>
-          {header}
-          <View style={{ paddingHorizontal: 12, paddingTop: 12, paddingBottom: 12 }}>
-            {item.photo ? (
-              <>
-                <TouchableOpacity onPress={() => { if (!item.photo) return; setImagePreviewVisible(true); }} activeOpacity={0.9}>
-                  <View style={styles.imageWrap}>
-                    <Image source={{ uri: item.photo }} style={styles.image} />
-                    <View style={[styles.childGridOverlay, { gap: 4 }]}>
-                       {item.title && <Text style={styles.childGridTitle} numberOfLines={1}>{item.title}</Text>}
-                      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <View style={{ flex: 1, marginRight: 8 }}>
-                          {item.user_name && (
-                            <Text style={styles.childGridDate} numberOfLines={1}>
-                              {`${item.user_name} ${item.user_lastname || ''}`.trim()}
-                            </Text>
-                          )}
-                        </View>
-                        <View style={{ flexShrink: 0 }}>
-                          {item.date_taken && <Text style={styles.childGridDate}>{formatDate(item.date_taken)}</Text>}
-                        </View>
-                      </View>
-                    </View>
-                  </View>
-                </TouchableOpacity>
-                {hasActionsOrDescription && (
-                  <TouchableOpacity
-                    style={styles.toggleActionsButton}
-                    onPress={() => setActionsVisible(v => !v)}
-                    accessibilityLabel={isActionsVisible ? 'Masquer les actions' : 'Afficher les actions'}
-                  >
-                    <Ionicons name={isActionsVisible ? 'close' : 'ellipsis-horizontal'} size={24} color="#FFFFFF" />
-                  </TouchableOpacity>
-                )}
-              </>
-            ) : (
-              hasActionsOrDescription ? (
-                <View style={{ alignItems: 'flex-end', marginBottom: 8 }}>
-                  <TouchableOpacity
-                    style={styles.inlineActionsButton}
-                    onPress={() => setActionsVisible(v => !v)}
-                    accessibilityLabel={isActionsVisible ? 'Masquer les actions' : 'Afficher les actions'}
-                  >
-                    <Ionicons name={isActionsVisible ? 'close' : 'ellipsis-horizontal'} size={20} color="#11224e" />
-                  </TouchableOpacity>
-                </View>
-              ) : null
-            )}
-          </View>
-          <ScrollView bounces>
-            <View style={[styles.content, { paddingTop: 0 }]}>
-              
-              
-
-              {isActionsVisible && (
-                <>
-                  {(item.voice_note || (item.latitude && item.longitude) || item.after === 1) && (
-                    <View style={styles.actionsContainer}>
-                      {item.voice_note && (
-                        <TouchableOpacity style={styles.actionButton} onPress={playSound}>
-                          <Ionicons name={isPlaying ? 'pause-circle' : 'play-circle'} size={32} color="#11224e" />
-                        </TouchableOpacity>
-                      )}
-                      {item.latitude && item.longitude && (
-                        <TouchableOpacity style={styles.actionButton} onPress={handleMapPress}>
-                          <Image source={ICONS.map} style={styles.actionIcon} />
-                        </TouchableOpacity>
-                      )}
-                      {item.after === 1 && (
-                        <TouchableOpacity style={styles.actionButton} onPress={() => setCommentModalVisible(true)}>
-                          <Ionicons name="add-circle-outline" size={32} color="#11224e" />
-                        </TouchableOpacity>
-                      )}
-                      {item.id_qualiphoto_parent && (
-                        <TouchableOpacity style={styles.actionButton} onPress={() => setComplementModalVisible(true)}>
-                          <Ionicons name="add" size={32} color="#11224e" />
-                        </TouchableOpacity>
-                      )}
-                    </View>
-                  )}
-                  {(typeof item.commentaire === 'string' && item.commentaire.trim().length > 0) ? (
-                    <View style={styles.metaCard}>
-                      {typeof item.commentaire === 'string' && item.commentaire.trim().length > 0 ? (
-                        <View style={[styles.metaRow, { borderTopWidth: 0, paddingTop: 0 }]}>
-                          <Text style={styles.metaLabel}>Description</Text>
-                          <Text style={[styles.metaValue, styles.metaMultiline]}>{item.commentaire}</Text>
-                        </View>
-                      ) : null}
-                    </View>
-                  ) : null}
-                  {item.id_qualiphoto_parent && (
-                    <View style={styles.metaCard}>
-                      <Text style={styles.sectionTitle}>Photo après</Text>
-                      {isLoadingComplement ? (
-                        <ActivityIndicator style={{ marginVertical: 12 }} />
-                      ) : complement ? (
-                        <View>
-                          {(complement.photo_comp || complement.photo) ? (
-                            (() => {
-                              const compUri = complement.photo_comp || complement.photo;
-                              if (!compUri) return null;
-                              return (
-                                <TouchableOpacity onPress={() => setImagePreviewVisible(true)} activeOpacity={0.9}>
-                                  <View style={styles.imageWrap}>
-                                    <Image source={{ uri: compUri }} style={styles.image} />
-                                  </View>
-                                </TouchableOpacity>
-                              );
-                            })()
-                          ) : null}
-                          {(complement.voice_note) ? (
-                            <View style={[styles.actionsContainer, { marginTop: 8 }]}>
-                              <TouchableOpacity style={styles.actionButton} onPress={async () => {
+        <ParentQualiPhotoView
+          item={item}
+          initialItem={initialItem}
+          onClose={onClose}
+          subtitle={subtitle}
+          handleGeneratePdf={handleGeneratePdf}
+          isGeneratingPdf={isGeneratingPdf}
+          setSignatureModalVisible={setSignatureModalVisible}
+          setImagePreviewVisible={setImagePreviewVisible}
+          childPhotos={children}
+          hasActionsOrDescription={!!hasActionsOrDescription}
+          isActionsVisible={isActionsVisible}
+          setActionsVisible={setActionsVisible}
+          playSound={playSound}
+          isPlaying={isPlaying}
+          handleMapPress={handleMapPress}
+          setCommentModalVisible={setCommentModalVisible}
+          setComplementModalVisible={setComplementModalVisible}
+          complement={complement}
+          isLoadingComplement={isLoadingComplement}
+          comments={comments}
+          isLoadingComments={isLoadingComments}
+          layoutMode={layoutMode}
+          setLayoutMode={setLayoutMode}
+          setChildModalVisible={setChildModalVisible}
+          sortOrder={sortOrder}
+          setSortOrder={setSortOrder}
+          isLoadingChildren={isLoadingChildren}
+          childIdToHasComplement={childIdToHasComplement}
+          setItem={setItem}
+        />
+      );
+    } else {
+        const playComplementSound = async () => {
+            if (!complement?.voice_note) return;
                                 try {
                                   if (isPlayingComp && compSound) { await compSound.pauseAsync(); setIsPlayingComp(false); return; }
                                   if (compSound) { await compSound.playAsync(); setIsPlayingComp(true); return; }
@@ -731,231 +507,9 @@ type Props = {
                                   });
                                   await newSound.playAsync();
                                 } catch {}
-                              }}>
-                                <Ionicons name={isPlayingComp ? 'pause-circle' : 'play-circle'} size={32} color="#11224e" />
-                              </TouchableOpacity>
-                            </View>
-                          ) : null}
-                          {typeof complement.commentaire === 'string' && complement.commentaire.trim().length > 0 ? (
-                            <View style={[styles.metaCard, { marginTop: 8 }]}>
-                              <MetaRow label="Description (Complémentaire)" value={complement.commentaire} multiline />
-                            </View>
-                          ) : null}
-                        </View>
-                      ) : (
-                        <Text style={styles.noChildrenText}>Aucune photo après.</Text>
-                      )}
-                    </View>
-                  )}
-                </>
-              )}
-              {item.after === 1 && (comments.length > 0 || isLoadingComments) && (
-                <View style={styles.metaCard}>
-                  <Text style={styles.sectionTitle}>Commentaires</Text>
-                  {isLoadingComments && <ActivityIndicator style={{ marginVertical: 16 }} />}
-                  {comments.map((comment) => (
-                    <MetaRow
-                      key={comment.id}
-                      label={`De ${comment.user_name || 'Utilisateur'} le ${formatDate(comment.created_at)}`}
-                      value={comment.commentaire_text}
-                      multiline
-                    />
-                  ))}
-                </View>
-              )}
-              {item.before === 1 && (
-                <>
-                  <View style={styles.sectionSeparator} />
-                  <View style={styles.childPicturesContainer}>
-                  <View style={[styles.childListHeader, children.length === 0 && { justifyContent: 'center' }]}>
-                    {children.length > 0 && (
-                      <View style={styles.layoutToggleContainer}>
-                        <TouchableOpacity
-                            style={[styles.layoutToggleButton, layoutMode === 'list' && styles.layoutToggleButtonActive]}
-                            onPress={() => setLayoutMode('list')}
-                        >
-                            <Ionicons name="list" size={20} color={layoutMode === 'list' ? '#FFFFFF' : '#11224e'} />
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                            style={[styles.layoutToggleButton, layoutMode === 'grid' && styles.layoutToggleButtonActive]}
-                            onPress={() => setLayoutMode('grid')}
-                        >
-                            <Ionicons name="grid" size={20} color={layoutMode === 'grid' ? '#FFFFFF' : '#11224e'} />
-                        </TouchableOpacity>
-                     </View>
-                   )}
-                   <TouchableOpacity
-                     onPress={() => setChildModalVisible(true)}
-                     accessibilityLabel="Ajouter une photo avant"
-                     style={styles.cameraCTA}
-                   >
-                     <Image source={cameraIcon} style={styles.cameraCTAIcon} />
-                     <Text style={styles.cameraCTALabel}>Prendre la situation avant</Text>
-                   </TouchableOpacity>
-                   {children.length > 0 && (
-                     <TouchableOpacity
-                       style={styles.sortButton}
-                       onPress={() => setSortOrder(current => current === 'asc' ? 'desc' : 'asc')}
-                       accessibilityLabel={sortOrder === 'desc' ? 'Trier par ordre croissant' : 'Trier par ordre décroissant'}
-                     >
-                       <Ionicons name={sortOrder === 'desc' ? 'arrow-down' : 'arrow-up'} size={24} color="#f87b1b" />
-                     </TouchableOpacity>
-                   )}
-                 </View>
-                  {isLoadingChildren && <Text>Chargement...</Text>}
-                  {!isLoadingChildren && children.length === 0 && item.before === 1 && (
-                    <Text style={styles.noChildrenText}>Aucune photo suivie n&apos;a encore été ajoutée.</Text>
-                  )}
-                  <View style={styles.childGridContainer}>
-                    {children.map((child) => (
-                      <ChildPhotoCard
-                        key={child.id}
-                        child={child}
-                        onPress={() => setItem(child)}
-                        mode={layoutMode}
-                        hasComplement={!!childIdToHasComplement[String(child.id)]}
-                      />
-                    ))}
-                  </View>
-                </View>
-                </>
-              )}
-            </View>
-          </ScrollView>
-          
-        </>
-      );
-    } else {
-      // Child Item View: Fully scrollable
-      return (
-        <>
-          {header}
-          <ScrollView bounces>
-            <View style={styles.content}>
+          };
 
-              <View>
-                <Text style={styles.sectionTitle}>Situation avant</Text>
-                {item.photo ? (
-                  <>
-                    <TouchableOpacity onPress={() => { if (!item.photo) return; setImagePreviewVisible(true); }} activeOpacity={0.9}>
-                      <View style={styles.imageWrap}>
-                        <Image source={{ uri: item.photo }} style={styles.image} />
-                        <View style={[styles.childGridOverlay, { gap: 4 }]}>
-                          {item.title && <Text style={styles.childGridTitle} numberOfLines={1}>{item.title}</Text>}
-                          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <View style={{ flex: 1, marginRight: 8 }}>
-                              {item.user_name && (
-                                <Text style={styles.childGridDate} numberOfLines={1}>
-                                  {`${item.user_name} ${item.user_lastname || ''}`.trim()}
-                                </Text>
-                              )}
-                            </View>
-                            <View style={{ flexShrink: 0 }}>
-                              {item.date_taken && <Text style={styles.childGridDate}>{formatDate(item.date_taken)}</Text>}
-                            </View>
-                          </View>
-                        </View>
-                      </View>
-                    </TouchableOpacity>
-                    {hasActionsOrDescription && (
-                      <TouchableOpacity
-                        style={styles.toggleActionsButton}
-                        onPress={() => setActionsVisible(v => !v)}
-                        accessibilityLabel={isActionsVisible ? 'Masquer les actions' : 'Afficher les actions'}
-                      >
-                        <Ionicons name={isActionsVisible ? 'close' : 'ellipsis-horizontal'} size={24} color="#FFFFFF" />
-                      </TouchableOpacity>
-                    )}
-                  </>
-                ) : (
-                  hasActionsOrDescription ? (
-                    <View style={{ alignItems: 'flex-end', marginBottom: 8 }}>
-                      <TouchableOpacity
-                        style={styles.inlineActionsButton}
-                        onPress={() => setActionsVisible(v => !v)}
-                        accessibilityLabel={isActionsVisible ? 'Masquer les actions' : 'Afficher les actions'}
-                      >
-                        <Ionicons name={isActionsVisible ? 'close' : 'ellipsis-horizontal'} size={20} color="#11224e" />
-                      </TouchableOpacity>
-                    </View>
-                  ) : null
-                )}
-              </View>
-
-              {isActionsVisible && (
-                <>
-                  {(item.voice_note || (item.latitude && item.longitude) || item.after === 1) && (
-                    <View style={styles.actionsContainer}>
-                      {item.voice_note && (
-                        <TouchableOpacity style={styles.actionButton} onPress={playSound}>
-                          <Ionicons name={isPlaying ? 'pause-circle' : 'play-circle'} size={32} color="#11224e" />
-                        </TouchableOpacity>
-                      )}
-                      {item.latitude && item.longitude && (
-                        <TouchableOpacity style={styles.actionButton} onPress={handleMapPress}>
-                          <Image source={ICONS.map} style={styles.actionIcon} />
-                        </TouchableOpacity>
-                      )}
-                      {item.after === 1 && (
-                        <TouchableOpacity style={styles.actionButton} onPress={() => setCommentModalVisible(true)}>
-                          <Ionicons name="add-circle-outline" size={32} color="#11224e" />
-                        </TouchableOpacity>
-                      )}
-                      {item.id_qualiphoto_parent && (
-                        <TouchableOpacity
-                          style={styles.actionButton}
-                          onPress={() => {
-                            const isAbsolute = typeof item.photo === 'string' && /^(https?:)?\/\//.test(item.photo);
-                            const prefillPhoto = isAbsolute
-                              ? { photoUri: item.photo }
-                              : { photoPath: (item as any).photo_path || item.photo };
-                            setDeclPrefill({
-                              id_zone: (item as any).id_zone,
-                              id_project: (item as any).id_project,
-                              latitude: (item as any).latitude,
-                              longitude: (item as any).longitude,
-                              title: initialItem?.title || '',
-                              description: initialItem?.commentaire || '',
-                              disableFields: true,
-                              ...prefillPhoto,
-                            });
-                            setDeclModalVisible(true);
-                          }}
-                          accessibilityLabel="Créer une déclaration depuis cette photo"
-                        >
-                          <Image source={ICONS.declaration} style={styles.actionIcon} />
-                        </TouchableOpacity>
-                      )}
-                    </View>
-                  )}
-                  {(typeof item.commentaire === 'string' && item.commentaire.trim().length > 0) ? (
-                    <View style={styles.metaCard}>
-                      {typeof item.commentaire === 'string' && item.commentaire.trim().length > 0 ? (
-                        <View style={[styles.metaRow, { borderTopWidth: 0, paddingTop: 0 }]}>
-                          <Text style={styles.metaLabel}>Description</Text>
-                          <Text style={[styles.metaValue, styles.metaMultiline]}>{item.commentaire}</Text>
-                        </View>
-                      ) : null}
-                    </View>
-                  ) : null}
-                </>
-              )}
-
-              {/* Complementary content - always visible on child */}
-              <View>
-                <View style={styles.sectionHeaderRow}>
-                  {complement ? <Text style={styles.sectionTitle}>Situation après</Text> : <View />}
-                  {complement && (
-                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                      <TouchableOpacity
-                        onPress={() => handleCompare(item.photo, complement.photo_comp || complement.photo)}
-                        accessibilityLabel="Comparer les images"
-                        style={{ marginLeft: 12 }}
-                      >
-                        <Image source={ICONS.chatgpt} style={{ width: 22, height: 22 }} />
-                      </TouchableOpacity>
-                      <TouchableOpacity
-                        onPress={async () => {
+          const deleteComplement = async () => {
                           if (!token || !complement?.id) return;
                           try {
                             await qualiphotoService.deleteComplementaire(complement.id, token);
@@ -963,146 +517,62 @@ type Props = {
                           } catch {
                             Alert.alert('Erreur', "Échec de la suppression de la photo complémentaire.");
                           }
-                        }}
-                        accessibilityLabel="Supprimer la photo complémentaire"
-                        style={{ marginLeft: 12 }}
-                      >
-                        <Ionicons name="trash-outline" size={22} color="#dc2626" />
-                      </TouchableOpacity>
-                    </View>
-                  )}
-                </View>
-                {isLoadingComplement ? (
-                  <ActivityIndicator style={{ marginVertical: 12 }} />
-                ) : complement ? (
-                  <>
-                    {(complement.photo_comp || complement.photo) ? (
-                      (() => {
-                        const compUri = complement.photo_comp || complement.photo;
-                        if (!compUri) return null;
+          }
                         return (
-                          <View style={styles.compImageLine}>
-                            <TouchableOpacity
-                              onPress={() => { setPreviewImageUri(compUri); setImagePreviewVisible(true); }}
-                              activeOpacity={0.85}
-                              accessibilityLabel="Agrandir la photo complémentaire"
-                            >
-                              <Image source={{ uri: compUri }} style={styles.compImage} />
-                              <View style={[styles.childGridOverlay, { gap: 4 }]}>
-                                {complement.title && <Text style={styles.childGridTitle} numberOfLines={1}>{complement.title}</Text>}
-                                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                                  <View style={{ flex: 1, marginRight: 8 }}>
-                                    {complement.user_name && (
-                                      <Text style={styles.childGridDate} numberOfLines={1}>
-                                        {`${complement.user_name} ${complement.user_lastname || ''}`.trim()}
-                                      </Text>
-                                    )}
-                                  </View>
-                                  <View style={{ flexShrink: 0 }}>
-                                    {complement.date_taken && <Text style={styles.childGridDate}>{formatDate(complement.date_taken)}</Text>}
-                                  </View>
-                                </View>
-                              </View>
-                            </TouchableOpacity>
-                            {hasComplementActionsOrDescription && (
-                              <TouchableOpacity
-                                style={styles.toggleActionsButton}
-                                onPress={() => setComplementActionsVisible(v => !v)}
-                                accessibilityLabel={isComplementActionsVisible ? 'Masquer les actions' : 'Afficher les actions'}
-                              >
-                                <Ionicons name={isComplementActionsVisible ? 'close' : 'ellipsis-horizontal'} size={24} color="#FFFFFF" />
-                              </TouchableOpacity>
-                            )}
-                          </View>
-                        );
-                      })()
-                    ) : (
-                      hasComplementActionsOrDescription ? (
-                        <View style={{ alignItems: 'flex-end', marginBottom: 8 }}>
-                          <TouchableOpacity
-                            style={styles.inlineActionsButton}
-                            onPress={() => setComplementActionsVisible(v => !v)}
-                            accessibilityLabel={isComplementActionsVisible ? 'Masquer les actions' : 'Afficher les actions'}
-                          >
-                            <Ionicons name={isComplementActionsVisible ? 'close' : 'ellipsis-horizontal'} size={20} color="#11224e" />
-                          </TouchableOpacity>
-                        </View>
-                      ) : null
-                    )}
-                    {isComplementActionsVisible && (
-                      <>
-                        {(complement.voice_note || (complement.latitude && complement.longitude)) && (
-                          <View style={[styles.actionsContainer, { marginBottom: 8 }]}>
-                            {complement.voice_note && (
-                              <TouchableOpacity style={styles.actionButton} onPress={async () => {
-                                try {
-                                  if (isPlayingComp && compSound) { await compSound.pauseAsync(); setIsPlayingComp(false); return; }
-                                  if (compSound) { await compSound.playAsync(); setIsPlayingComp(true); return; }
-                                  const { sound: newSound } = await Audio.Sound.createAsync({ uri: complement.voice_note! });
-                                  setCompSound(newSound);
-                                  setIsPlayingComp(true);
-                                  newSound.setOnPlaybackStatusUpdate((status) => {
-                                    if (status.isLoaded && status.didJustFinish) { setIsPlayingComp(false); newSound.setPositionAsync(0); }
-                                  });
-                                  await newSound.playAsync();
-                                } catch {}
-                              }}>
-                                <Ionicons name={isPlayingComp ? 'pause-circle' : 'play-circle'} size={32} color="#11224e" />
-                              </TouchableOpacity>
-                            )}
-                            {complement.latitude && complement.longitude && (
-                              <TouchableOpacity style={styles.actionButton} onPress={handleComplementMapPress}>
-                                <Image source={ICONS.map} style={styles.actionIcon} />
-                              </TouchableOpacity>
-                            )}
-                          </View>
-                        )}
-                        {(complement.user_name || (typeof complement.commentaire === 'string' && complement.commentaire.trim().length > 0)) ? (
-                          <View style={styles.metaCard}>
-                            {typeof complement.commentaire === 'string' && complement.commentaire.trim().length > 0 ? (
-                              <View style={[styles.metaRow, complement.user_name ? { borderTopWidth: 0, paddingTop: 0 } : null]}>
-                                <Text style={styles.metaLabel}>Description</Text>
-                                <Text style={[styles.metaValue, styles.metaMultiline]}>{complement.commentaire}</Text>
-                              </View>
-                            ) : null}
-                          </View>
-                        ) : null}
-                      </>
-                    )}
-                  </>
-                ) : (
-                  <View style={{ alignItems: 'center', marginVertical: 16 }}>
-                    <TouchableOpacity
-                      onPress={() => setComplementModalVisible(true)}
-                      accessibilityLabel="Ajouter une photo complémentaire"
-                      style={styles.cameraCTA}
-                    >
-                      <Image source={cameraIcon} style={styles.cameraCTAIcon} />
-                      <Text style={styles.cameraCTALabel}>Prendre la situation après</Text>
-                    </TouchableOpacity>
-                  </View>
-                )}
-              </View>
-
-              {item.after === 1 && (comments.length > 0 || isLoadingComments) && (
-                <View style={styles.metaCard}>
-                  <Text style={styles.sectionTitle}>Commentaires</Text>
-                  {isLoadingComments && <ActivityIndicator style={{ marginVertical: 16 }} />}
-                  {comments.map((comment) => (
-                    <MetaRow
-                      key={comment.id}
-                      label={`De ${comment.user_name || 'Utilisateur'} le ${formatDate(comment.created_at)}`}
-                      value={comment.commentaire_text}
-                      multiline
-                    />
-                  ))}
-                </View>
-              )}
-
-            </View>
-          </ScrollView>
-        </>
+        <ChildQualiPhotoView
+            item={item}
+            initialItem={initialItem}
+            setItem={setItem}
+            subtitle={subtitle}
+            setEditPlanVisible={setEditPlanVisible}
+            setImagePreviewVisible={setImagePreviewVisible}
+            hasActionsOrDescription={!!hasActionsOrDescription}
+            isActionsVisible={isActionsVisible}
+            setActionsVisible={setActionsVisible}
+            playSound={playSound}
+            isPlaying={isPlaying}
+            handleMapPress={handleMapPress}
+            setCommentModalVisible={setCommentModalVisible}
+            setDeclPrefill={setDeclPrefill}
+            setDeclModalVisible={setDeclModalVisible}
+            comments={comments}
+            isLoadingComments={isLoadingComments}
+            complement={complement}
+            isLoadingComplement={isLoadingComplement}
+            handleCompare={handleCompare}
+            deleteComplement={deleteComplement}
+            setPreviewImageUri={setPreviewImageUri}
+            hasComplementActionsOrDescription={!!hasComplementActionsOrDescription}
+            isComplementActionsVisible={isComplementActionsVisible}
+            setComplementActionsVisible={setComplementActionsVisible}
+            playComplementSound={playComplementSound}
+            isPlayingComp={isPlayingComp}
+            handleComplementMapPress={handleComplementMapPress}
+            setComplementModalVisible={setComplementModalVisible}
+        />
       );
+    }
+  };
+   const handleGeneratePdf = async () => {
+    if (!item || !token) return;
+    setIsGeneratingPdf(true);
+    try {
+        const { fileUrl } = await qualiphotoService.generatePdf(item.id, token);
+        const absoluteUrl = `${API_CONFIG.BASE_URL}${fileUrl}`;
+        
+        // Check if linking is supported
+        const supported = await Linking.canOpenURL(absoluteUrl);
+        if (supported) {
+            await Linking.openURL(absoluteUrl);
+            Alert.alert('Succès', 'PDF généré et ouvert avec succès.');
+        } else {
+            Alert.alert('Erreur', `Impossible d'ouvrir l'URL: ${absoluteUrl}`);
+        }
+        } catch (err) {
+        console.error("PDF Generation Error", err);
+        Alert.alert('Erreur', 'Échec de la génération du PDF.');
+    } finally {
+        setIsGeneratingPdf(false);
     }
    };
 
@@ -1319,28 +789,6 @@ type Props = {
       />
     </Modal>
   );
-}
-
-function MetaRow({ label, value, multiline }: { label: string; value: string; multiline?: boolean }) {
-  return (
-    <View style={styles.metaRow}>
-      <Text style={styles.metaLabel}>{label}</Text>
-      <Text style={[styles.metaValue, multiline && styles.metaMultiline]}>{value}</Text>
-    </View>
-  );
-}
-
-function formatDate(dateStr: string) {
-  const replaced = dateStr.replace(' ', 'T');
-  const date = new Date(replaced);
-  if (isNaN(date.getTime())) return dateStr;
-  return new Intl.DateTimeFormat('fr-FR', {
-    year: 'numeric',
-    month: 'short',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-  }).format(date);
 }
 
 const styles = StyleSheet.create({
