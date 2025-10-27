@@ -148,7 +148,7 @@ export default function QualiPhotoGalleryScreen() {
 
   // Refetch photos on filter change
   useEffect(() => {
-    // Reset pagination and fetch first page on filter change
+  
     setPage(1);
     setHasMore(true);
     fetchPhotos(1, false);
@@ -160,18 +160,18 @@ export default function QualiPhotoGalleryScreen() {
         onPress={() => { setSelectedItem(item); setDetailVisible(true); }}
     >
         <View style={styles.cardHeader}>
-            <Image source={ICONS.folder} style={{ width: 48, height: 48 }} />
-        </View>
-        <View style={styles.cardBody}>
+            <Image source={ICONS.folder} style={{ width: 48, height: 48, marginRight: 12 }} />
             <Text style={styles.cardTitle} numberOfLines={2}>
                 {item.title}
             </Text>
+        </View>
+        <View style={styles.cardBody}>
             <View style={styles.infoRow}>
-                <Ionicons name="briefcase-outline" size={14} color="#f87b1b" />
+                <Ionicons name="briefcase-outline" size={14} color="#6b7280" />
                 <Text style={styles.infoText} numberOfLines={1}>{item.project_title || 'N/A'}</Text>
             </View>
             <View style={styles.infoRow}>
-                <Ionicons name="location-outline" size={14} color="#f87b1b" />
+                <Ionicons name="location-outline" size={14} color="#6b7280" />
                 <Text style={styles.infoText} numberOfLines={1}>{item.zone_title || 'N/A'}</Text>
             </View>
             <View style={styles.cardFooter}>
@@ -541,19 +541,21 @@ const styles = StyleSheet.create({
       backgroundColor: '#f9fafb'
   },
   cardHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
       alignItems: 'center',
-      marginBottom: 8,
+      marginBottom: 12,
   },
   cardBody: {
       flex: 1,
       gap: 6,
   },
   cardTitle: {
-      fontSize: 14,
+      flex: 1,
+      fontSize: 16,
       fontWeight: '700',
       color: '#11224e',
-      textAlign: 'center',
-      minHeight: 34, 
+      marginRight: 8,
   },
   infoRow: {
       flexDirection: 'row',

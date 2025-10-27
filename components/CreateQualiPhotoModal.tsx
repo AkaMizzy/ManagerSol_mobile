@@ -1,3 +1,4 @@
+import { ICONS } from '@/constants/Icons';
 import { useAuth } from '@/contexts/AuthContext';
 import qualiphotoService, { QualiPhotoItem, QualiProject, QualiZone } from '@/services/qualiphotoService';
 import { Ionicons } from '@expo/vector-icons';
@@ -7,6 +8,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import DateTimePickerModal from 'react-native-modal-datetime-picker';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Image } from 'expo-image';
 
 type Props = {
   visible: boolean;
@@ -283,7 +285,8 @@ export default function CreateQualiPhotoModal({ visible, onClose, onSuccess, ini
               <Ionicons name="close" size={24} color="#6b7280" />
             </TouchableOpacity>
             <View style={styles.headerCenter}>
-              <Text style={styles.headerTitle}>Qualiphotos</Text>
+              <Text style={styles.headerTitle}>Nouveau dossier</Text>
+              <Image source={ICONS.folder} style={{ width: 24, height: 24 }} />
             </View>
             <View style={styles.placeholder} />
           </View>
@@ -490,7 +493,7 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F8FAFC' },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12, backgroundColor: '#FFFFFF', borderBottomWidth: 1, borderBottomColor: '#e5e7eb' },
   closeButton: { padding: 8 },
-  headerCenter: { alignItems: 'center', flex: 1 },
+  headerCenter: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, flex: 1 },
   headerTitle: { fontSize: 18, fontWeight: '600', color: '#11224e' },
   headerSubtitle: { fontSize: 12, color: '#64748b', marginTop: 2 },
   placeholder: { width: 40 },
