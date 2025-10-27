@@ -4,7 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Audio } from 'expo-av';
 import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, Image, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import DateTimePickerModal from 'react-native-modal-datetime-picker';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -30,7 +30,7 @@ export default function CreateQualiPhotoModal({ visible, onClose, onSuccess, ini
   const [voiceNote, setVoiceNote] = useState<{ uri: string; name: string; type: string } | null>(null);
   const [latitude, setLatitude] = useState<number | null>(null);
   const [longitude, setLongitude] = useState<number | null>(null);
-  const [locationStatus, setLocationStatus] = useState<'idle' | 'fetching' | 'success' | 'error'>('idle');
+  const [, setLocationStatus] = useState<'idle' | 'fetching' | 'success' | 'error'>('idle');
   const [recording, setRecording] = useState<Audio.Recording | null>(null);
   const [sound, setSound] = useState<Audio.Sound | null>(null);
   const [isRecording, setIsRecording] = useState(false);
@@ -76,6 +76,23 @@ export default function CreateQualiPhotoModal({ visible, onClose, onSuccess, ini
     return `${y}-${m}-${d} ${hh}:${mm}:${ss}`;
   }
 
+  const handlePickPhoto = useCallback(async () => {
+    try {
+      const { status } = await ImagePicker.requestCameraPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission', 'Camera permission is required.');
+        return;
+      }
+      const result = await ImagePicker.launchCameraAsync({ allowsEditing: false, quality: 0.8 });
+      if (!result.canceled && result.assets[0]) {
+        const asset = result.assets[0];
+        setPhoto({ uri: asset.uri, name: `qualiphoto_${Date.now()}.jpg`, type: 'image/jpeg' });
+      }
+    } catch {
+      Alert.alert('Error', 'Failed to open camera');
+    }
+  }, []);
+
   useEffect(() => {
     if (!visible) return;
 
@@ -114,8 +131,15 @@ export default function CreateQualiPhotoModal({ visible, onClose, onSuccess, ini
       }
     };
     fetchLocation();
+
+    // Auto-trigger camera when modal opens
+    const timer = setTimeout(() => {
+      handlePickPhoto();
+    }, 500);
+
+    return () => clearTimeout(timer);
     
-  }, [visible, token, initialProjectId, initialZoneId]);
+  }, [visible, token, initialProjectId, initialZoneId, handlePickPhoto]);
 
   useEffect(() => {
     if (!token || !selectedProject) { setZones([]); if (!initialZoneId) setSelectedZone(null); return; }
@@ -127,23 +151,6 @@ export default function CreateQualiPhotoModal({ visible, onClose, onSuccess, ini
   }, [token, selectedProject, initialZoneId]);
 
   const canSave = useMemo(() => !!selectedProject && !!selectedZone && title.trim().length > 0 && !submitting, [selectedProject, selectedZone, title, submitting]);
-
-  const handlePickPhoto = async () => {
-    try {
-      const { status } = await ImagePicker.requestCameraPermissionsAsync();
-      if (status !== 'granted') {
-        Alert.alert('Permission', 'Camera permission is required.');
-        return;
-      }
-      const result = await ImagePicker.launchCameraAsync({ allowsEditing: false, quality: 0.8 });
-      if (!result.canceled && result.assets[0]) {
-        const asset = result.assets[0];
-        setPhoto({ uri: asset.uri, name: `qualiphoto_${Date.now()}.jpg`, type: 'image/jpeg' });
-      }
-    } catch {
-      Alert.alert('Error', 'Failed to open camera');
-    }
-  };
 
   const handleGenerateDescription = async () => {
     if (!photo || !token) {

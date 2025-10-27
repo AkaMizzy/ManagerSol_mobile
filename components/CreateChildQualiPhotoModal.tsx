@@ -6,7 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Audio } from 'expo-av';
 import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, Image, KeyboardAvoidingView, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -79,7 +79,7 @@ export function CreateChildQualiPhotoForm({ onClose, onSuccess, parentItem }: Fo
     return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
   }
 
-  const handlePickPhoto = async () => {
+  const handlePickPhoto = useCallback(async () => {
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
     if (status !== 'granted') {
       Alert.alert('Permission', 'L\'autorisation d\'accéder à la caméra est requise.');
@@ -91,7 +91,7 @@ export function CreateChildQualiPhotoForm({ onClose, onSuccess, parentItem }: Fo
       setAnnotatorBaseUri(asset.uri);
       setAnnotatorVisible(true);
     }
-  };
+  }, []);
 
   const handleGenerateDescription = async () => {
     if (!photo || !token) {
@@ -138,7 +138,7 @@ export function CreateChildQualiPhotoForm({ onClose, onSuccess, parentItem }: Fo
       setCreationCount(prev => prev + 1);
       resetForm();
     } catch (e: any) {
-      setError(e?.message || 'Échec de l\'enregistrement de la photo "après".');
+      setError(e?.message || 'Échec de l\'enregistrement de la photo "avant".');
     } finally {
       setSubmitting(false);
     }
@@ -247,6 +247,15 @@ export function CreateChildQualiPhotoForm({ onClose, onSuccess, parentItem }: Fo
   }, [token, parentItem?.id_project]);
 
   useEffect(() => {
+    // Auto-trigger camera when form is ready
+    const timer = setTimeout(() => {
+      handlePickPhoto();
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [handlePickPhoto]);
+
+  useEffect(() => {
     const fetchLocation = async () => {
       setLocationStatus('fetching');
       try {
@@ -336,7 +345,7 @@ export function CreateChildQualiPhotoForm({ onClose, onSuccess, parentItem }: Fo
             ) : (
               <TouchableOpacity style={styles.photoPickerButton} onPress={handlePickPhoto}>
                 <Ionicons name="camera-outline" size={24} color="#475569" />
-                <Text style={styles.photoPickerText}>{`Ajouter une Photo "Après"`}</Text>
+                <Text style={styles.photoPickerText}>{`Ajouter une Photo "Avant"`}</Text>
               </TouchableOpacity>
             )}
             <View style={styles.voiceNoteContainer}>
@@ -551,6 +560,8 @@ type ModalProps = {
 };
 
 export default function CreateChildQualiPhotoModal({ visible, onClose, onSuccess, parentItem }: ModalProps) {
+  if (!visible) return null;
+  
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
       <CreateChildQualiPhotoForm 

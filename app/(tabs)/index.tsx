@@ -26,7 +26,7 @@ const GRID_ITEMS: {
   icon?: keyof typeof Ionicons.glyphMap;
   image?: any;
 }[] = [
-  { title: 'QualiPhoto', image: require('../../assets/icons/camera_p.png') },
+  { title: 'Réception', image: require('../../assets/icons/camera_p.png') },
   { title: 'Planning', image: require('../../assets/icons/planning.png') },
   { title: 'Calendrier', image: require('../../assets/icons/calendar.png') },
   { title: 'Manifold', image: require('../../assets/icons/manifolder.png') },
@@ -34,7 +34,7 @@ const GRID_ITEMS: {
   { title: 'Audit', image: require('../../assets/icons/audit_zone.png') },
   { title: 'Echantillon', image: require('../../assets/icons/prelevement_echantillon.png') },
   { title: 'Inventaires', image: require('../../assets/icons/inventaire_article.png') },
-  { title: 'Réception', image: require('../../assets/icons/reception.png') },
+  { title: 'tesst', image: require('../../assets/icons/reception.png') },
   { title: 'Fournisseurs', icon: 'business-outline' },
   { title: 'Zones',  image: require('../../assets/icons/zones.png') },
   { title: 'Paramètres', image: require('../../assets/icons/settings.png') },
@@ -232,7 +232,7 @@ export default function DashboardScreen() {
               key={item.title}
               style={styles.gridButton}
               onPress={() => {
-                if (item.title === 'QualiPhoto') {
+                if (item.title === 'Réception') {
                   router.push('/(tabs)/qualiphoto');
                 } else if (item.title === 'Planning') {
                   router.push('/planning');
