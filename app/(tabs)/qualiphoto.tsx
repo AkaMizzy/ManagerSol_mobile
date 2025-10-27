@@ -4,6 +4,7 @@ import QualiPhotoDetail from '@/components/QualiPhotoDetail';
 import { ICONS } from '@/constants/Icons';
 import { useAuth } from '@/contexts/AuthContext';
 import qualiphotoService, { QualiPhotoItem, QualiProject, QualiZone } from '@/services/qualiphotoService';
+import { Ionicons } from '@expo/vector-icons';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, FlatList, Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -154,33 +155,30 @@ export default function QualiPhotoGalleryScreen() {
   }, [fetchPhotos]);
 
   const renderItem = useCallback(({ item }: { item: QualiPhotoItem }) => (
-    <View style={styles.card}>
-      {item.title ? (
-        <Text style={styles.cardTitle} numberOfLines={2}>
-          {item.title}
-        </Text>
-      ) : null}
-      {item.date_taken ? (
-        <Text style={styles.cardDate}>
-          {formatDateForGrid(item.date_taken)}
-        </Text>
-      ) : null}
-      <Pressable
-        style={({ pressed }) => [styles.imageWrap, pressed && styles.pressed] }
-        accessibilityRole="button"
-        accessibilityLabel="Ouvrir les détails de la photo"
+    <Pressable
+        style={({ pressed }) => [styles.card, pressed && styles.pressed]}
         onPress={() => { setSelectedItem(item); setDetailVisible(true); }}
-      >
-        <Image source={{ uri: item.photo ?? undefined }} style={styles.image} resizeMode="cover" />
-      </Pressable>
-      <View style={styles.meta}>
-        <View style={styles.metaRow}>
-          <Text style={styles.metaText} numberOfLines={1}>{item.project_title || ''}</Text>
-          {item.zone_title ? <Text style={styles.metaSubText} numberOfLines={1}>{item.zone_title}</Text> : null}
+    >
+        <View style={styles.cardHeader}>
+            <Image source={ICONS.folder} style={{ width: 48, height: 48 }} />
         </View>
-        
-      </View>
-    </View>
+        <View style={styles.cardBody}>
+            <Text style={styles.cardTitle} numberOfLines={2}>
+                {item.title}
+            </Text>
+            <View style={styles.infoRow}>
+                <Ionicons name="briefcase-outline" size={14} color="#f87b1b" />
+                <Text style={styles.infoText} numberOfLines={1}>{item.project_title || 'N/A'}</Text>
+            </View>
+            <View style={styles.infoRow}>
+                <Ionicons name="location-outline" size={14} color="#f87b1b" />
+                <Text style={styles.infoText} numberOfLines={1}>{item.zone_title || 'N/A'}</Text>
+            </View>
+            <View style={styles.cardFooter}>
+                 <Text style={styles.cardDate}>{formatDateForGrid(item.date_taken)}</Text>
+            </View>
+        </View>
+    </Pressable>
   ), []);
 
   const keyExtractor = useCallback((item: QualiPhotoItem) => item.id, []);
@@ -405,7 +403,8 @@ const styles = StyleSheet.create({
   },
   titleContainer: {
     paddingHorizontal: 16,
-    paddingVertical: 8,
+    paddingTop: 8,
+    paddingBottom: 4,
     alignItems: 'center',
   },
   titleText: {
@@ -523,78 +522,61 @@ const styles = StyleSheet.create({
   },
   card: {
     flex: 1,
-    maxWidth: '49%', // Prevent single item from stretching full width
+    maxWidth: '49%',
     marginHorizontal: 4,
     marginVertical: 8,
     backgroundColor: '#ffffff',
-    borderRadius: 12,
-    overflow: 'hidden',
+    borderRadius: 16,
     borderWidth: 1,
-    borderColor: '#f87b1b',
-  },
-  imageWrap: {
-    width: '100%',
-    aspectRatio: 1,
-    overflow: 'hidden',
-  },
-  image: {
-    width: '100%',
-    height: '100%',
-    transform: [{ scale: 1.02 }],
+    borderColor: '#e5e7eb',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
+    elevation: 2,
+    padding: 12,
   },
   pressed: {
-    opacity: 0.9,
+      transform: [{ scale: 0.98 }],
+      backgroundColor: '#f9fafb'
   },
-  meta: {
-    paddingHorizontal: 8,
-    paddingVertical: 6,
-    gap: 2,
+  cardHeader: {
+      alignItems: 'center',
+      marginBottom: 8,
   },
-  metaText: {
-    color: '#f87b1b',
-    fontWeight: '600',
-    fontSize: 13,
-    flexShrink: 1,
-    marginRight: 8,
-  },
-  metaRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  metaSubText: {
-    color: '#6b7280',
-    fontSize: 12,
-    flexShrink: 1,
-  },
-  metaTitle: {
-    color: '#374151',
-    fontSize: 12,
-    fontWeight: '600',
-    marginTop: 4,
-  },
-  metaDate: {
-    color: '#9ca3af',
-    fontSize: 11,
-    fontWeight: '500',
-    textAlign: 'center',
-    marginTop: 2,
+  cardBody: {
+      flex: 1,
+      gap: 6,
   },
   cardTitle: {
-    color: '#f87b1b',
-    fontSize: 13,
-    fontWeight: '700',
-    textAlign: 'center',
-    paddingHorizontal: 8,
-    paddingTop: 8,
+      fontSize: 14,
+      fontWeight: '700',
+      color: '#11224e',
+      textAlign: 'center',
+      minHeight: 34, 
+  },
+  infoRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+      backgroundColor: '#f8fafc',
+      borderRadius: 8,
+      paddingHorizontal: 8,
+      paddingVertical: 6,
+  },
+  infoText: {
+      fontSize: 12,
+      color: '#4b5563',
+      flex: 1,
+  },
+  cardFooter: {
+      marginTop: 8,
+      alignItems: 'center',
   },
   cardDate: {
-    color: '#9ca3af',
-    fontSize: 11,
-    fontWeight: '500',
-    textAlign: 'center',
-    paddingHorizontal: 8,
-    marginTop: 2,
+      fontSize: 11,
+      color: '#9ca3af',
+      fontWeight: '500',
   },
   loadingMoreWrap: {
     paddingVertical: 20,

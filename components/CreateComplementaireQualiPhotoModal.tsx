@@ -5,8 +5,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { Audio } from 'expo-av';
 import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
-import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, Image, Keyboard, KeyboardAvoidingView, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, TouchableWithoutFeedback, View } from 'react-native';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { ActivityIndicator, Image, Keyboard, KeyboardAvoidingView, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 type Props = {
@@ -42,7 +42,7 @@ export default function CreateComplementaireQualiPhotoModal({ visible, onClose, 
 
   const canSave = useMemo(() => !!photo && !submitting, [photo, submitting]);
 
-  const handlePickPhoto = async () => {
+  const handlePickPhoto = useCallback(async () => {
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
     if (status !== 'granted') return;
     const result = await ImagePicker.launchCameraAsync({ allowsEditing: false, quality: 0.9 });
@@ -51,7 +51,7 @@ export default function CreateComplementaireQualiPhotoModal({ visible, onClose, 
       setAnnotatorBaseUri(asset.uri);
       setAnnotatorVisible(true);
     }
-  };
+  }, []);
 
   const openAnnotatorForExisting = () => {
     if (!photo) return;
@@ -184,10 +184,18 @@ export default function CreateComplementaireQualiPhotoModal({ visible, onClose, 
     fetchLocation();
   }, []);
 
+  useEffect(() => {
+    if (visible) {
+      const timer = setTimeout(() => {
+        handlePickPhoto();
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [visible, handlePickPhoto]);
+
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-        <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
         <SafeAreaView style={styles.container}>
           <View style={styles.header}>
             <TouchableOpacity onPress={onClose} style={styles.closeButton}>
@@ -201,10 +209,12 @@ export default function CreateComplementaireQualiPhotoModal({ visible, onClose, 
             <View style={{ width: 40 }} />
           </View>
 
-          <ScrollView 
+          <ScrollView
             ref={scrollViewRef}
             style={styles.content}
             showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+            onScrollBeginDrag={Keyboard.dismiss}
           >
             {/* Parent info (target child for this complementary) */}
             <View style={styles.parentInfoCard}>
@@ -233,7 +243,7 @@ export default function CreateComplementaireQualiPhotoModal({ visible, onClose, 
             ) : (
               <TouchableOpacity style={styles.photoPickerButton} onPress={handlePickPhoto}>
                 <Ionicons name="camera-outline" size={24} color="#475569" />
-                <Text style={styles.photoPickerText}>Ajouter une Photo</Text>
+                <Text style={styles.photoPickerText}>Ajouter une Photo &quot;après&quot;</Text>
               </TouchableOpacity>
             )}
 
@@ -339,7 +349,6 @@ export default function CreateComplementaireQualiPhotoModal({ visible, onClose, 
             </TouchableOpacity>
           </View>
         </SafeAreaView>
-        </TouchableWithoutFeedback>
       </KeyboardAvoidingView>
       {isAnnotatorVisible && annotatorBaseUri && (
         <Modal

@@ -2,10 +2,9 @@ import { useAuth } from '@/contexts/AuthContext';
 import qualiphotoService, { QualiPhotoItem, QualiProject, QualiZone } from '@/services/qualiphotoService';
 import { Ionicons } from '@expo/vector-icons';
 import { Audio } from 'expo-av';
-import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, Image, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { ActivityIndicator, Alert, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import DateTimePickerModal from 'react-native-modal-datetime-picker';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -26,7 +25,6 @@ export default function CreateQualiPhotoModal({ visible, onClose, onSuccess, ini
   const [title, setTitle] = useState<string>('');
   const [dateTaken, setDateTaken] = useState<string>('');
   const [comment, setComment] = useState<string>('');
-  const [photo, setPhoto] = useState<{ uri: string; name: string; type: string } | null>(null);
   const [voiceNote, setVoiceNote] = useState<{ uri: string; name: string; type: string } | null>(null);
   const [latitude, setLatitude] = useState<number | null>(null);
   const [longitude, setLongitude] = useState<number | null>(null);
@@ -44,7 +42,6 @@ export default function CreateQualiPhotoModal({ visible, onClose, onSuccess, ini
   const [zoneOpen, setZoneOpen] = useState(false);
   const [isDatePickerVisible, setDatePickerVisible] = useState(false);
   const [isTranscribing, setIsTranscribing] = useState(false);
-  const [isGeneratingDescription, setIsGeneratingDescription] = useState(false);
 
   const scrollViewRef = useRef<ScrollView>(null);
   const durationIntervalRef = useRef<number | null>(null);
@@ -75,23 +72,6 @@ export default function CreateQualiPhotoModal({ visible, onClose, onSuccess, ini
     const ss = pad(date.getSeconds());
     return `${y}-${m}-${d} ${hh}:${mm}:${ss}`;
   }
-
-  const handlePickPhoto = useCallback(async () => {
-    try {
-      const { status } = await ImagePicker.requestCameraPermissionsAsync();
-      if (status !== 'granted') {
-        Alert.alert('Permission', 'Camera permission is required.');
-        return;
-      }
-      const result = await ImagePicker.launchCameraAsync({ allowsEditing: false, quality: 0.8 });
-      if (!result.canceled && result.assets[0]) {
-        const asset = result.assets[0];
-        setPhoto({ uri: asset.uri, name: `qualiphoto_${Date.now()}.jpg`, type: 'image/jpeg' });
-      }
-    } catch {
-      Alert.alert('Error', 'Failed to open camera');
-    }
-  }, []);
 
   useEffect(() => {
     if (!visible) return;
@@ -131,15 +111,8 @@ export default function CreateQualiPhotoModal({ visible, onClose, onSuccess, ini
       }
     };
     fetchLocation();
-
-    // Auto-trigger camera when modal opens
-    const timer = setTimeout(() => {
-      handlePickPhoto();
-    }, 500);
-
-    return () => clearTimeout(timer);
     
-  }, [visible, token, initialProjectId, initialZoneId, handlePickPhoto]);
+  }, [visible, token, initialProjectId, initialZoneId]);
 
   useEffect(() => {
     if (!token || !selectedProject) { setZones([]); if (!initialZoneId) setSelectedZone(null); return; }
@@ -151,24 +124,6 @@ export default function CreateQualiPhotoModal({ visible, onClose, onSuccess, ini
   }, [token, selectedProject, initialZoneId]);
 
   const canSave = useMemo(() => !!selectedProject && !!selectedZone && title.trim().length > 0 && !submitting, [selectedProject, selectedZone, title, submitting]);
-
-  const handleGenerateDescription = async () => {
-    if (!photo || !token) {
-      Alert.alert('Erreur', "Veuillez d'abord sélectionner une image.");
-      return;
-    }
-    setIsGeneratingDescription(true);
-    setError(null);
-    try {
-      const result = await qualiphotoService.describeImage(photo, token);
-      setComment(prev => prev ? `${prev}\n${result.description}` : result.description);
-    } catch (e: any) {
-      setError(e?.message || 'Échec de la génération de la description');
-      Alert.alert('Erreur', e?.message || 'Une erreur est survenue lors de la génération de la description.');
-    } finally {
-      setIsGeneratingDescription(false);
-    }
-  };
 
   const handleSubmit = async () => {
     if (!token) return;
@@ -184,7 +139,6 @@ export default function CreateQualiPhotoModal({ visible, onClose, onSuccess, ini
         title: title || undefined,
         commentaire: comment || undefined,
         date_taken: dateTaken || undefined,
-        photo: photo || undefined,
         voice_note: voiceNote || undefined,
         latitude: latitude || undefined,
         longitude: longitude || undefined,
@@ -196,7 +150,6 @@ export default function CreateQualiPhotoModal({ visible, onClose, onSuccess, ini
       setTitle('');
       setDateTaken('');
       setComment('');
-      setPhoto(null);
       setVoiceNote(null);
       setLatitude(null);
       setLongitude(null);
@@ -219,7 +172,6 @@ export default function CreateQualiPhotoModal({ visible, onClose, onSuccess, ini
     setTitle('');
     setDateTaken('');
     setComment('');
-    setPhoto(null);
     setVoiceNote(null);
     setLatitude(null);
     setLongitude(null);
@@ -420,7 +372,7 @@ export default function CreateQualiPhotoModal({ visible, onClose, onSuccess, ini
                           {(loadingZones ? [] : zones).map(z => (
                             <Pressable key={z.id} style={styles.dropdownItem} onPress={() => { setSelectedZone(z.id); setZoneOpen(false); }}>
                               <View style={styles.dropdownRow}>
-                                <View style={styles.dropdownIconWrap}>{z.logo ? <Image source={{ uri: z.logo }} style={styles.dropdownLogo} /> : <Ionicons name="location" size={18} color="#11224e" />}</View>
+                                <View style={styles.dropdownIconWrap}><Ionicons name="location" size={18} color="#11224e" /></View>
                                 <View style={styles.dropdownItemContent}><Text style={styles.dropdownItemTitle} numberOfLines={1}>{z.title}</Text></View>
                                 <Ionicons name="chevron-forward" size={16} color="#9ca3af" />
                               </View>
@@ -444,26 +396,6 @@ export default function CreateQualiPhotoModal({ visible, onClose, onSuccess, ini
                   style={styles.input}
                 />
               </View>
-              {/* Photo Input Area */}
-              {photo ? (
-                <View style={styles.imagePreviewContainer}>
-                  <Image source={{ uri: photo.uri }} style={styles.imagePreview} />
-                  <View style={styles.imageActions}>
-                    <TouchableOpacity style={[styles.iconButton, styles.iconButtonSecondary]} onPress={handlePickPhoto}>
-                      <Ionicons name="camera-reverse-outline" size={20} color="#11224e" />
-                    </TouchableOpacity>
-                    <TouchableOpacity style={[styles.iconButton, styles.iconButtonSecondary]} onPress={() => setPhoto(null)}>
-                      <Ionicons name="trash-outline" size={20} color="#dc2626" />
-                    </TouchableOpacity>
-                  </View>
-                </View>
-              ) : (
-                <TouchableOpacity style={styles.photoPickerButton} onPress={handlePickPhoto}>
-                  <Ionicons name="camera-outline" size={24} color="#475569" />
-                  <Text style={styles.photoPickerText}>Ajouter une Photo</Text>
-                </TouchableOpacity>
-              )}
-
               {/* Voice Note Area */}
               <View style={styles.voiceNoteContainer}>
                 {isRecording ? (
@@ -508,21 +440,6 @@ export default function CreateQualiPhotoModal({ visible, onClose, onSuccess, ini
                           <Ionicons name="arrow-forward-circle-outline" size={20} color="#11224e" />
                           <Ionicons name="document-text-outline" size={20} color="#11224e" />
                         </View>
-                      )}
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={[
-                        styles.voiceRecordButton,
-                        styles.transcribeButton,
-                        (isGeneratingDescription || !photo) && styles.buttonDisabled,
-                      ]}
-                      onPress={handleGenerateDescription}
-                      disabled={isGeneratingDescription || !photo}
-                    >
-                      {isGeneratingDescription ? (
-                        <ActivityIndicator size="small" color="#11224e" />
-                      ) : (
-                        <Image source={require('@/assets/icons/chatgpt.png')} style={{ width: 24, height: 24 }} />
                       )}
                     </TouchableOpacity>
                   </View>
@@ -650,48 +567,6 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     color: '#6b7280',
   },
-  photoPickerButton: {
-    borderWidth: 2,
-    borderColor: '#f87b1b',
-    borderStyle: 'dashed',
-    borderRadius: 12,
-    paddingVertical: 32,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#f8fafc',
-    gap: 8,
-  },
-  photoPickerText: {
-    color: '#475569',
-    fontWeight: '600',
-  },
-  imagePreviewContainer: {
-    position: 'relative',
-  },
-  imagePreview: {
-    width: '100%',
-    aspectRatio: 16/10,
-    borderRadius: 12,
-  },
-  imageActions: {
-    position: 'absolute',
-    top: 8,
-    right: 8,
-    flexDirection: 'row',
-    gap: 8,
-  },
-  iconButton: {
-    padding: 10,
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
-    borderRadius: 99,
-  },
-  iconButtonSecondary: {
-    backgroundColor: '#f1f5f9',
-    borderRadius: 99,
-    padding: 8,
-    borderWidth: 1,
-    borderColor: '#e2e8f0'
-  },
   voiceNoteContainer: {
     marginTop: 12,
   },
@@ -718,8 +593,6 @@ const styles = StyleSheet.create({
   submitButton: { backgroundColor: '#f87b1b', borderRadius: 12, paddingVertical: 16, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 8, height: 48, alignSelf: 'center', width: '92%' },
   submitButtonDisabled: { backgroundColor: '#d1d5db' },
   submitButtonText: { fontSize: 16, fontWeight: '600', color: '#FFFFFF' },
-  captureButton: { backgroundColor: '#11224e', borderRadius: 10, paddingVertical: 12, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 8 },
-  captureButtonText: { color: '#FFFFFF', fontWeight: '600' },
   secondaryButton: { backgroundColor: '#f3f4f6', borderRadius: 10, paddingVertical: 10, paddingHorizontal: 12 },
   secondaryButtonText: { color: '#111827', fontWeight: '600' },
   inputWrap: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#fff', borderWidth: 1, borderColor: '#f87b1b', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10 },
