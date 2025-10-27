@@ -35,9 +35,12 @@ const GRID_ITEMS: {
   { title: 'Echantillon', image: require('../../assets/icons/prelevement_echantillon.png') },
   { title: 'Inventaires', image: require('../../assets/icons/inventaire_article.png') },
   { title: 'tesst', image: require('../../assets/icons/reception.png') },
-  { title: 'Fournisseurs', icon: 'business-outline' },
-  { title: 'Zones',  image: require('../../assets/icons/zones.png') },
   { title: 'Paramètres', image: require('../../assets/icons/settings.png') },
+  { title: 'zones', icon: 'business-outline' },
+  { title: 'module',  image: require('../../assets/icons/zones.png') },
+  { title: 'Projets', image: require('../../assets/icons/settings.png') },
+  { title: 'Utilisateurs', icon: 'business-outline' },
+  { title: 'Organisme',  image: require('../../assets/icons/zones.png') },
 ];
 
 // const GRID_ITEMS: { title: string; icon: keyof typeof Ionicons.glyphMap }[] = [
@@ -249,6 +252,8 @@ export default function DashboardScreen() {
                   router.push('/echantillon');
                 } else if (item.title === 'Inventaires') {
                   router.push('/inventaire');
+                } else if (item.title === 'Projets') {
+                  router.push('/projects');
                 } else if (item.title === 'Paramètres') {
                   router.push('/parametre');
                 } else {
