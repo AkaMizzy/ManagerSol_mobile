@@ -1,14 +1,14 @@
 import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
 import {
-    ActivityIndicator,
-    Image,
-    Pressable,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Image,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 
 import { ICONS } from '../constants/Icons';
@@ -290,9 +290,8 @@ type ParentQualiPhotoViewProps = {
                 )}
                 <View style={layoutMode === 'grid' ? styles.childGridContainer : styles.childListContainer}>
                   {childPhotos.map((child) => (
-                    <View style={layoutMode === 'grid' ? styles.childGridItem : styles.childListItem}>
+                    <View key={child.id} style={layoutMode === 'grid' ? styles.childGridItem : styles.childListItem}>
                         <PhotoCard
-                            key={child.id}
                             uri={child.photo}
                             title={child.title}
                             userName={child.user_name}
