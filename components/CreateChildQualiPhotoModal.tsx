@@ -30,6 +30,7 @@ export function CreateChildQualiPhotoForm({ onClose, onSuccess, parentItem }: Fo
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isTranscribing, setIsTranscribing] = useState(false);
+  const [isTranscribed, setIsTranscribed] = useState(false);
   const [latitude, setLatitude] = useState<number | null>(null);
   const [longitude, setLongitude] = useState<number | null>(null);
   const [, setLocationStatus] = useState<'idle' | 'fetching' | 'success' | 'error'>('idle');
@@ -172,6 +173,7 @@ export function CreateChildQualiPhotoForm({ onClose, onSuccess, parentItem }: Fo
     const uri = recording.getURI();
     if (uri) {
       setVoiceNote({ uri, name: `voicenote-${Date.now()}.m4a`, type: 'audio/m4a' });
+      setIsTranscribed(false);
     }
     setRecording(null);
   }
@@ -205,6 +207,7 @@ export function CreateChildQualiPhotoForm({ onClose, onSuccess, parentItem }: Fo
     setVoiceNote(null);
     setSound(null);
     setIsPlaying(false);
+    setIsTranscribed(false);
   };
 
   const handleTranscribe = async () => {
@@ -217,6 +220,7 @@ export function CreateChildQualiPhotoForm({ onClose, onSuccess, parentItem }: Fo
     try {
       const result = await qualiphotoService.transcribeVoiceNote(voiceNote, token);
       setComment(prev => prev ? `${prev}\n${result.transcription}` : result.transcription);
+      setIsTranscribed(true);
     } catch (e: any) {
       setError(e?.message || 'Échec de la transcription');
       Alert.alert('Erreur de Transcription', e?.message || 'Une erreur est survenue lors de la transcription.');
@@ -363,8 +367,8 @@ export function CreateChildQualiPhotoForm({ onClose, onSuccess, parentItem }: Fo
                       <TouchableOpacity style={styles.playButton} onPress={playSound}>
                         <Ionicons name={isPlaying ? 'pause-circle' : 'play-circle'} size={28} color="#11224e" />
                       </TouchableOpacity>
-                      <TouchableOpacity style={styles.deleteButton} onPress={resetVoiceNote}>
-                        <Ionicons name="trash-outline" size={20} color="#dc2626" />
+                      <TouchableOpacity style={[styles.deleteButton, isTranscribed && styles.buttonDisabled]} onPress={resetVoiceNote} disabled={isTranscribed}>
+                        <Ionicons name="trash-outline" size={20} color={isTranscribed ? '#9ca3af' : '#dc2626'} />
                       </TouchableOpacity>
                     </View>
                   ) : (

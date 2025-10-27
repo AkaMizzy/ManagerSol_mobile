@@ -768,24 +768,35 @@ type Props = {
                   <View style={styles.childPicturesContainer}>
                   <View style={styles.childListHeader}>
                     {children.length > 0 ? (
-                      <TouchableOpacity 
-                        style={styles.pageButton} 
-                        onPress={() => setLayoutMode(prev => prev === 'grid' ? 'list' : 'grid')}
-                      >
-                        <Text style={styles.pageButtonText}>{layoutMode === 'grid' ? '2' : '1'}</Text>
-                      </TouchableOpacity>
-                    ) : (
-                      <View style={{ width: 32, height: 32 }} />
-                    )}
-                    <TouchableOpacity
-                      onPress={() => setChildModalVisible(true)}
-                      accessibilityLabel="Ajouter une photo après"
-                      style={styles.cameraCTA}
-                    >
-                      <Image source={cameraIcon} style={styles.cameraCTAIcon} />
-                    </TouchableOpacity>
-                    {children.length > 0 ? (
+                      <View style={styles.layoutToggleContainer}>
+                        <TouchableOpacity
+                            style={[styles.layoutToggleButton, layoutMode === 'list' && styles.layoutToggleButtonActive]}
+                            onPress={() => setLayoutMode('list')}
+                        >
+                            <Ionicons name="list" size={20} color={layoutMode === 'list' ? '#FFFFFF' : '#11224e'} />
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            style={[styles.layoutToggleButton, layoutMode === 'grid' && styles.layoutToggleButtonActive]}
+                            onPress={() => setLayoutMode('grid')}
+                        >
+                            <Ionicons name="grid" size={20} color={layoutMode === 'grid' ? '#FFFFFF' : '#11224e'} />
+                        </TouchableOpacity>
+                     </View>
+                   ) : (
+                     <View style={{ width: 40, height: 40 }} /> // Adjusted for symmetry
+                   )}
+                   <View style={styles.cameraCTAContainer}>
+                      <Text style={styles.cameraCTALabel}>Prendre une situation avant</Text>
                       <TouchableOpacity
+                        onPress={() => setChildModalVisible(true)}
+                        accessibilityLabel="Ajouter une photo après"
+                        style={styles.cameraCTA}
+                      >
+                        <Image source={cameraIcon} style={styles.cameraCTAIcon} />
+                      </TouchableOpacity>
+                   </View>
+                   {children.length > 0 ? (
+                     <TouchableOpacity
                         style={styles.sortButton}
                         onPress={() => setSortOrder(current => current === 'asc' ? 'desc' : 'asc')}
                         accessibilityLabel={sortOrder === 'desc' ? 'Trier par ordre croissant' : 'Trier par ordre décroissant'}
@@ -793,7 +804,7 @@ type Props = {
                         <Ionicons name={sortOrder === 'desc' ? 'arrow-down' : 'arrow-up'} size={24} color="#f87b1b" />
                       </TouchableOpacity>
                     ) : (
-                      <View style={{ width: 32, height: 32 }} />
+                      <View style={{ width: 40, height: 40 }} /> // Adjusted for symmetry
                     )}
                   </View>
                   {isLoadingChildren && <Text>Chargement...</Text>}
@@ -1841,6 +1852,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 8,
   },
+  cameraCTAContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cameraCTALabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#11224e',
+    marginBottom: 4,
+  },
   cameraCTA: {
     width: 72,
     height: 72,
@@ -1863,10 +1884,30 @@ const styles = StyleSheet.create({
     resizeMode: 'contain',
   },
   sortButton: {
-    width: 32,
-    height: 32,
+    width: 40, // Adjusted for symmetry
+    height: 40, // Adjusted for symmetry
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  layoutToggleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F2F2F7',
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#f87b1b',
+    overflow: 'hidden',
+    width: 80, // Fixed width for two buttons
+    height: 40,
+  },
+  layoutToggleButton: {
+    flex: 1,
+    height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  layoutToggleButtonActive: {
+    backgroundColor: '#f87b1b',
   },
   pageButton: {
     width: 32,

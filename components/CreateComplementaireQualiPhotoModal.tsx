@@ -30,6 +30,7 @@ export default function CreateComplementaireQualiPhotoModal({ visible, onClose, 
   const [recordingDuration, setRecordingDuration] = useState(0);
   const [isTranscribing, setIsTranscribing] = useState(false);
   const [comment, setComment] = useState('');
+  const [isTranscribed, setIsTranscribed] = useState(false);
   const [isGeneratingDescription, setIsGeneratingDescription] = useState(false);
   const [latitude, setLatitude] = useState<number | null>(null);
   const [longitude, setLongitude] = useState<number | null>(null);
@@ -102,7 +103,10 @@ export default function CreateComplementaireQualiPhotoModal({ visible, onClose, 
     if (durationIntervalRef.current) clearInterval(durationIntervalRef.current);
     await recording.stopAndUnloadAsync();
     const uri = recording.getURI();
-    if (uri) setVoiceNote({ uri, name: `voicenote-${Date.now()}.m4a`, type: 'audio/m4a' });
+    if (uri) {
+        setVoiceNote({ uri, name: `voicenote-${Date.now()}.m4a`, type: 'audio/m4a' });
+        setIsTranscribed(false);
+    }
     setRecording(null);
   }
 
@@ -132,6 +136,7 @@ export default function CreateComplementaireQualiPhotoModal({ visible, onClose, 
     try {
       const result = await qualiphotoService.transcribeVoiceNote(voiceNote, token);
       setComment(prev => prev ? `${prev}\n${result.transcription}` : result.transcription);
+      setIsTranscribed(true);
     } catch (e: any) {
       setError(e?.message || 'Échec de la transcription');
     } finally {
@@ -263,8 +268,17 @@ export default function CreateComplementaireQualiPhotoModal({ visible, onClose, 
                       <TouchableOpacity style={styles.playButton} onPress={playSound}>
                         <Ionicons name={isPlaying ? 'pause-circle' : 'play-circle'} size={28} color="#11224e" />
                       </TouchableOpacity>
-                      <TouchableOpacity style={styles.deleteButton} onPress={() => { setVoiceNote(null); setSound(null); setIsPlaying(false); }}>
-                        <Ionicons name="trash-outline" size={20} color="#dc2626" />
+                      <TouchableOpacity
+                        style={[styles.deleteButton, isTranscribed && styles.buttonDisabled]}
+                        onPress={() => {
+                          setVoiceNote(null);
+                          setSound(null);
+                          setIsPlaying(false);
+                          setIsTranscribed(false);
+                        }}
+                        disabled={isTranscribed}
+                      >
+                        <Ionicons name="trash-outline" size={20} color={isTranscribed ? '#9ca3af' : '#dc2626'} />
                       </TouchableOpacity>
                     </View>
                   ) : (
