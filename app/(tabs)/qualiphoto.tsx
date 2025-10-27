@@ -171,7 +171,7 @@ export default function QualiPhotoGalleryScreen() {
         accessibilityLabel="Ouvrir les détails de la photo"
         onPress={() => { setSelectedItem(item); setDetailVisible(true); }}
       >
-        <Image source={{ uri: item.photo }} style={styles.image} resizeMode="cover" />
+        <Image source={{ uri: item.photo ?? undefined }} style={styles.image} resizeMode="cover" />
       </Pressable>
       <View style={styles.meta}>
         <View style={styles.metaRow}>
