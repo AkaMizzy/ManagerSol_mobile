@@ -1,10 +1,8 @@
 import AppHeader from '@/components/AppHeader';
 import CreateQualiPhotoModal from '@/components/CreateQualiPhotoModal';
 import QualiPhotoDetail from '@/components/QualiPhotoDetail';
-import QualiPhotoFilterModal from '@/components/QualiPhotoFilterModal';
 import { useAuth } from '@/contexts/AuthContext';
 import qualiphotoService, { QualiPhotoItem, QualiProject, QualiZone } from '@/services/qualiphotoService';
-import { Ionicons } from '@expo/vector-icons';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, FlatList, Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -48,7 +46,6 @@ export default function QualiPhotoGalleryScreen() {
   const [detailVisible, setDetailVisible] = useState(false);
   const [selectedItem, setSelectedItem] = useState<QualiPhotoItem | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [isFilterModalVisible, setFilterModalVisible] = useState(false);
 
   // Guards to prevent re-entrant and out-of-order updates
   const fetchingRef = useRef(false);
@@ -251,14 +248,6 @@ export default function QualiPhotoGalleryScreen() {
             <View style={styles.actionsWrapper}>
               <Pressable
                   accessibilityRole="button"
-                  accessibilityLabel="Filter QualiPhotos"
-                  onPress={() => setFilterModalVisible(true)}
-                  style={styles.addIconButton}
-                >
-                <Ionicons name="options-outline" size={32} color="#f87b1b" />
-              </Pressable>
-              <Pressable
-                  accessibilityRole="button"
                   accessibilityLabel="Ajouter une QualiPhoto"
                   onPress={() => setModalVisible(true)}
                   disabled={isCreateDisabled}
@@ -338,11 +327,6 @@ export default function QualiPhotoGalleryScreen() {
           // Refresh list in background to include the new item
           fetchPhotos();
         }}
-      />
-
-      <QualiPhotoFilterModal
-        visible={isFilterModalVisible}
-        onClose={() => setFilterModalVisible(false)}
       />
 
       <QualiPhotoDetail

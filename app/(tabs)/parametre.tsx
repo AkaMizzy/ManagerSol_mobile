@@ -1,5 +1,3 @@
-import CompanyManagement from '@/components/CompanyManagement';
-import UserManagement from '@/components/UserManagement';
 import { useAuth } from '@/contexts/AuthContext';
 import Ionicons from '@expo/vector-icons/build/Ionicons';
 import { useState } from 'react';
@@ -46,10 +44,7 @@ export default function ParametreScreen() {
           {renderTabButton('company', 'Organisme', 'business-outline')}
         </View>
 
-        <View style={{ flex: 1 }}>
-          {activeTab === 'users' && <UserManagement />}
-          {activeTab === 'company' && <CompanyManagement />}
-        </View>
+        
       </SafeAreaView>
     </>
   );

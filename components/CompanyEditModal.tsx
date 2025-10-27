@@ -2,10 +2,12 @@ import { useAuth } from '@/contexts/AuthContext';
 import companyService from '@/services/companyService';
 import { Company } from '@/types/company';
 import Ionicons from '@expo/vector-icons/build/Ionicons';
+import * as ImagePicker from 'expo-image-picker';
 import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  Image,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -65,6 +67,7 @@ export default function CompanyEditModal({
 }: CompanyEditModalProps) {
   const { token } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
+  const [logoUri, setLogoUri] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -96,6 +99,28 @@ export default function CompanyEditModal({
       ...prev,
       [field]: value,
     }));
+  };
+
+  const handlePickLogo = async () => {
+    try {
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission refusée', 'Vous devez autoriser l\'accès à la galerie pour sélectionner un logo');
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: false,
+        quality: 0.9,
+      });
+
+      if (!result.canceled && result.assets[0]) {
+        setLogoUri(result.assets[0].uri);
+      }
+    } catch (error) {
+      Alert.alert('Erreur', 'Impossible de sélectionner une image');
+    }
   };
 
   const validateForm = () => {
@@ -140,7 +165,7 @@ export default function CompanyEditModal({
         },
       };
 
-      const updatedCompany = await companyService.updateCompany(token, company.id, updateData);
+      const updatedCompany = await companyService.updateCompany(token, company.id, updateData, logoUri);
       onUpdated(updatedCompany);
       onClose();
       Alert.alert('Succès', 'Les informations de l\'organisme ont été mises à jour');
@@ -185,6 +210,20 @@ export default function CompanyEditModal({
           {/* Company Information */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Informations générales</Text>
+
+            {/* Logo Selection */}
+            <View style={styles.logoContainer}>
+              <Text style={styles.inputLabel}>Logo de l&apos;organisme</Text>
+              <TouchableOpacity onPress={handlePickLogo} style={styles.logoButton}>
+                <Ionicons name="image-outline" size={24} color="#11224e" />
+                <Text style={styles.logoButtonText}>Modifier le logo</Text>
+              </TouchableOpacity>
+              {logoUri && (
+                <View style={styles.logoPreview}>
+                  <Image source={{ uri: logoUri }} style={styles.logoImage} />
+                </View>
+              )}
+            </View>
 
             <InputField
               label="Nom de l'organisme"
@@ -341,5 +380,36 @@ const styles = {
   multilineInput: {
     height: 80,
     textAlignVertical: 'top',
+  },
+  logoContainer: {
+    marginBottom: 20,
+  },
+  logoButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#d1d5db',
+    borderRadius: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    backgroundColor: '#f9fafb',
+  },
+  logoButtonText: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#11224e',
+    marginLeft: 8,
+  },
+  logoPreview: {
+    marginTop: 12,
+    alignItems: 'center',
+  },
+  logoImage: {
+    width: 120,
+    height: 120,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
   },
 } as const;

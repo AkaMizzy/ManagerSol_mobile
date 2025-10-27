@@ -2,28 +2,26 @@ import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import React, { useCallback, useEffect, useState } from 'react';
 import {
-    ActivityIndicator,
-    Alert,
-    FlatList,
-    RefreshControl,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Alert,
+  FlatList,
+  RefreshControl,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from 'react-native';
-import API_CONFIG from '../app/config/api';
-import { useAuth } from '../contexts/AuthContext';
-import userService from '../services/userService';
-import { CompanyUser } from '../types/user';
-import CreateUserModal from './CreateUserModal';
-import UserDetailModal from './UserDetailModal';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import AppHeader from '@/components/AppHeader';
+import CreateUserModal from '@/components/CreateUserModal';
+import UserDetailModal from '@/components/UserDetailModal';
+import { useAuth } from '@/contexts/AuthContext';
+import userService from '@/services/userService';
+import { CompanyUser } from '@/types/user';
+import API_CONFIG from '../config/api';
 
-interface UserManagementProps {
-  onUserCreated?: () => void;
-}
-
-export default function UserManagement({ onUserCreated }: UserManagementProps) {
-  const { token } = useAuth();
+export default function UsersScreen() {
+  const { token, user } = useAuth();
   const [users, setUsers] = useState<CompanyUser[]>([]);
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -70,7 +68,6 @@ export default function UserManagement({ onUserCreated }: UserManagementProps) {
   const handleUserCreated = async () => {
     // Refresh users list when a new user is created
     await fetchUsers();
-    onUserCreated?.();
   };
 
   const handleUserCardPress = (user: CompanyUser) => {
@@ -180,88 +177,93 @@ export default function UserManagement({ onUserCreated }: UserManagementProps) {
   }
 
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <View style={styles.headerSearchContainer}>
-          <Ionicons name="search" size={18} color="#6b7280" />
-          <View style={{ width: 8 }} />
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Rechercher (nom, email, tél)"
-            placeholderTextColor="#9ca3af"
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-            autoCorrect={false}
-            autoCapitalize="none"
-          />
-          {searchQuery.length > 0 && (
-            <TouchableOpacity onPress={() => setSearchQuery('')}>
-              <Ionicons name="close-circle" size={18} color="#9ca3af" />
+    <>
+      <SafeAreaView style={{ flex: 1, backgroundColor: 'white' }}>
+        <AppHeader user={user || undefined} />
+        <View style={styles.container}>
+          <View style={styles.header}>
+            <View style={styles.headerSearchContainer}>
+              <Ionicons name="search" size={18} color="#6b7280" />
+              <View style={{ width: 8 }} />
+              <TextInput
+                style={styles.searchInput}
+                placeholder="Rechercher (nom, email, tél)"
+                placeholderTextColor="#9ca3af"
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+                autoCorrect={false}
+                autoCapitalize="none"
+              />
+              {searchQuery.length > 0 && (
+                <TouchableOpacity onPress={() => setSearchQuery('')}>
+                  <Ionicons name="close-circle" size={18} color="#9ca3af" />
+                </TouchableOpacity>
+              )}
+            </View>
+            <TouchableOpacity
+              style={styles.addButton}
+              onPress={() => setShowCreateModal(true)}
+            >
+              <Ionicons name="add-circle" size={20} color="#f87b1b" />
+              <Text style={styles.addButtonText}>Ajouter</Text>
             </TouchableOpacity>
-          )}
-        </View>
-        <TouchableOpacity
-          style={styles.addButton}
-          onPress={() => setShowCreateModal(true)}
-        >
-          <Ionicons name="add-circle" size={20} color="#f87b1b" />
-          <Text style={styles.addButtonText}>Ajouter</Text>
-        </TouchableOpacity>
-      </View>
+          </View>
 
-        {/* Filters */}
-        <View style={styles.controlsContainer}>
-          <View style={styles.filtersRow}>
-            {/* Role chips */}
-            <View style={styles.filterGroup}>
-              <TouchableOpacity
-                style={[styles.chip, roleFilter === 'all' && styles.chipActive]}
-                onPress={() => setRoleFilter('all')}
-                activeOpacity={0.7}
-              >
-                <Text style={[styles.chipText, roleFilter === 'all' && styles.chipTextActive]}>Tous rôles</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.chip, roleFilter === 'admin' && styles.chipActive]}
-                onPress={() => setRoleFilter('admin')}
-                activeOpacity={0.7}
-              >
-                <Text style={[styles.chipText, roleFilter === 'admin' && styles.chipTextActive]}>Admin</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.chip, roleFilter === 'user' && styles.chipActive]}
-                onPress={() => setRoleFilter('user')}
-                activeOpacity={0.7}
-              >
-                <Text style={[styles.chipText, roleFilter === 'user' && styles.chipTextActive]}>Utilisateur</Text>
-              </TouchableOpacity>
+          {/* Filters */}
+          <View style={styles.controlsContainer}>
+            <View style={styles.filtersRow}>
+              {/* Role chips */}
+              <View style={styles.filterGroup}>
+                <TouchableOpacity
+                  style={[styles.chip, roleFilter === 'all' && styles.chipActive]}
+                  onPress={() => setRoleFilter('all')}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[styles.chipText, roleFilter === 'all' && styles.chipTextActive]}>Tous rôles</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.chip, roleFilter === 'admin' && styles.chipActive]}
+                  onPress={() => setRoleFilter('admin')}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[styles.chipText, roleFilter === 'admin' && styles.chipTextActive]}>Admin</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.chip, roleFilter === 'user' && styles.chipActive]}
+                  onPress={() => setRoleFilter('user')}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[styles.chipText, roleFilter === 'user' && styles.chipTextActive]}>Utilisateur</Text>
+                </TouchableOpacity>
+              </View>
             </View>
           </View>
-        </View>
 
-      <FlatList
-        data={filteredUsers}
-        keyExtractor={(item) => item.id}
-        renderItem={renderUserCard}
-        contentContainerStyle={styles.listContainer}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            colors={['#11224e']}
-            tintColor="#11224e"
+          <FlatList
+            data={filteredUsers}
+            keyExtractor={(item) => item.id}
+            renderItem={renderUserCard}
+            contentContainerStyle={styles.listContainer}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={onRefresh}
+                colors={['#11224e']}
+                tintColor="#11224e"
+              />
+            }
+            ListEmptyComponent={
+              <View style={styles.emptyContainer}>
+                <Ionicons name="people-outline" size={64} color="#9ca3af" />
+                <Text style={styles.emptyTitle}>Aucun utilisateur</Text>
+                <Text style={styles.emptySubtitle}>
+                  Commencez par ajouter des utilisateurs à votre entreprise
+                </Text>
+              </View>
+            }
           />
-        }
-        ListEmptyComponent={
-          <View style={styles.emptyContainer}>
-            <Ionicons name="people-outline" size={64} color="#9ca3af" />
-            <Text style={styles.emptyTitle}>Aucun utilisateur</Text>
-            <Text style={styles.emptySubtitle}>
-              Commencez par ajouter des utilisateurs à votre entreprise
-            </Text>
-          </View>
-        }
-      />
+        </View>
+      </SafeAreaView>
 
       <CreateUserModal
         visible={showCreateModal}
@@ -283,7 +285,7 @@ export default function UserManagement({ onUserCreated }: UserManagementProps) {
           setUsers(prevUsers => prevUsers.filter(u => u.id !== userId));
         }}
       />
-    </View>
+    </>
   );
 }
 

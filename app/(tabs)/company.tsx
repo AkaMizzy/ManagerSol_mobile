@@ -4,10 +4,12 @@ import { Company } from '@/types/company';
 import Ionicons from '@expo/vector-icons/build/Ionicons';
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, Image, ScrollView, Text, TouchableOpacity, View } from 'react-native';
-import CompanyEditModal from './CompanyEditModal';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import AppHeader from '@/components/AppHeader';
+import CompanyEditModal from '@/components/CompanyEditModal';
 
-export default function CompanyManagement() {
-  const { token } = useAuth();
+export default function CompanyScreen() {
+  const { token, user } = useAuth();
   const [company, setCompany] = useState<Company | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [editModalVisible, setEditModalVisible] = useState<boolean>(false);
@@ -84,71 +86,74 @@ export default function CompanyManagement() {
 
   return (
     <>
-      <ScrollView 
-        style={styles.container} 
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 100 }}
-      >
-        {/* Header Section */}
-        <View style={styles.header}>
-          <View style={styles.logoContainer}>
-            {company.logo ? (
-              <Image source={{ uri: company.logo }} style={styles.logo} />
-            ) : (
-              <View style={styles.defaultLogo}>
-                <Ionicons name="business" size={32} color="#f87b1b" />
-              </View>
-            )}
-          </View>
-          <View style={styles.headerContent}>
-            <View style={styles.titleRow}>
-              <Text style={styles.companyTitle}>{company.title}</Text>
-              <View style={[styles.statusBadge, { backgroundColor: statusBadge.bg, borderColor: statusBadge.border }]}>
-                <Text style={[styles.statusText, { color: statusBadge.color }]}>
-                  {statusBadge.label}
-                </Text>
-              </View>
+      <SafeAreaView style={{ flex: 1, backgroundColor: 'white' }}>
+        <AppHeader user={user || undefined} />
+        <ScrollView 
+          style={styles.container} 
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ paddingBottom: 100 }}
+        >
+          {/* Header Section */}
+          <View style={styles.header}>
+            <View style={styles.logoContainer}>
+              {company.logo ? (
+                <Image source={{ uri: company.logo }} style={styles.logo} />
+              ) : (
+                <View style={styles.defaultLogo}>
+                  <Ionicons name="business" size={32} color="#f87b1b" />
+                </View>
+              )}
             </View>
-            {company.description && (
-              <Text style={styles.companyDescription}>{company.description}</Text>
-            )}
+            <View style={styles.headerContent}>
+              <View style={styles.titleRow}>
+                <Text style={styles.companyTitle}>{company.title}</Text>
+                <View style={[styles.statusBadge, { backgroundColor: statusBadge.bg, borderColor: statusBadge.border }]}>
+                  <Text style={[styles.statusText, { color: statusBadge.color }]}>
+                    {statusBadge.label}
+                  </Text>
+                </View>
+              </View>
+              {company.description && (
+                <Text style={styles.companyDescription}>{company.description}</Text>
+              )}
+            </View>
           </View>
-        </View>
 
-        {/* Company Information */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Informations générales</Text>
-          <View style={styles.infoContainer}>
-            <InfoRow icon="mail-outline" label="Email principal" value={company.email} />
-            <InfoRow icon="calendar-outline" label="Année de création" value={company.foundedYear?.toString()} />
-            <InfoRow icon="people-outline" label="Nombre d'utilisateurs" value={company.nb_users?.toString()} />
-          </View>
-        </View>
-
-        {/* Sector Information */}
-        {company.sector && (
+          {/* Company Information */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Informations du secteur</Text>
+            <Text style={styles.sectionTitle}>Informations générales</Text>
             <View style={styles.infoContainer}>
-              <InfoRow icon="call-outline" label="Téléphone principal" value={company.sector.phone1} />
-              <InfoRow icon="call-outline" label="Téléphone secondaire" value={company.sector.phone2} />
-              <InfoRow icon="globe-outline" label="Site web" value={company.sector.website} isLink />
-              <InfoRow icon="mail-outline" label="Email secondaire" value={company.sector.email2} />
+              <InfoRow icon="mail-outline" label="Email principal" value={company.email} />
+              <InfoRow icon="calendar-outline" label="Année de création" value={company.foundedYear?.toString()} />
+              <InfoRow icon="people-outline" label="Nombre d'utilisateurs" value={company.nb_users?.toString()} />
             </View>
           </View>
-        )}
 
-        {/* Actions */}
-        <View style={styles.actionsContainer}>
-          <TouchableOpacity 
-            style={styles.actionButton}
-            onPress={() => setEditModalVisible(true)}
-          >
-            <Ionicons name="create-outline" size={20} color="#f87b1b" />
-            <Text style={styles.actionButtonText}>Modifier les informations</Text>
-          </TouchableOpacity>
-        </View>
-      </ScrollView>
+          {/* Sector Information */}
+          {company.sector && (
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Informations du secteur</Text>
+              <View style={styles.infoContainer}>
+                <InfoRow icon="call-outline" label="Téléphone principal" value={company.sector.phone1} />
+                <InfoRow icon="call-outline" label="Téléphone secondaire" value={company.sector.phone2} />
+                <InfoRow icon="globe-outline" label="Site web" value={company.sector.website} isLink />
+                <InfoRow icon="mail-outline" label="Email secondaire" value={company.sector.email2} />
+              </View>
+            </View>
+          )}
+
+          {/* Actions */}
+          <View style={styles.actionsContainer}>
+            <TouchableOpacity 
+              style={styles.actionButton}
+              onPress={() => setEditModalVisible(true)}
+            >
+              <Ionicons name="create-outline" size={20} color="#f87b1b" />
+              <Text style={styles.actionButtonText}>Modifier les informations</Text>
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
+      </SafeAreaView>
       
       {/* Edit Modal */}
       <CompanyEditModal
