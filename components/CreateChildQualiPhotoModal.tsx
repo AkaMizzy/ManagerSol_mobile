@@ -36,6 +36,7 @@ export function CreateChildQualiPhotoForm({ onClose, onSuccess, parentItem }: Fo
   const [, setLocationStatus] = useState<'idle' | 'fetching' | 'success' | 'error'>('idle');
   const [creationCount, setCreationCount] = useState(0);
   const [isGeneratingDescription, setIsGeneratingDescription] = useState(false);
+  const [isEnhancing, setIsEnhancing] = useState(false);
 
   const [annotatedPlan, setAnnotatedPlan] = useState<{ uri: string; name: string; type: string } | null>(null);
   const [isPlanEditorVisible, setPlanEditorVisible] = useState(false);
@@ -109,6 +110,24 @@ export function CreateChildQualiPhotoForm({ onClose, onSuccess, parentItem }: Fo
       Alert.alert('Erreur', e?.message || 'Une erreur est survenue lors de la génération de la description.');
     } finally {
       setIsGeneratingDescription(false);
+    }
+  };
+
+  const handleEnhanceDescription = async () => {
+    if (!comment || !token) {
+      Alert.alert('Erreur', 'Aucune description à améliorer.');
+      return;
+    }
+    setIsEnhancing(true);
+    setError(null);
+    try {
+      const result = await qualiphotoService.enhanceDescription(comment, token);
+      setComment(result.enhancedDescription);
+    } catch (e: any) {
+      setError(e?.message || 'Échec de l\'amélioration');
+      Alert.alert('Erreur d\'amélioration', e?.message || 'Une erreur est survenue lors de l\'amélioration de la description.');
+    } finally {
+      setIsEnhancing(false);
     }
   };
 
@@ -428,11 +447,11 @@ export function CreateChildQualiPhotoForm({ onClose, onSuccess, parentItem }: Fo
                 <View style={[styles.inputWrap, { alignItems: 'flex-start' }]}>
                   <Ionicons name="chatbubble-ellipses-outline" size={16} color="#6b7280" style={{ marginTop: 4 }} />
                   <TextInput
-                    placeholder="Description (optionnel)"
+                    placeholder="Introduction (optionnel)"
                     placeholderTextColor="#9ca3af"
                     value={comment}
                     onChangeText={setComment}
-                    style={[styles.input, { height: 160 }]}
+                    style={[styles.input, { height: 160, paddingRight: 40 }]}
                     multiline
                     onFocus={() => {
                       setTimeout(() => {
@@ -440,6 +459,17 @@ export function CreateChildQualiPhotoForm({ onClose, onSuccess, parentItem }: Fo
                       }, 100);
                     }}
                   />
+                  <TouchableOpacity
+                      style={styles.enhanceButton}
+                      onPress={handleEnhanceDescription}
+                      disabled={isEnhancing || !comment}
+                  >
+                      {isEnhancing ? (
+                          <ActivityIndicator size="small" color="#f87b1b" />
+                      ) : (
+                          <Ionicons name="sparkles-outline" size={20} color={!comment ? '#d1d5db' : '#f87b1b'} />
+                      )}
+                  </TouchableOpacity>
                 </View>
               </View>
             </View>
@@ -695,7 +725,7 @@ const styles = StyleSheet.create({
     borderColor: '#e2e8f0'
   },
 
-  inputWrap: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#fff', borderWidth: 1, borderColor: '#f87b1b', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10 },
+  inputWrap: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#fff', borderWidth: 1, borderColor: '#f87b1b', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10, position: 'relative' },
   input: { flex: 1, color: '#111827', fontSize: 16 },
 
   voiceNoteContainer: {
@@ -743,4 +773,12 @@ const styles = StyleSheet.create({
   zoneItemSelected: { borderColor: '#f87b1b', backgroundColor: '#fff7ed' },
   zoneLogo: { width: 64, height: 64, borderRadius: 8, marginBottom: 6 },
   zoneTitle: { fontSize: 12, color: '#475569', textAlign: 'center' },
+  enhanceButton: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
+    padding: 4,
+    borderRadius: 8,
+    backgroundColor: '#fff'
+  },
 });

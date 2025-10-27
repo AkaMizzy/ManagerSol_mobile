@@ -6,7 +6,7 @@ import { Audio } from 'expo-av';
 import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, Image, Keyboard, KeyboardAvoidingView, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, Image, Keyboard, KeyboardAvoidingView, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 type Props = {
@@ -35,6 +35,7 @@ export default function CreateComplementaireQualiPhotoModal({ visible, onClose, 
   const [latitude, setLatitude] = useState<number | null>(null);
   const [longitude, setLongitude] = useState<number | null>(null);
   const [locationStatus, setLocationStatus] = useState<'idle' | 'fetching' | 'success' | 'error'>('idle');
+  const [isEnhancing, setIsEnhancing] = useState(false);
   const durationIntervalRef = useRef<number | null>(null);
   const scrollViewRef = useRef<ScrollView>(null);
 
@@ -157,6 +158,24 @@ export default function CreateComplementaireQualiPhotoModal({ visible, onClose, 
       setError(e?.message || 'Failed to generate description');
     } finally {
       setIsGeneratingDescription(false);
+    }
+  };
+
+  const handleEnhanceDescription = async () => {
+    if (!comment || !token) {
+      Alert.alert('Erreur', 'Aucune description à améliorer.');
+      return;
+    }
+    setIsEnhancing(true);
+    setError(null);
+    try {
+      const result = await qualiphotoService.enhanceDescription(comment, token);
+      setComment(result.enhancedDescription);
+    } catch (e: any) {
+      setError(e?.message || 'Échec de l\'amélioration');
+      Alert.alert('Erreur d\'amélioration', e?.message || 'Une erreur est survenue lors de l\'amélioration de la description.');
+    } finally {
+      setIsEnhancing(false);
     }
   };
 
@@ -320,11 +339,11 @@ export default function CreateComplementaireQualiPhotoModal({ visible, onClose, 
                 <View style={[styles.inputWrap, { alignItems: 'flex-start' }]}>
                   <Ionicons name="chatbubble-ellipses-outline" size={16} color="#6b7280" style={{ marginTop: 4 }} />
                   <TextInput
-                    placeholder="Description"
+                    placeholder="Introduction"
                     placeholderTextColor="#9ca3af"
                     value={comment}
                     onChangeText={setComment}
-                    style={[styles.input, { height: 150 }]}
+                    style={[styles.input, { height: 150, paddingRight: 40 }]}
                     multiline
                     returnKeyType="done"
                     blurOnSubmit
@@ -335,6 +354,17 @@ export default function CreateComplementaireQualiPhotoModal({ visible, onClose, 
                       }, 300);
                     }}
                   />
+                  <TouchableOpacity
+                      style={styles.enhanceButton}
+                      onPress={handleEnhanceDescription}
+                      disabled={isEnhancing || !comment}
+                  >
+                      {isEnhancing ? (
+                          <ActivityIndicator size="small" color="#f87b1b" />
+                      ) : (
+                          <Ionicons name="sparkles-outline" size={20} color={!comment ? '#d1d5db' : '#f87b1b'} />
+                      )}
+                  </TouchableOpacity>
                 </View>
               </View>
             </View>
@@ -415,7 +445,7 @@ const styles = StyleSheet.create({
   transcribeButton: {},
   buttonDisabled: { opacity: 0.5, backgroundColor: '#e5e7eb' },
   buttonContentWrapper: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, flex: 1 },
-  inputWrap: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#fff', borderWidth: 1, borderColor: '#f87b1b', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10 },
+  inputWrap: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#fff', borderWidth: 1, borderColor: '#f87b1b', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10, position: 'relative' },
   input: { flex: 1, color: '#111827' },
   recordingWrap: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#fef2f2', padding: 12, borderRadius: 10 },
   recordingText: { color: '#dc2626', fontWeight: '600' },
@@ -423,6 +453,14 @@ const styles = StyleSheet.create({
   audioPlayerWrap: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#f1f5f9', paddingHorizontal: 12, height: 50, borderRadius: 10, flex: 1, borderWidth: 1, borderColor: '#f87b1b' },
   playButton: {},
   deleteButton: {},
+  enhanceButton: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
+    padding: 4,
+    borderRadius: 8,
+    backgroundColor: '#fff'
+  },
 });
 
 

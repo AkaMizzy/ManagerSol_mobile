@@ -207,7 +207,7 @@ type Props = {
     }
   }, [item, token]);
 
-  // Load declaration dropdowns when modal opens
+
   useEffect(() => {
     if (!token || !isDeclModalVisible) return;
     let cancelled = false;
@@ -593,10 +593,12 @@ type Props = {
             </TouchableOpacity>
           )}
 
-          {/* Plan Button (only for child items) */}
           {item?.id_qualiphoto_parent && (
             <TouchableOpacity style={styles.headerAction} onPress={() => setEditPlanVisible(true)} accessibilityLabel="Éditer le plan de zone">
-                <Image source={require('@/assets/icons/plan.png')} style={styles.headerActionIcon} />
+                <Image 
+                  source={item.photo_plan ? { uri: item.photo_plan } : require('@/assets/icons/plan.png')} 
+                  style={[styles.headerPlanIcon]} 
+                />
             </TouchableOpacity>
           )}
         </View>
@@ -604,7 +606,6 @@ type Props = {
     );
 
     if (item?.id === initialItem?.id) {
-      // Original Item View: Fixed top, scrollable bottom
       return (
         <>
           {header}
@@ -766,8 +767,8 @@ type Props = {
                 <>
                   <View style={styles.sectionSeparator} />
                   <View style={styles.childPicturesContainer}>
-                  <View style={styles.childListHeader}>
-                    {children.length > 0 ? (
+                  <View style={[styles.childListHeader, children.length === 0 && { justifyContent: 'center' }]}>
+                    {children.length > 0 && (
                       <View style={styles.layoutToggleContainer}>
                         <TouchableOpacity
                             style={[styles.layoutToggleButton, layoutMode === 'list' && styles.layoutToggleButtonActive]}
@@ -782,31 +783,25 @@ type Props = {
                             <Ionicons name="grid" size={20} color={layoutMode === 'grid' ? '#FFFFFF' : '#11224e'} />
                         </TouchableOpacity>
                      </View>
-                   ) : (
-                     <View style={{ width: 40, height: 40 }} /> // Adjusted for symmetry
                    )}
-                   <View style={styles.cameraCTAContainer}>
-                      <Text style={styles.cameraCTALabel}>Prendre une situation avant</Text>
-                      <TouchableOpacity
-                        onPress={() => setChildModalVisible(true)}
-                        accessibilityLabel="Ajouter une photo après"
-                        style={styles.cameraCTA}
-                      >
-                        <Image source={cameraIcon} style={styles.cameraCTAIcon} />
-                      </TouchableOpacity>
-                   </View>
-                   {children.length > 0 ? (
+                   <TouchableOpacity
+                     onPress={() => setChildModalVisible(true)}
+                     accessibilityLabel="Ajouter une photo avant"
+                     style={styles.cameraCTA}
+                   >
+                     <Image source={cameraIcon} style={styles.cameraCTAIcon} />
+                     <Text style={styles.cameraCTALabel}>Prendre la situation avant</Text>
+                   </TouchableOpacity>
+                   {children.length > 0 && (
                      <TouchableOpacity
-                        style={styles.sortButton}
-                        onPress={() => setSortOrder(current => current === 'asc' ? 'desc' : 'asc')}
-                        accessibilityLabel={sortOrder === 'desc' ? 'Trier par ordre croissant' : 'Trier par ordre décroissant'}
-                      >
-                        <Ionicons name={sortOrder === 'desc' ? 'arrow-down' : 'arrow-up'} size={24} color="#f87b1b" />
-                      </TouchableOpacity>
-                    ) : (
-                      <View style={{ width: 40, height: 40 }} /> // Adjusted for symmetry
-                    )}
-                  </View>
+                       style={styles.sortButton}
+                       onPress={() => setSortOrder(current => current === 'asc' ? 'desc' : 'asc')}
+                       accessibilityLabel={sortOrder === 'desc' ? 'Trier par ordre croissant' : 'Trier par ordre décroissant'}
+                     >
+                       <Ionicons name={sortOrder === 'desc' ? 'arrow-down' : 'arrow-up'} size={24} color="#f87b1b" />
+                     </TouchableOpacity>
+                   )}
+                 </View>
                   {isLoadingChildren && <Text>Chargement...</Text>}
                   {!isLoadingChildren && children.length === 0 && item.before === 1 && (
                     <Text style={styles.noChildrenText}>Aucune photo suivie n&apos;a encore été ajoutée.</Text>
@@ -839,6 +834,7 @@ type Props = {
             <View style={styles.content}>
 
               <View>
+                <Text style={styles.sectionTitle}>Situation avant</Text>
                 {item.photo ? (
                   <>
                     <TouchableOpacity onPress={() => { if (!item.photo) return; setImagePreviewVisible(true); }} activeOpacity={0.9}>
@@ -948,15 +944,9 @@ type Props = {
               {/* Complementary content - always visible on child */}
               <View>
                 <View style={styles.sectionHeaderRow}>
-                  <Text style={styles.sectionTitle}>Photo après</Text>
-                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                    <TouchableOpacity
-                      onPress={() => setComplementModalVisible(true)}
-                      accessibilityLabel="Ajouter une photo complémentaire"
-                    >
-                      <Image source={ICONS.cameraGif} style={{ width: 45, height: 45 }} />
-                    </TouchableOpacity>
-                    {complement && (
+                  {complement ? <Text style={styles.sectionTitle}>Situation après</Text> : <View />}
+                  {complement && (
+                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                       <TouchableOpacity
                         onPress={() => handleCompare(item.photo, complement.photo_comp || complement.photo)}
                         accessibilityLabel="Comparer les images"
@@ -964,8 +954,6 @@ type Props = {
                       >
                         <Image source={ICONS.chatgpt} style={{ width: 22, height: 22 }} />
                       </TouchableOpacity>
-                    )}
-                    {complement && (
                       <TouchableOpacity
                         onPress={async () => {
                           if (!token || !complement?.id) return;
@@ -981,8 +969,8 @@ type Props = {
                       >
                         <Ionicons name="trash-outline" size={22} color="#dc2626" />
                       </TouchableOpacity>
-                    )}
-                  </View>
+                    </View>
+                  )}
                 </View>
                 {isLoadingComplement ? (
                   <ActivityIndicator style={{ marginVertical: 12 }} />
@@ -1083,7 +1071,16 @@ type Props = {
                     )}
                   </>
                 ) : (
-                  <Text style={styles.noChildrenText}>Aucune photo après.</Text>
+                  <View style={{ alignItems: 'center', marginVertical: 16 }}>
+                    <TouchableOpacity
+                      onPress={() => setComplementModalVisible(true)}
+                      accessibilityLabel="Ajouter une photo complémentaire"
+                      style={styles.cameraCTA}
+                    >
+                      <Image source={cameraIcon} style={styles.cameraCTAIcon} />
+                      <Text style={styles.cameraCTALabel}>Prendre la situation après</Text>
+                    </TouchableOpacity>
+                  </View>
                 )}
               </View>
 
@@ -1102,12 +1099,6 @@ type Props = {
                 </View>
               )}
 
-              {item.id_qualiphoto_parent && (
-                <TouchableOpacity style={styles.backToParentButton} onPress={() => setItem(initialItem || null)}>
-                  <Ionicons name="arrow-back" size={16} color="#f87b1b" />
-                  <Text style={styles.backToParentButtonText}>Retour </Text>
-                </TouchableOpacity>
-              )}
             </View>
           </ScrollView>
         </>
@@ -1397,6 +1388,14 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
   },
+  headerPlanIcon: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    borderWidth: 1,
+    borderColor: '#f87b1b',
+  },
+  
   title: {
     fontSize: 16,
     fontWeight: '700',
@@ -1735,18 +1734,6 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
   },
-  backToParentButton: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'center',
-      gap: 8,
-      paddingVertical: 12,
-      marginTop: 8,
-  },
-  backToParentButtonText: {
-      color: '#f87b1b',
-      fontWeight: '600',
-  },
   inlineMetaRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -1851,6 +1838,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 8,
+    paddingHorizontal: 4,
   },
   cameraCTAContainer: {
     alignItems: 'center',
@@ -1858,29 +1846,28 @@ const styles = StyleSheet.create({
   },
   cameraCTALabel: {
     fontSize: 12,
-    fontWeight: '600',
+    fontWeight: 'bold',
     color: '#11224e',
-    marginBottom: 4,
+    marginLeft: 8,
   },
   cameraCTA: {
-    width: 72,
-    height: 72,
-    borderRadius: 12,
-    borderWidth: 2,
-    borderColor: '#f87b1b',
-    justifyContent: 'center',
+    flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    overflow: 'hidden',
+    justifyContent: 'center',
+    backgroundColor: '#ffffff',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 25,
     elevation: 3,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.12,
-    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    marginHorizontal: 12,
   },
   cameraCTAIcon: {
-    width: 64,
-    height: 64,
+    width: 30,
+    height: 30,
     resizeMode: 'contain',
   },
   sortButton: {

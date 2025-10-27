@@ -206,6 +206,14 @@ class QualiPhotoService {
     return data;
   }
 
+  async enhanceDescription(description: string, token: string): Promise<{ enhancedDescription: string }> {
+    return this.makeRequest<{ enhancedDescription: string }>('/qualiphoto/enhance-description', token, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ description }),
+    });
+  }
+
   async compareImages(beforeImageUrl: string, afterImageUrl: string, token: string): Promise<{ description: string }> {
     // Convert absolute URLs from the client to relative paths for the backend
     const beforeRelativeUrl = beforeImageUrl.replace(this.baseUrl, '');

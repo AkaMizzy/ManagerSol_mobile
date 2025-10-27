@@ -45,6 +45,7 @@ export default function CreateQualiPhotoModal({ visible, onClose, onSuccess, ini
   const [isDatePickerVisible, setDatePickerVisible] = useState(false);
   const [isTranscribing, setIsTranscribing] = useState(false);
   const [isTranscribed, setIsTranscribed] = useState(false);
+  const [isEnhancing, setIsEnhancing] = useState(false);
 
   const scrollViewRef = useRef<ScrollView>(null);
   const durationIntervalRef = useRef<number | null>(null);
@@ -273,6 +274,24 @@ export default function CreateQualiPhotoModal({ visible, onClose, onSuccess, ini
     }
   };
 
+  const handleEnhanceDescription = async () => {
+    if (!comment || !token) {
+      Alert.alert('Erreur', 'Aucune description à améliorer.');
+      return;
+    }
+    setIsEnhancing(true);
+    setError(null);
+    try {
+      const result = await qualiphotoService.enhanceDescription(comment, token);
+      setComment(result.enhancedDescription);
+    } catch (e: any) {
+      setError(e?.message || 'Échec de l\'amélioration');
+      Alert.alert('Erreur d\'amélioration', e?.message || 'Une erreur est survenue lors de l\'amélioration de la description.');
+    } finally {
+      setIsEnhancing(false);
+    }
+  };
+
   useEffect(() => {
     return sound ? () => { sound.unloadAsync(); } : undefined;
   }, [sound]);
@@ -455,11 +474,11 @@ export default function CreateQualiPhotoModal({ visible, onClose, onSuccess, ini
                   <View style={[styles.inputWrap, { alignItems: 'flex-start' }]}>
                     <Ionicons name="chatbubble-ellipses-outline" size={16} color="#6b7280" style={{ marginTop: 4 }} />
                     <TextInput
-                      placeholder="Description"
+                      placeholder="Introduction"
                       placeholderTextColor="#9ca3af"
                       value={comment}
                       onChangeText={setComment}
-                      style={[styles.input, { height: 350 }]}
+                      style={[styles.input, { height: 350, paddingRight: 40 }]}
                       multiline
                       numberOfLines={6}
                       textAlignVertical="top"
@@ -469,6 +488,17 @@ export default function CreateQualiPhotoModal({ visible, onClose, onSuccess, ini
                         }, 300);
                       }}
                     />
+                    <TouchableOpacity
+                        style={styles.enhanceButton}
+                        onPress={handleEnhanceDescription}
+                        disabled={isEnhancing || !comment}
+                    >
+                        {isEnhancing ? (
+                            <ActivityIndicator size="small" color="#f87b1b" />
+                        ) : (
+                            <Ionicons name="sparkles-outline" size={20} color={!comment ? '#d1d5db' : '#f87b1b'} />
+                        )}
+                    </TouchableOpacity>
                   </View>
                 </View>
               </View>
@@ -602,7 +632,7 @@ const styles = StyleSheet.create({
   submitButtonText: { fontSize: 16, fontWeight: '600', color: '#FFFFFF' },
   secondaryButton: { backgroundColor: '#f3f4f6', borderRadius: 10, paddingVertical: 10, paddingHorizontal: 12 },
   secondaryButtonText: { color: '#111827', fontWeight: '600' },
-  inputWrap: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#fff', borderWidth: 1, borderColor: '#f87b1b', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10 },
+  inputWrap: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#fff', borderWidth: 1, borderColor: '#f87b1b', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10, position: 'relative' },
   input: { flex: 1, color: '#111827' },
   recordingWrap: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#fef2f2', padding: 12, borderRadius: 10 },
   recordingText: { color: '#dc2626', fontWeight: '600' },
@@ -611,6 +641,14 @@ const styles = StyleSheet.create({
   playButton: {},
   deleteButton: {},
   coordText: { fontSize: 14, color: '#4b5563', textAlign: 'center', marginBottom: 8 },
+  enhanceButton: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
+    padding: 4,
+    borderRadius: 8,
+    backgroundColor: '#fff'
+  },
 });
 
 
