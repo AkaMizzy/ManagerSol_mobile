@@ -31,16 +31,22 @@ export default function CreateZoneModal({ visible, onClose, projectId, projectTi
   const [longitude, setLongitude] = useState<string>('');
   const [status, setStatus] = useState<boolean>(true);
   const [assignedUser, setAssignedUser] = useState<string>('');
+  const [control, setControl] = useState<string>('');
+  const [technicien, setTechnicien] = useState<string>('');
+  const [controlOpen, setControlOpen] = useState(false);
+  const [technicienOpen, setTechnicienOpen] = useState(false);
   const [pickedImage, setPickedImage] = useState<ImagePicker.ImagePickerAsset | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showLocationInput, setShowLocationInput] = useState(false);
 
-  const isDisabled = useMemo(() => !title || !zoneTypeId || !token || !projectId, [title, zoneTypeId, token, projectId]);
+  const isDisabled = useMemo(() => !title || !zoneTypeId || !token || !projectId || !control || !technicien, [title, zoneTypeId, token, projectId, control, technicien]);
 
   function validate(): string | null {
     if (!title) return 'Le titre est requis';
     if (!zoneTypeId) return 'Le type de zone est requis';
+    if (!control) return 'Le contrôleur est requis';
+    if (!technicien) return 'Le technicien est requis';
     return null;
   }
 
@@ -55,6 +61,8 @@ export default function CreateZoneModal({ visible, onClose, projectId, projectTi
       form.append('id_project', String(projectId));
       form.append('zone_type_id', String(zoneTypeId));
       form.append('status', status ? '1' : '0');
+      form.append('control', control);
+      form.append('technicien', technicien);
       if (assignedUser) form.append('assigned_user', assignedUser);
       
       if (latitude) form.append('latitude', String(Number(latitude)));
@@ -75,7 +83,7 @@ export default function CreateZoneModal({ visible, onClose, projectId, projectTi
         const data = await res.json().catch(() => ({}));
         throw new Error(data?.error || 'Création de zone échouée');
       }
-      setTitle(''); setZoneTypeId(''); setLatitude(''); setLongitude(''); setPickedImage(null); setError(null);
+      setTitle(''); setZoneTypeId(''); setLatitude(''); setLongitude(''); setPickedImage(null); setError(null); setControl(''); setTechnicien('');
       if (onCreated) await onCreated();
       onClose();
     } catch (e: any) {
@@ -378,6 +386,69 @@ export default function CreateZoneModal({ visible, onClose, projectId, projectTi
                   </View>
                 )}
               </View>
+
+              <View style={{ gap: 8, marginBottom: 12 }}>
+                <Text style={{ fontSize: 12, color: '#6b7280', marginLeft: 2 }}>Contrôleur</Text>
+                <TouchableOpacity style={[styles.inputWrap, { justifyContent: 'space-between' }]} onPress={() => setControlOpen(v => !v)}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1 }}>
+                    <Ionicons name="shield-checkmark-outline" size={16} color="#6b7280" />
+                    <Text style={[styles.input, { color: control ? '#111827' : '#9ca3af' }]} numberOfLines={1}>
+                      {control ? (companyUsers.find(u => String(u.id) === String(control))?.firstname ? `${companyUsers.find(u => String(u.id) === String(control))?.firstname} ${companyUsers.find(u => String(u.id) === String(control))?.lastname || ''}` : control) : 'Choisir un contrôleur'}
+                    </Text>
+                  </View>
+                  <Ionicons name={controlOpen ? 'chevron-up' : 'chevron-down'} size={16} color="#9ca3af" />
+                </TouchableOpacity>
+                {controlOpen && (
+                  <View style={{ maxHeight: 220, borderWidth: 1, borderColor: '#e5e7eb', borderRadius: 10, overflow: 'hidden' }}>
+                    <ScrollView keyboardShouldPersistTaps="handled">
+                      {loadingUsers ? (
+                        <View style={{ padding: 12 }}><Text style={{ color: '#6b7280' }}>Chargement...</Text></View>
+                      ) : companyUsers.length === 0 ? (
+                        <View style={{ padding: 12 }}><Text style={{ color: '#6b7280' }}>Aucun utilisateur</Text></View>
+                      ) : (
+                        companyUsers.map(u => (
+                          <TouchableOpacity key={u.id} onPress={() => { setControl(String(u.id)); setControlOpen(false); }} style={{ paddingHorizontal: 12, paddingVertical: 10, backgroundColor: String(control) === String(u.id) ? '#f1f5f9' : '#FFFFFF', borderBottomWidth: 1, borderBottomColor: '#f3f4f6' }}>
+                            <Text style={{ color: '#11224e' }}>{u.firstname || ''} {u.lastname || ''}</Text>
+                            {u.email ? <Text style={{ color: '#6b7280', fontSize: 12 }}>{u.email}</Text> : null}
+                          </TouchableOpacity>
+                        ))
+                      )}
+                    </ScrollView>
+                  </View>
+                )}
+              </View>
+
+              <View style={{ gap: 8, marginBottom: 12 }}>
+                <Text style={{ fontSize: 12, color: '#6b7280', marginLeft: 2 }}>Technicien</Text>
+                <TouchableOpacity style={[styles.inputWrap, { justifyContent: 'space-between' }]} onPress={() => setTechnicienOpen(v => !v)}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1 }}>
+                    <Ionicons name="construct-outline" size={16} color="#6b7280" />
+                    <Text style={[styles.input, { color: technicien ? '#111827' : '#9ca3af' }]} numberOfLines={1}>
+                      {technicien ? (companyUsers.find(u => String(u.id) === String(technicien))?.firstname ? `${companyUsers.find(u => String(u.id) === String(technicien))?.firstname} ${companyUsers.find(u => String(u.id) === String(technicien))?.lastname || ''}` : technicien) : 'Choisir un technicien'}
+                    </Text>
+                  </View>
+                  <Ionicons name={technicienOpen ? 'chevron-up' : 'chevron-down'} size={16} color="#9ca3af" />
+                </TouchableOpacity>
+                {technicienOpen && (
+                  <View style={{ maxHeight: 220, borderWidth: 1, borderColor: '#e5e7eb', borderRadius: 10, overflow: 'hidden' }}>
+                    <ScrollView keyboardShouldPersistTaps="handled">
+                      {loadingUsers ? (
+                        <View style={{ padding: 12 }}><Text style={{ color: '#6b7280' }}>Chargement...</Text></View>
+                      ) : companyUsers.length === 0 ? (
+                        <View style={{ padding: 12 }}><Text style={{ color: '#6b7280' }}>Aucun utilisateur</Text></View>
+                      ) : (
+                        companyUsers.map(u => (
+                          <TouchableOpacity key={u.id} onPress={() => { setTechnicien(String(u.id)); setTechnicienOpen(false); }} style={{ paddingHorizontal: 12, paddingVertical: 10, backgroundColor: String(technicien) === String(u.id) ? '#f1f5f9' : '#FFFFFF', borderBottomWidth: 1, borderBottomColor: '#f3f4f6' }}>
+                            <Text style={{ color: '#11224e' }}>{u.firstname || ''} {u.lastname || ''}</Text>
+                            {u.email ? <Text style={{ color: '#6b7280', fontSize: 12 }}>{u.email}</Text> : null}
+                          </TouchableOpacity>
+                        ))
+                      )}
+                    </ScrollView>
+                  </View>
+                )}
+              </View>
+
               <View style={{ gap: 8 }}>
                 <View style={{ flexDirection: 'row', gap: 12 }}>
                   <TouchableOpacity onPress={pickImage} style={[styles.inputWrap, { flex: 1, justifyContent: 'center' }]}>

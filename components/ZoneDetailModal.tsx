@@ -36,6 +36,12 @@ type ZoneRecord = {
   assigned_user_firstname?: string | null;
   assigned_user_lastname?: string | null;
   assigned_user_email?: string | null;
+  control?: string | null;
+  control_user_firstname?: string | null;
+  control_user_lastname?: string | null;
+  technicien?: string | null;
+  technicien_user_firstname?: string | null;
+  technicien_user_lastname?: string | null;
 };
 
 type Props = {
@@ -225,6 +231,18 @@ export default function ZoneDetailModal({ visible, onClose, zoneId }: Props) {
                 if (n) return n;
                 if (zone?.assigned_user_email) return zone.assigned_user_email;
                 if (zone?.assigned_user) return String(zone.assigned_user);
+                return '—';
+              })()} />
+              <MetaRow icon="shield-checkmark-outline" label="Contrôleur" value={(() => {
+                const n = [zone?.control_user_firstname || '', zone?.control_user_lastname || ''].join(' ').trim();
+                if (n) return n;
+                if (zone?.control) return String(zone.control);
+                return '—';
+              })()} />
+              <MetaRow icon="construct-outline" label="Technicien" value={(() => {
+                const n = [zone?.technicien_user_firstname || '', zone?.technicien_user_lastname || ''].join(' ').trim();
+                if (n) return n;
+                if (zone?.technicien) return String(zone.technicien);
                 return '—';
               })()} />
             </View>
