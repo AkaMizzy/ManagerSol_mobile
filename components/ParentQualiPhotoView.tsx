@@ -1,20 +1,27 @@
 import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
 import {
-  ActivityIndicator,
-  Image,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    Image,
+    LayoutAnimation,
+    Platform,
+    Pressable,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    UIManager,
+    View,
 } from 'react-native';
 
 import { ICONS } from '../constants/Icons';
 import { Comment, QualiPhotoItem } from '../services/qualiphotoService';
 import { PhotoActions } from './PhotoActions';
 import { PhotoCard } from './PhotoCard';
+
+if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
 
 const cameraIcon = require('@/assets/icons/camera.gif');
 
@@ -67,7 +74,6 @@ type ParentQualiPhotoViewProps = {
     isLoadingChildren: boolean;
     childIdToHasComplement: Record<string, boolean>;
     setItem: (item: QualiPhotoItem) => void;
-    onOpenConclusionModal: () => void;
   };
   
 
@@ -98,8 +104,14 @@ type ParentQualiPhotoViewProps = {
     isLoadingChildren,
     childIdToHasComplement,
     setItem,
-    onOpenConclusionModal,
   }) => {
+    const [isDescriptionExpanded, setIsDescriptionExpanded] = React.useState(false);
+
+    const toggleDescription = () => {
+      LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+      setIsDescriptionExpanded((prev) => !prev);
+    };
+    
     const header = (
         <View style={styles.header}>
           {item?.id_qualiphoto_parent ? (
@@ -179,17 +191,33 @@ type ParentQualiPhotoViewProps = {
                 onAddComplement={() => setComplementModalVisible(true)}
               />
               
-              {(typeof item.commentaire === 'string' && item.commentaire.trim().length > 0) && (
-                <View>
-                  <Text style={styles.metaLabel}>Description</Text>
-                  <Text style={styles.metaValue}>{item.commentaire}</Text>
-                </View>
-              )}
+              {(typeof item.commentaire === 'string' && item.commentaire.trim().length > 0) && (() => {
+                const comment = item.commentaire.trim();
+                const MAX_LENGTH = 100;
+                const isLongText = comment.length > MAX_LENGTH;
 
-              <TouchableOpacity onPress={onOpenConclusionModal} style={styles.compareButton}>
-                <Image source={ICONS.chatgpt} style={{ width: 22, height: 22 }} />
-                <Text style={styles.compareButtonText}>Conclusion</Text>
-              </TouchableOpacity>
+                let displayedText = comment;
+                if (isLongText && !isDescriptionExpanded) {
+                  const truncated = comment.substring(0, MAX_LENGTH);
+                  const lastSpaceIndex = truncated.lastIndexOf(' ');
+                  const cutoff = lastSpaceIndex > 0 ? lastSpaceIndex : MAX_LENGTH;
+                  displayedText = `${comment.substring(0, cutoff)}...`;
+                }
+
+                return (
+                  <View>
+                    <Text style={styles.metaLabel}>Description</Text>
+                    <Text style={styles.metaValue}>{displayedText}</Text>
+                    {isLongText && (
+                      <TouchableOpacity onPress={toggleDescription} style={{ alignSelf: 'flex-start' }}>
+                        <Text style={styles.readMoreText}>
+                          {isDescriptionExpanded ? 'Voir moins' : 'Lire la suite'}
+                        </Text>
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                );
+              })()}
             </View>
           </View>
         </View>
@@ -639,22 +667,10 @@ const styles = StyleSheet.create({
         marginVertical: 16,
         marginHorizontal: 12,
       },
-      compareButton: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        paddingHorizontal: 10,
-        paddingVertical: 6,
-        borderRadius: 8,
-        backgroundColor: '#fff7ed',
-        borderColor: '#f87b1b',
-        borderWidth: 1,
-        gap: 6,
-        alignSelf: 'flex-start',
-        marginTop: 8,
-      },
-      compareButtonText: {
-        fontSize: 12,
-        fontWeight: '600',
+      readMoreText: {
         color: '#f87b1b',
+        fontSize: 12,
+        marginTop: 4,
+        textDecorationLine: 'underline',
       },
 });
