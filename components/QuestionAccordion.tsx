@@ -1,9 +1,11 @@
 import { ICONS } from '@/constants/Icons';
 import { ManifolderQuestion, QuestionType, Zone } from '@/types/manifolder';
 import { Ionicons } from '@expo/vector-icons';
+import { Audio } from 'expo-av';
 import * as ImagePicker from 'expo-image-picker';
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import {
+  ActivityIndicator,
   Alert,
   Animated,
   FlatList,
@@ -14,13 +16,13 @@ import {
   Switch,
   Text,
   TextInput,
+  TouchableOpacity,
   View
 } from 'react-native';
 import DateTimePickerModal from 'react-native-modal-datetime-picker';
 import FileUploader from './FileUploader';
 import MapSelector from './MapSelector';
 import PreviewModal from './PreviewModal';
-import VoiceRecorder from './VoiceRecorder';
 
 interface QuestionAccordionProps {
   question: ManifolderQuestion;
@@ -90,8 +92,27 @@ export default function QuestionAccordion({
   const [questionZoneId, setQuestionZoneId] = useState(selectedZoneId || defaultZoneId);
   const [showZoneModal, setShowZoneModal] = useState(false);
   const [showCameraModal, setShowCameraModal] = useState(false);
-  const [showVoiceModal, setShowVoiceModal] = useState(false);
   const [showListModal, setShowListModal] = useState(false);
+
+  const [recording, setRecording] = useState<Audio.Recording | null>(null);
+
+  // States for voice question type
+  const [valueSound, setValueSound] = useState<Audio.Sound | null>(null);
+  const [isValueRecording, setIsValueRecording] = useState(false);
+  const [isValuePlaying, setIsValuePlaying] = useState(false);
+  const [valueRecordingDuration, setValueRecordingDuration] = useState(0);
+  const valueDurationIntervalRef = useRef<any>(null);
+  const [isValueTranscribed, setIsValueTranscribed] = useState(false);
+
+  // States for vocal attachment
+  const [vocalAnswerSound, setVocalAnswerSound] = useState<Audio.Sound | null>(null);
+  const [isVocalAnswerRecording, setIsVocalAnswerRecording] = useState(false);
+  const [isVocalAnswerPlaying, setIsVocalAnswerPlaying] = useState(false);
+  const [vocalAnswerRecordingDuration, setVocalAnswerRecordingDuration] = useState(0);
+  const vocalAnswerDurationIntervalRef = useRef<any>(null);
+  const [isVocalAnswerTranscribed, setIsVocalAnswerTranscribed] = useState(false); 
+  const [showVocalAnswerRecorder, setShowVocalAnswerRecorder] = useState(false);
+
 
   // Tooltip state for compact labels
   const [tooltipVisible, setTooltipVisible] = useState(false);
@@ -123,6 +144,139 @@ export default function QuestionAccordion({
       useNativeDriver: false,
     }).start();
   }, [isExpanded, animatedHeight]);
+
+  function formatDuration(seconds: number) {
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
+  }
+
+  async function startRecording(type: 'value' | 'vocalAnswer') {
+      try {
+          const { status } = await Audio.requestPermissionsAsync();
+          if (status !== 'granted') {
+              Alert.alert('Permission Denied', 'Microphone access is required to record audio.');
+              return;
+          }
+          await Audio.setAudioModeAsync({ allowsRecordingIOS: true, playsInSilentModeIOS: true });
+          const { recording: newRecording } = await Audio.Recording.createAsync(Audio.RecordingOptionsPresets.HIGH_QUALITY);
+          setRecording(newRecording);
+          
+          if (type === 'value') {
+              setIsValueRecording(true);
+              valueDurationIntervalRef.current = setInterval(() => {
+                  setValueRecordingDuration(prev => prev + 1);
+              }, 1000);
+          } else {
+              setIsVocalAnswerRecording(true);
+              vocalAnswerDurationIntervalRef.current = setInterval(() => {
+                  setVocalAnswerRecordingDuration(prev => prev + 1);
+              }, 1000);
+          }
+      } catch (err) {
+          console.error('Failed to start recording', err);
+      }
+  }
+
+  async function stopRecording(type: 'value' | 'vocalAnswer') {
+      if (!recording) return;
+
+      if (type === 'value') {
+          setIsValueRecording(false);
+          if (valueDurationIntervalRef.current) clearInterval(valueDurationIntervalRef.current);
+      } else {
+          setIsVocalAnswerRecording(false);
+          if (vocalAnswerDurationIntervalRef.current) clearInterval(vocalAnswerDurationIntervalRef.current);
+      }
+
+      await recording.stopAndUnloadAsync();
+      const uri = recording.getURI();
+      if (uri) {
+          const file = { uri, name: `voicenote-${Date.now()}.m4a`, type: 'audio/m4a' };
+          if (type === 'value') {
+              handleValueChange(file);
+              setIsValueTranscribed(false);
+          } else {
+              if (onVocalFileSelect) onVocalFileSelect(file);
+              setIsVocalAnswerTranscribed(false);
+          }
+      }
+
+      if (type === 'value') {
+          setValueRecordingDuration(0);
+      } else {
+          setVocalAnswerRecordingDuration(0);
+      }
+      setRecording(null);
+  }
+
+  async function playSound(type: 'value' | 'vocalAnswer') {
+    const voiceNote = type === 'value' ? value : vocalAnswer;
+    const sound = type === 'value' ? valueSound : vocalAnswerSound;
+    const isPlaying = type === 'value' ? isValuePlaying : isVocalAnswerPlaying;
+    const setSound = type === 'value' ? setValueSound : setVocalAnswerSound;
+    const setIsPlaying = type === 'value' ? setIsValuePlaying : setIsVocalAnswerPlaying;
+
+    if (!voiceNote || !voiceNote.uri) return;
+    if (isPlaying && sound) {
+        await sound.pauseAsync();
+        setIsPlaying(false);
+        return;
+    }
+    if (sound) {
+        await sound.playAsync();
+        setIsPlaying(true);
+        return;
+    }
+    const { sound: newSound } = await Audio.Sound.createAsync({ uri: voiceNote.uri });
+    setSound(newSound);
+    setIsPlaying(true);
+    newSound.setOnPlaybackStatusUpdate((status) => {
+        if (status.isLoaded && status.didJustFinish) {
+            setIsPlaying(false);
+            newSound.setPositionAsync(0);
+        }
+    });
+    await newSound.playAsync();
+  }
+
+  const resetVoiceNote = (type: 'value' | 'vocalAnswer') => {
+    if (type === 'value') {
+        if (valueSound) valueSound.unloadAsync();
+        handleValueChange(null);
+        setValueSound(null);
+        setIsValuePlaying(false);
+        setIsValueTranscribed(false);
+    } else {
+        if (vocalAnswerSound) vocalAnswerSound.unloadAsync();
+        if (onVocalFileRemove) onVocalFileRemove();
+        setVocalAnswerSound(null);
+        setIsVocalAnswerPlaying(false);
+        setIsVocalAnswerTranscribed(false);
+    }
+  };
+
+  const handleTranscribe = (type: 'value' | 'vocalAnswer') => {
+      const voiceNote = type === 'value' ? value : vocalAnswer;
+      const setIsTranscribed = type === 'value' ? setIsValueTranscribed : setIsVocalAnswerTranscribed;
+
+      if (!voiceNote || !voiceNote.uri) {
+          Alert.alert('Erreur', 'Aucune note vocale à transcrire.');
+          return;
+      }
+      if (onTranscribeAudio) {
+          onTranscribeAudio(question.id, voiceNote.uri);
+          setIsTranscribed(true);
+      }
+  };
+
+  React.useEffect(() => {
+    return valueSound ? () => { valueSound.unloadAsync(); } : undefined;
+  }, [valueSound]);
+
+  React.useEffect(() => {
+    return vocalAnswerSound ? () => { vocalAnswerSound.unloadAsync(); } : undefined;
+  }, [vocalAnswerSound]);
 
   const handleValueChange = (newValue: any, newQuantity?: number, zoneId?: string) => {
     onValueChange(question.id, newValue, newQuantity, zoneId || questionZoneId);
@@ -550,22 +704,54 @@ export default function QuestionAccordion({
       case 'voice':
         return (
           <View style={styles.inputContainer}>
-            <View style={styles.inputWithInfo}>
-              <VoiceRecorder
-                value={vocalAnswer}
-                onFileSelect={(file) => {
-                   if (onVocalFileSelect) {
-                     onVocalFileSelect(file);
-                   }
-                 }}
-                 onFileRemove={() => {
-                   if (onVocalFileRemove) {
-                     onVocalFileRemove();
-                   }
-                 }}
-                 placeholder={question.placeholder || 'Record voice message...'}
-                 maxDuration={300}
-               />
+            <View style={styles.voiceNoteContainer}>
+                {isValueRecording ? (
+                    <View style={styles.recordingWrap}>
+                        <Text style={styles.recordingText}>Enregistrement... {formatDuration(valueRecordingDuration)}</Text>
+                        <TouchableOpacity style={styles.stopButton} onPress={() => stopRecording('value')}>
+                            <Ionicons name="stop-circle" size={24} color="#dc2626" />
+                        </TouchableOpacity>
+                    </View>
+                ) : (
+                    <View style={styles.voiceActionsContainer}>
+                        {value && value.uri ? (
+                            <View style={styles.audioPlayerWrap}>
+                                <TouchableOpacity style={styles.playButton} onPress={() => playSound('value')}>
+                                    <Ionicons name={isValuePlaying ? 'pause-circle' : 'play-circle'} size={28} color="#11224e" />
+                                </TouchableOpacity>
+                                <TouchableOpacity style={[styles.deleteButton, isValueTranscribed && styles.buttonDisabled]} onPress={() => resetVoiceNote('value')} disabled={isValueTranscribed}>
+                                    <Ionicons name="trash-outline" size={20} color={isValueTranscribed ? '#9ca3af' : '#dc2626'} />
+                                </TouchableOpacity>
+                            </View>
+                        ) : (
+                            <TouchableOpacity style={styles.voiceRecordButton} onPress={() => startRecording('value')}>
+                                <View style={styles.buttonContentWrapper}>
+                                    <Ionicons name="mic-outline" size={24} color="#11224e" />
+                                </View>
+                            </TouchableOpacity>
+                        )}
+                        <TouchableOpacity
+                            style={[
+                                styles.voiceRecordButton,
+                                styles.transcribeButton,
+                                (!value || !value.uri || isTranscribing) && styles.buttonDisabled,
+                            ]}
+                            onPress={() => handleTranscribe('value')}
+                            disabled={!value || !value.uri || isTranscribing}
+                        >
+                            {isTranscribing ? (
+                                <ActivityIndicator size="small" color="#11224e" />
+                            ) : (
+                                <View style={styles.buttonContentWrapper}>
+                                    <Ionicons name="volume-high-outline" size={25} color="#11224e" />
+                                    <Ionicons name="arrow-forward-circle-outline" size={20} color="#11224e" />
+                                    <Ionicons name="document-text-outline" size={20} color="#11224e" />
+                                </View>
+                            )}
+                        </TouchableOpacity>
+                    </View>
+                )}
+            </View>
               {!!question.description && (
                 <Pressable onPress={() => showInfo(question.description ?? undefined)} accessibilityRole="button" accessibilityLabel="Show field info" style={styles.infoIcon}>
                   <Ionicons name="information-circle-outline" size={18} color="#8E8E93" />
@@ -576,7 +762,6 @@ export default function QuestionAccordion({
                   <Text style={styles.tooltipText}>{tooltipText}</Text>
                 </Animated.View>
               )}
-            </View>
           </View>
         );
 
@@ -817,7 +1002,7 @@ export default function QuestionAccordion({
               {/* Vocal Button */}
               <Pressable
                 style={[styles.actionButton, (isLocked || isSubmitting) && styles.actionButtonDisabled]}
-                onPress={() => setShowVoiceModal(true)}
+                onPress={() => setShowVocalAnswerRecorder(v => !v)}
                 accessibilityRole="button"
                 accessibilityLabel="record voice"
                 disabled={isLocked || isSubmitting}
@@ -845,6 +1030,57 @@ export default function QuestionAccordion({
               )}
             </View>
 
+            {(showVocalAnswerRecorder || vocalAnswer) && (
+              <View style={[styles.voiceNoteContainer, { marginTop: 16, paddingTop: 16, borderTopWidth: 1, borderTopColor: '#F2F2F7' }]}>
+                {isVocalAnswerRecording ? (
+                    <View style={styles.recordingWrap}>
+                        <Text style={styles.recordingText}>Enregistrement... {formatDuration(vocalAnswerRecordingDuration)}</Text>
+                        <TouchableOpacity style={styles.stopButton} onPress={() => stopRecording('vocalAnswer')}>
+                            <Ionicons name="stop-circle" size={24} color="#dc2626" />
+                        </TouchableOpacity>
+                    </View>
+                ) : (
+                    <View style={styles.voiceActionsContainer}>
+                        {vocalAnswer && vocalAnswer.uri ? (
+                            <View style={styles.audioPlayerWrap}>
+                                <TouchableOpacity style={styles.playButton} onPress={() => playSound('vocalAnswer')}>
+                                    <Ionicons name={isVocalAnswerPlaying ? 'pause-circle' : 'play-circle'} size={28} color="#11224e" />
+                                </TouchableOpacity>
+                                <TouchableOpacity style={[styles.deleteButton, isVocalAnswerTranscribed && styles.buttonDisabled]} onPress={() => resetVoiceNote('vocalAnswer')} disabled={isVocalAnswerTranscribed}>
+                                    <Ionicons name="trash-outline" size={20} color={isVocalAnswerTranscribed ? '#9ca3af' : '#dc2626'} />
+                                </TouchableOpacity>
+                            </View>
+                        ) : (
+                            <TouchableOpacity style={styles.voiceRecordButton} onPress={() => startRecording('vocalAnswer')}>
+                                <View style={styles.buttonContentWrapper}>
+                                    <Ionicons name="mic-outline" size={24} color="#11224e" />
+                                </View>
+                            </TouchableOpacity>
+                        )}
+                        <TouchableOpacity
+                            style={[
+                                styles.voiceRecordButton,
+                                styles.transcribeButton,
+                                (!vocalAnswer || !vocalAnswer.uri || isTranscribing) && styles.buttonDisabled,
+                            ]}
+                            onPress={() => handleTranscribe('vocalAnswer')}
+                            disabled={!vocalAnswer || !vocalAnswer.uri || isTranscribing}
+                        >
+                            {isTranscribing ? (
+                                <ActivityIndicator size="small" color="#11224e" />
+                            ) : (
+                                <View style={styles.buttonContentWrapper}>
+                                    <Ionicons name="volume-high-outline" size={25} color="#11224e" />
+                                    <Ionicons name="arrow-forward-circle-outline" size={20} color="#11224e" />
+                                    <Ionicons name="document-text-outline" size={20} color="#11224e" />
+                                </View>
+                            )}
+                        </TouchableOpacity>
+                    </View>
+                )}
+              </View>
+            )}
+
             {imageAnswer && !isSubmitted && (
                 <View style={styles.imagePreviewContainer}>
                     <Text style={styles.imagePreviewLabel}>Image Attachment:</Text>
@@ -852,27 +1088,6 @@ export default function QuestionAccordion({
                     <Pressable onPress={onImageFileRemove} style={styles.removeImageButton}>
                         <Ionicons name="close-circle" size={24} color="#FF3B30" />
                     </Pressable>
-                </View>
-            )}
-
-            {vocalAnswer && (
-                <View style={styles.voiceNoteContainer}>
-                    <Text style={styles.voiceNoteLabel}>Voice Note:</Text>
-                    <VoiceRecorder
-                        value={vocalAnswer}
-                        onFileSelect={() => {}} 
-                        onFileRemove={() => {
-                            if (onVocalFileRemove) {
-                                onVocalFileRemove();
-                            }
-                        }}
-                        onTranscribe={() => {
-                          if (onTranscribeAudio && vocalAnswer && (vocalAnswer.uri || vocalAnswer.path)) {
-                            onTranscribeAudio(question.id, vocalAnswer.uri || vocalAnswer.path);
-                          }
-                        }}
-                        isTranscribing={isTranscribing}
-                    />
                 </View>
             )}
 
@@ -1016,44 +1231,6 @@ export default function QuestionAccordion({
                 <Ionicons name="camera-outline" size={32} color="#007AFF" />
                 <Text style={styles.cameraOptionText}>Take Photo</Text>
               </Pressable>
-            </View>
-          </View>
-        </View>
-      </Modal>
-
-      {/* Voice Recording Modal */}
-      <Modal
-        visible={showVoiceModal}
-        transparent={true}
-        animationType="slide"
-        onRequestClose={() => setShowVoiceModal(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Record Voice Note</Text>
-              <Pressable onPress={() => setShowVoiceModal(false)}>
-                <Ionicons name="close" size={24} color="#1C1C1E" />
-              </Pressable>
-            </View>
-            
-            <View style={styles.voiceOptionsContainer}>
-              <VoiceRecorder
-                value={vocalAnswer}
-                onFileSelect={(file) => {
-                  if (onVocalFileSelect) {
-                    onVocalFileSelect(file);
-                  }
-                  setShowVoiceModal(false);
-                }}
-                onFileRemove={() => {
-                  if (onVocalFileRemove) {
-                    onVocalFileRemove();
-                  }
-                }}
-                placeholder="Record voice note for this question"
-                maxDuration={300} // 5 minutes
-              />
             </View>
           </View>
         </View>
@@ -1650,4 +1827,60 @@ voiceNoteLabel: {
     color: '#F9FAFB',
     fontSize: 12,
   },
+  voiceActionsContainer: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  voiceRecordButton: {
+    flex: 1,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    height: 50,
+    backgroundColor: '#f1f5f9',
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#f87b1b'
+  },
+  transcribeButton: {},
+  buttonDisabled: { 
+    opacity: 0.5, 
+    backgroundColor: '#e5e7eb' 
+  },
+  buttonContentWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    flex: 1,
+  },
+  recordingWrap: { 
+    flexDirection: 'row', 
+    justifyContent: 'space-between', 
+    alignItems: 'center', 
+    backgroundColor: '#fef2f2', 
+    padding: 12, 
+    borderRadius: 10 
+  },
+  recordingText: { 
+    color: '#dc2626', 
+    fontWeight: '600' 
+  },
+  stopButton: { 
+    padding: 4 
+  },
+  audioPlayerWrap: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    justifyContent: 'space-between', 
+    backgroundColor: '#f1f5f9', 
+    paddingHorizontal: 12, 
+    height: 50, 
+    borderRadius: 10, 
+    flex: 1, 
+    borderWidth: 1, 
+    borderColor: '#f87b1b' 
+  },
+  playButton: {},
+  deleteButton: {},
 });

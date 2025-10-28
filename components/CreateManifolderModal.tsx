@@ -138,7 +138,7 @@ export default function CreateManifolderModal({
               <Ionicons name="close" size={24} color="#6b7280" />
             </TouchableOpacity>
             <View style={styles.headerCenter}>
-              <Text style={styles.headerTitle}>Créer un Manifold</Text>
+              <Text style={styles.headerTitle}>créer un dossier de suivi</Text>
               <Text style={styles.headerSubtitle}>Remplissez les détails ci-dessous</Text>
             </View>
             <View style={styles.placeholder} />
@@ -238,7 +238,7 @@ export default function CreateManifolderModal({
               onPress={handleSubmit}
               disabled={submitting}
             >
-              <Text style={styles.submitButtonText}>{submitting ? 'Création en cours...' : 'Créer le Manifold'}</Text>
+              <Text style={styles.submitButtonText}>{submitting ? 'Création en cours...' : 'Créer le dossier'}</Text>
             </TouchableOpacity>
           </View>
 
