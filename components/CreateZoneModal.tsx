@@ -352,7 +352,7 @@ export default function CreateZoneModal({ visible, onClose, projectId, projectTi
               </View>
 
               <View style={{ gap: 8, marginBottom: 12 }}>
-                <Text style={{ fontSize: 12, color: '#6b7280', marginLeft: 2 }}>Assigné à (optionnel)</Text>
+                <Text style={{ fontSize: 12, color: '#6b7280', marginLeft: 2 }}>Admin</Text>
                 <TouchableOpacity style={[styles.inputWrap, { justifyContent: 'space-between' }]} onPress={() => setAssignOpen(v => !v)}>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1 }}>
                     <Ionicons name="person-outline" size={16} color="#6b7280" />
