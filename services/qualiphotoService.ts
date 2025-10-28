@@ -24,6 +24,8 @@ export type QualiPhotoItem = {
   project_owner_id?: string | null;
   project_control_id?: string | null;
   project_technicien_id?: string | null;
+  conclusion?: string | null;
+  conclusion_audio?: string | null;
 };
 
 export type Comment = {
@@ -57,10 +59,12 @@ type CreateQualiPhotoPayload = {
   id_zone: string;
   title?: string;
   commentaire?: string;
+  conclusion?: string;
   date_taken?: string;
   photo?: { uri: string; name: string; type: string };
   photo_plan?: { uri: string; name: string; type: string };
   voice_note?: { uri: string; name: string; type: string };
+  conclusion_voice_note?: { uri: string; name: string; type: string };
   latitude?: number;
   longitude?: number;
   id_qualiphoto_parent?: string;
@@ -84,6 +88,7 @@ class QualiPhotoService {
       photo_comp: this.toAbsoluteUrl(item.photo_comp ?? null),
       photo_plan: this.toAbsoluteUrl(item.photo_plan ?? null),
       voice_note: this.toAbsoluteUrl(item.voice_note),
+      conclusion_audio: this.toAbsoluteUrl(item.conclusion_audio),
     };
   }
 
@@ -214,6 +219,22 @@ class QualiPhotoService {
     });
   }
 
+  async generateConclusion(description: string, token: string): Promise<{ conclusion: string }> {
+    return this.makeRequest<{ conclusion: string }>('/qualiphoto/generate-conclusion', token, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ description }),
+    });
+  }
+
+  async updateConclusion(qualiphotoId: string, conclusion: string, token: string): Promise<{ success: boolean }> {
+    return this.makeRequest<{ success: boolean }>(`/qualiphoto/${qualiphotoId}/conclusion`, token, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ conclusion }),
+    });
+  }
+
   async compareImages(beforeImageUrl: string, afterImageUrl: string, token: string): Promise<{ description: string }> {
     // Convert absolute URLs from the client to relative paths for the backend
     const beforeRelativeUrl = beforeImageUrl.replace(this.baseUrl, '');
@@ -235,6 +256,7 @@ class QualiPhotoService {
     formData.append('id_zone', payload.id_zone);
     if (payload.title) formData.append('title', payload.title);
     if (payload.commentaire) formData.append('commentaire', payload.commentaire);
+    if (payload.conclusion) formData.append('conclusion', payload.conclusion);
     if (payload.date_taken) formData.append('date_taken', payload.date_taken);
     if (payload.latitude) formData.append('latitude', String(payload.latitude));
     if (payload.longitude) formData.append('longitude', String(payload.longitude));
@@ -261,6 +283,14 @@ class QualiPhotoService {
         uri: payload.voice_note.uri,
         name: payload.voice_note.name,
         type: payload.voice_note.type,
+      } as any);
+    }
+
+    if (payload.conclusion_voice_note) {
+      formData.append('conclusion_audio', {
+        uri: payload.conclusion_voice_note.uri,
+        name: payload.conclusion_voice_note.name,
+        type: payload.conclusion_voice_note.type,
       } as any);
     }
 

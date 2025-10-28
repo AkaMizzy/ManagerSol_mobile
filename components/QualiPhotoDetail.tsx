@@ -13,6 +13,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AppHeader from './AppHeader';
 import { ChildQualiPhotoView } from './ChildQualiPhotoView';
 import ComparisonModal from './ComparisonModal';
+import ConclusionModal from './ConclusionModal';
 import { CreateChildQualiPhotoForm } from './CreateChildQualiPhotoModal';
 import CreateComplementaireQualiPhotoModal from './CreateComplementaireQualiPhotoModal';
 import { ParentQualiPhotoView } from './ParentQualiPhotoView';
@@ -74,6 +75,10 @@ type Props = {
   const [isComparing, setIsComparing] = useState(false);
   const [comparisonDescription, setComparisonDescription] = useState<string | null>(null);
   const [comparisonError, setComparisonError] = useState<string | null>(null);
+  const [conclusion, setConclusion] = useState<string | null>(null);
+  const [isGeneratingConclusion, setIsGeneratingConclusion] = useState(false);
+  const [isConclusionModalVisible, setConclusionModalVisible] = useState(false);
+  const [generatedConclusion, setGeneratedConclusion] = useState<string | null>(null);
 
   // Signature states
   const [signatures, setSignatures] = useState<{
@@ -96,7 +101,41 @@ type Props = {
     setLayoutMode('list');
     setComplement(null);
     setSignatures({ technicien: null, control: null, admin: null });
+    setConclusion(initialItem?.conclusion || null);
+    setGeneratedConclusion(null);
   }, [initialItem]);
+
+  const handleOpenConclusionModal = async () => {
+    if (!token || !item || !item.commentaire) {
+      Alert.alert('Erreur', 'La description est requise pour générer une conclusion.');
+      return;
+    }
+    setConclusionModalVisible(true);
+    setIsGeneratingConclusion(true);
+    setGeneratedConclusion(null);
+    try {
+      const result = await qualiphotoService.generateConclusion(item.commentaire, token);
+      setGeneratedConclusion(result.conclusion);
+    } catch (e: any) {
+      Alert.alert('Erreur', e?.message || 'Une erreur est survenue lors de la génération de la conclusion.');
+      setConclusionModalVisible(false);
+    } finally {
+      setIsGeneratingConclusion(false);
+    }
+  };
+
+  const handleSaveConclusion = async (finalConclusion: string) => {
+    if (!token || !item) return;
+    try {
+      await qualiphotoService.updateConclusion(item.id, finalConclusion, token);
+      setConclusion(finalConclusion);
+      setItem({ ...item, conclusion: finalConclusion });
+      setConclusionModalVisible(false);
+      Alert.alert('Succès', 'Conclusion enregistrée avec succès.');
+    } catch (e: any) {
+      Alert.alert('Erreur', e?.message || 'Une erreur est survenue lors de la sauvegarde de la conclusion.');
+    }
+  };
 
   const handleCompare = async (beforeUrl: string | null, afterUrl: string | null) => {
     if (!token || !beforeUrl || !afterUrl) {
@@ -471,9 +510,6 @@ type Props = {
           setSignatureModalVisible={setSignatureModalVisible}
           setImagePreviewVisible={setImagePreviewVisible}
           childPhotos={children}
-          hasActionsOrDescription={!!hasActionsOrDescription}
-          isActionsVisible={isActionsVisible}
-          setActionsVisible={setActionsVisible}
           playSound={playSound}
           isPlaying={isPlaying}
           handleMapPress={handleMapPress}
@@ -491,6 +527,7 @@ type Props = {
           isLoadingChildren={isLoadingChildren}
           childIdToHasComplement={childIdToHasComplement}
           setItem={setItem}
+          onOpenConclusionModal={handleOpenConclusionModal}
         />
       );
     } else {
@@ -521,7 +558,7 @@ type Props = {
                         return (
         <ChildQualiPhotoView
             item={item}
-            initialItem={initialItem}
+            initialItem={initialItem || null}
             setItem={setItem}
             subtitle={subtitle}
             setEditPlanVisible={setEditPlanVisible}
@@ -724,6 +761,14 @@ type Props = {
         ) : (
           renderDetailView()
         )}
+        <ConclusionModal
+            visible={isConclusionModalVisible}
+            onClose={() => setConclusionModalVisible(false)}
+            onSave={handleSaveConclusion}
+            isGenerating={isGeneratingConclusion}
+            generatedConclusion={generatedConclusion}
+            initialConclusion={conclusion}
+        />
         <CreateDeclarationModal
           visible={isDeclModalVisible}
           onClose={() => setDeclModalVisible(false)}

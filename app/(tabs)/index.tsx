@@ -25,16 +25,17 @@ const GRID_ITEMS: {
   title: string;
   icon?: keyof typeof Ionicons.glyphMap;
   image?: any;
+  disabled?: boolean;
 }[] = [
   { title: 'Réception', image: require('../../assets/icons/folder.png') },
-  { title: 'Planning', image: require('../../assets/icons/planning.png') },
-  { title: 'Calendrier', image: require('../../assets/icons/calendar.png') },
-  { title: 'Manifold', image: require('../../assets/icons/manifolder.png') },
+  { title: 'Suivi', image: require('../../assets/icons/manifolder.png') },
   { title: 'Déclarations', image: require('../../assets/icons/declaration_anomalie.png') },
-  { title: 'Audit', image: require('../../assets/icons/audit_zone.png') },
-  { title: 'Echantillon', image: require('../../assets/icons/prelevement_echantillon.png') },
+  { title: 'Calendrier', image: require('../../assets/icons/calendar.png') },
   { title: 'Inventaires', image: require('../../assets/icons/inventaire_article.png') },
-  { title: 'tesst', image: require('../../assets/icons/reception.png') },
+  { title: 'Planning', image: require('../../assets/icons/planning.png'), disabled: true },
+  { title: 'Audit', image: require('../../assets/icons/audit_zone.png'), disabled: true },
+  { title: 'Echantillon', image: require('../../assets/icons/prelevement_echantillon.png'), disabled: true },
+  { title: 'Test', image: require('../../assets/icons/reception.png'), disabled: true },
   { title: 'Projets', image: require('../../assets/icons/project.png') },
   { title: 'Utilisateurs', image: require('../../assets/icons/users.png') },
   { title: 'Organisme',  image: require('../../assets/icons/company.png') },
@@ -230,7 +231,7 @@ export default function DashboardScreen() {
           {GRID_ITEMS.map((item) => (
             <Pressable
               key={item.title}
-              style={styles.gridButton}
+              style={[styles.gridButton, item.disabled && styles.gridButtonDisabled]}
               onPress={() => {
                 if (item.title === 'Réception') {
                   router.push('/(tabs)/qualiphoto');
@@ -239,7 +240,7 @@ export default function DashboardScreen() {
                 } else if (item.title === 'Calendrier') {
                   LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
                   setIsCalendarVisible(prevState => !prevState);
-                } else if (item.title === 'Manifold') {
+                } else if (item.title === 'Suivi') {
                   router.push('/manifolder');
                 } else if (item.title === 'Déclarations') {
                   router.push('/declaration');
@@ -261,13 +262,14 @@ export default function DashboardScreen() {
                   Alert.alert('Bientôt disponible', `La fonctionnalité ${item.title} est en cours de développement.`);
                 }
               }}
+              disabled={item.disabled}
             >
               {item.image ? (
-                <Image source={item.image} style={styles.gridImage} />
+                <Image source={item.image} style={[styles.gridImage, item.disabled && { opacity: 0.5 }]} />
               ) : (
-                <Ionicons name={item.icon!} size={32} color="#f87b1b" />
+                <Ionicons name={item.icon!} size={32} color={item.disabled ? '#a0a0a0' : '#f87b1b'} />
               )}
-              <Text style={styles.gridButtonText}>{item.title}</Text>
+              <Text style={[styles.gridButtonText, item.disabled && styles.gridButtonTextDisabled]}>{item.title}</Text>
             </Pressable>
           ))}
         </View>
@@ -493,6 +495,10 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#f87b1b',
   },
+  gridButtonDisabled: {
+    backgroundColor: '#f0f0f0',
+    borderColor: '#d0d0d0',
+  },
   gridImage: {
     width: 32,
     height: 32,
@@ -503,6 +509,9 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#11224e',
     textAlign: 'center',
+  },
+  gridButtonTextDisabled: {
+    color: '#a0a0a0',
   },
 
   statsContainer: {

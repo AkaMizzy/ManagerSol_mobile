@@ -1,5 +1,6 @@
 import API_CONFIG from '@/app/config/api';
 import { useAuth } from '@/contexts/AuthContext';
+import aiService from '@/services/aiService';
 import declarationService from '@/services/declarationService';
 import manifolderService from '@/services/manifolderService';
 import { ManifolderDetailsForDeclaration } from '@/types/declaration';
@@ -61,6 +62,8 @@ export default function ManifolderQuestions({
   const [hasBeenSubmittedQuestions, setHasBeenSubmittedQuestions] = useState<Set<string>>(new Set());
   
   const [isPreviewModalVisible, setIsPreviewModalVisible] = useState(false);
+  const [enhancingQuestionId, setEnhancingQuestionId] = useState<string | null>(null);
+  const [transcribingQuestionId, setTranscribingQuestionId] = useState<string | null>(null);
 
   // Signature completion state
   const [signatureStatus, setSignatureStatus] = useState<{
@@ -198,28 +201,6 @@ export default function ManifolderQuestions({
          console.log('No existing answers found');
        }
 
-      // Expand the first unanswered question
-      const sortedQuestions = [...response.questions].sort((a, b) => {
-        const aIsSubmitted = submittedQuestionIds.has(a.id);
-        const bIsSubmitted = submittedQuestionIds.has(b.id);
-        if (aIsSubmitted !== bIsSubmitted) {
-          return aIsSubmitted ? 1 : -1;
-        }
-        const orderA = a.order ?? Number.MAX_SAFE_INTEGER;
-        const orderB = b.order ?? Number.MAX_SAFE_INTEGER;
-        if (orderA !== orderB) {
-          return orderA - orderB;
-        }
-        return a.title.localeCompare(b.title);
-      });
-
-      const firstUnansweredQuestion = sortedQuestions.find(q => !submittedQuestionIds.has(q.id));
-      if (firstUnansweredQuestion) {
-        setExpandedQuestions(new Set([firstUnansweredQuestion.id]));
-      } else {
-        setExpandedQuestions(new Set());
-      }
-
     } catch (error: any) {
       Alert.alert('Error', error.message || 'Failed to load questions');
     } finally {
@@ -276,6 +257,35 @@ export default function ManifolderQuestions({
     } catch (err: any) {
       console.log('Failed to load signature status:', err.message);
       // Don't show error alert for signatures as they're optional
+    }
+  };
+
+  const handleEnhanceText = async (questionId: string, text: string) => {
+    if (!token || !text) return;
+    setEnhancingQuestionId(questionId);
+    try {
+      const enhancedText = await aiService.enhanceText(text, token);
+      // Assuming handleAnswerChange updates the state
+      handleAnswerChange(questionId, enhancedText, quantities[questionId], questionZones[questionId]);
+    } catch (error: any) {
+      Alert.alert('Error', error.message || 'Failed to enhance text.');
+    } finally {
+      setEnhancingQuestionId(null);
+    }
+  };
+
+  const handleTranscribeAudio = async (questionId: string, audioUri: string) => {
+    if (!token) return;
+    setTranscribingQuestionId(questionId);
+    try {
+      const transcribedText = await aiService.transcribeAudio(audioUri, token);
+      const currentAnswer = answers[questionId] || '';
+      const updatedText = currentAnswer ? `${currentAnswer} ${transcribedText}` : transcribedText;
+      handleAnswerChange(questionId, updatedText, quantities[questionId], questionZones[questionId]);
+    } catch (error: any) {
+      Alert.alert('Error', error.message || 'Failed to transcribe audio.');
+    } finally {
+      setTranscribingQuestionId(null);
     }
   };
 
@@ -873,6 +883,10 @@ export default function ManifolderQuestions({
               isSubmitted={submittedQuestions.has(question.id)}
               hasBeenSubmitted={hasBeenSubmittedQuestions.has(question.id)}
               isLocked={signatureStatus?.isComplete || false}
+              onEnhanceText={handleEnhanceText}
+              isEnhancing={enhancingQuestionId === question.id}
+              onTranscribeAudio={handleTranscribeAudio}
+              isTranscribing={transcribingQuestionId === question.id}
               vocalAnswer={vocalAnswers[question.id]}
               imageAnswer={imageAnswers[question.id]}
               onVocalFileSelect={(file) => setVocalAnswers(prev => ({ ...prev, [question.id]: file }))}

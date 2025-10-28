@@ -3,12 +3,12 @@ import { useAuth } from '@/contexts/AuthContext';
 import qualiphotoService, { QualiPhotoItem, QualiProject, QualiZone } from '@/services/qualiphotoService';
 import { Ionicons } from '@expo/vector-icons';
 import { Audio } from 'expo-av';
+import { Image } from 'expo-image';
 import * as Location from 'expo-location';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import DateTimePickerModal from 'react-native-modal-datetime-picker';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Image } from 'expo-image';
 
 type Props = {
   visible: boolean;
@@ -27,7 +27,9 @@ export default function CreateQualiPhotoModal({ visible, onClose, onSuccess, ini
   const [title, setTitle] = useState<string>('');
   const [dateTaken, setDateTaken] = useState<string>('');
   const [comment, setComment] = useState<string>('');
+  const [conclusion, setConclusion] = useState<string>('');
   const [voiceNote, setVoiceNote] = useState<{ uri: string; name: string; type: string } | null>(null);
+  const [conclusionVoiceNote, setConclusionVoiceNote] = useState<{ uri: string; name: string; type: string } | null>(null);
   const [latitude, setLatitude] = useState<number | null>(null);
   const [longitude, setLongitude] = useState<number | null>(null);
   const [, setLocationStatus] = useState<'idle' | 'fetching' | 'success' | 'error'>('idle');
@@ -47,8 +49,17 @@ export default function CreateQualiPhotoModal({ visible, onClose, onSuccess, ini
   const [isTranscribed, setIsTranscribed] = useState(false);
   const [isEnhancing, setIsEnhancing] = useState(false);
 
+  const [conclusionSound, setConclusionSound] = useState<Audio.Sound | null>(null);
+  const [isConclusionRecording, setIsConclusionRecording] = useState(false);
+  const [isConclusionPlaying, setIsConclusionPlaying] = useState(false);
+  const [conclusionRecordingDuration, setConclusionRecordingDuration] = useState(0);
+  const [isConclusionTranscribing, setIsConclusionTranscribing] = useState(false);
+  const [isConclusionTranscribed, setIsConclusionTranscribed] = useState(false);
+  const [isConclusionEnhancing, setIsConclusionEnhancing] = useState(false);
+  
   const scrollViewRef = useRef<ScrollView>(null);
   const durationIntervalRef = useRef<number | null>(null);
+  const conclusionDurationIntervalRef = useRef<number | null>(null);
 
   const projectTitle = useMemo(() => {
     if (!selectedProject) return 'Sélectionner un projet';
@@ -142,8 +153,10 @@ export default function CreateQualiPhotoModal({ visible, onClose, onSuccess, ini
         id_zone: selectedZone,
         title: title || undefined,
         commentaire: comment || undefined,
+        conclusion: conclusion || undefined,
         date_taken: dateTaken || undefined,
         voice_note: voiceNote || undefined,
+        conclusion_voice_note: conclusionVoiceNote || undefined,
         latitude: latitude || undefined,
         longitude: longitude || undefined,
       }, token);
@@ -154,13 +167,19 @@ export default function CreateQualiPhotoModal({ visible, onClose, onSuccess, ini
       setTitle('');
       setDateTaken('');
       setComment('');
+      setConclusion('');
       setVoiceNote(null);
+      setConclusionVoiceNote(null);
       setLatitude(null);
       setLongitude(null);
       setLocationStatus('idle');
       if (sound) {
         sound.unloadAsync();
         setSound(null);
+      }
+      if (conclusionSound) {
+        conclusionSound.unloadAsync();
+        setConclusionSound(null);
       }
       onClose();
     } catch (e: any) {
@@ -176,13 +195,19 @@ export default function CreateQualiPhotoModal({ visible, onClose, onSuccess, ini
     setTitle('');
     setDateTaken('');
     setComment('');
+    setConclusion('');
     setVoiceNote(null);
+    setConclusionVoiceNote(null);
     setLatitude(null);
     setLongitude(null);
     setLocationStatus('idle');
     if (sound) {
       sound.unloadAsync();
       setSound(null);
+    }
+    if (conclusionSound) {
+      conclusionSound.unloadAsync();
+      setConclusionSound(null);
     }
     setError(null);
     setProjectOpen(false);
@@ -292,9 +317,115 @@ export default function CreateQualiPhotoModal({ visible, onClose, onSuccess, ini
     }
   };
 
+  async function startConclusionRecording() {
+    try {
+      const { status } = await Audio.requestPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission Denied', 'Microphone access is required to record audio.');
+        return;
+      }
+      await Audio.setAudioModeAsync({ allowsRecordingIOS: true, playsInSilentModeIOS: true });
+      const { recording } = await Audio.Recording.createAsync(Audio.RecordingOptionsPresets.HIGH_QUALITY);
+      setRecording(recording);
+      setIsConclusionRecording(true);
+      conclusionDurationIntervalRef.current = setInterval(() => {
+        setConclusionRecordingDuration(prev => prev + 1);
+      }, 1000);
+    } catch (err) {
+      console.error('Failed to start conclusion recording', err);
+    }
+  }
+
+  async function stopConclusionRecording() {
+    if (!recording) return;
+    setIsConclusionRecording(false);
+    if (conclusionDurationIntervalRef.current) clearInterval(conclusionDurationIntervalRef.current);
+    await recording.stopAndUnloadAsync();
+    const uri = recording.getURI();
+    if (uri) {
+      setConclusionVoiceNote({ uri, name: `conclusion-voicenote-${Date.now()}.m4a`, type: 'audio/m4a' });
+      setIsConclusionTranscribed(false);
+    }
+    setConclusionRecordingDuration(0);
+    setRecording(null);
+  }
+
+  async function playConclusionSound() {
+    if (!conclusionVoiceNote) return;
+    if (isConclusionPlaying && conclusionSound) {
+      await conclusionSound.pauseAsync();
+      setIsConclusionPlaying(false);
+      return;
+    }
+    if (conclusionSound) {
+      await conclusionSound.playAsync();
+      setIsConclusionPlaying(true);
+      return;
+    }
+    const { sound: newSound } = await Audio.Sound.createAsync({ uri: conclusionVoiceNote.uri });
+    setConclusionSound(newSound);
+    setIsConclusionPlaying(true);
+    newSound.setOnPlaybackStatusUpdate((status) => {
+      if (status.isLoaded && status.didJustFinish) {
+        setIsConclusionPlaying(false);
+        newSound.setPositionAsync(0);
+      }
+    });
+    await newSound.playAsync();
+  }
+
+  const resetConclusionVoiceNote = () => {
+    if (conclusionSound) conclusionSound.unloadAsync();
+    setConclusionVoiceNote(null);
+    setConclusionSound(null);
+    setIsConclusionPlaying(false);
+    setIsConclusionTranscribed(false);
+  };
+
+  const handleConclusionTranscribe = async () => {
+    if (!conclusionVoiceNote || !token) {
+      Alert.alert('Erreur', 'Aucune note vocale à transcrire.');
+      return;
+    }
+    setIsConclusionTranscribing(true);
+    setError(null);
+    try {
+      const result = await qualiphotoService.transcribeVoiceNote(conclusionVoiceNote, token);
+      setConclusion(prev => prev ? `${prev}\n${result.transcription}` : result.transcription);
+      setIsConclusionTranscribed(true);
+    } catch (e: any) {
+      setError(e?.message || 'Échec de la transcription');
+      Alert.alert('Erreur de Transcription', e?.message || 'Une erreur est survenue lors de la transcription.');
+    } finally {
+      setIsConclusionTranscribing(false);
+    }
+  };
+
+  const handleEnhanceConclusion = async () => {
+    if (!conclusion || !token) {
+      Alert.alert('Erreur', 'Aucune conclusion à améliorer.');
+      return;
+    }
+    setIsConclusionEnhancing(true);
+    setError(null);
+    try {
+      const result = await qualiphotoService.enhanceDescription(conclusion, token);
+      setConclusion(result.enhancedDescription);
+    } catch (e: any) {
+      setError(e?.message || 'Échec de l\'amélioration');
+      Alert.alert('Erreur d\'amélioration', e?.message || 'Une erreur est survenue lors de l\'amélioration de la conclusion.');
+    } finally {
+      setIsConclusionEnhancing(false);
+    }
+  };
+
   useEffect(() => {
     return sound ? () => { sound.unloadAsync(); } : undefined;
   }, [sound]);
+
+  useEffect(() => {
+    return conclusionSound ? () => { conclusionSound.unloadAsync(); } : undefined;
+  }, [conclusionSound]);
 
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={handleClose}>
@@ -478,7 +609,7 @@ export default function CreateQualiPhotoModal({ visible, onClose, onSuccess, ini
                       placeholderTextColor="#9ca3af"
                       value={comment}
                       onChangeText={setComment}
-                      style={[styles.input, { height: 350, paddingRight: 40 }]}
+                      style={[styles.input, { height: 250, paddingRight: 40 }]}
                       multiline
                       numberOfLines={6}
                       textAlignVertical="top"
@@ -499,6 +630,89 @@ export default function CreateQualiPhotoModal({ visible, onClose, onSuccess, ini
                             <Ionicons name="sparkles-outline" size={20} color={!comment ? '#d1d5db' : '#f87b1b'} />
                         )}
                     </TouchableOpacity>
+                  </View>
+                </View>
+
+                {/* Conclusion Section */}
+                <View style={{ marginTop: 16 }}>
+                  <View style={styles.voiceNoteContainer}>
+                    {isConclusionRecording ? (
+                      <View style={styles.recordingWrap}>
+                        <Text style={styles.recordingText}>Enregistrement... {formatDuration(conclusionRecordingDuration)}</Text>
+                        <TouchableOpacity style={styles.stopButton} onPress={stopConclusionRecording}>
+                          <Ionicons name="stop-circle" size={24} color="#dc2626" />
+                        </TouchableOpacity>
+                      </View>
+                    ) : (
+                      <View style={styles.voiceActionsContainer}>
+                        {conclusionVoiceNote ? (
+                          <View style={styles.audioPlayerWrap}>
+                            <TouchableOpacity style={styles.playButton} onPress={playConclusionSound}>
+                              <Ionicons name={isConclusionPlaying ? 'pause-circle' : 'play-circle'} size={28} color="#11224e" />
+                            </TouchableOpacity>
+                            <TouchableOpacity style={[styles.deleteButton, isConclusionTranscribed && styles.buttonDisabled]} onPress={resetConclusionVoiceNote} disabled={isConclusionTranscribed}>
+                              <Ionicons name="trash-outline" size={20} color={isConclusionTranscribed ? '#9ca3af' : '#dc2626'} />
+                            </TouchableOpacity>
+                          </View>
+                        ) : (
+                          <TouchableOpacity style={styles.voiceRecordButton} onPress={startConclusionRecording}>
+                            <View style={styles.buttonContentWrapper}>
+                              <Ionicons name="mic-outline" size={24} color="#11224e" />
+                            </View>
+                          </TouchableOpacity>
+                        )}
+                        <TouchableOpacity
+                          style={[
+                            styles.voiceRecordButton,
+                            styles.transcribeButton,
+                            (!conclusionVoiceNote || isConclusionTranscribing) && styles.buttonDisabled,
+                          ]}
+                          onPress={handleConclusionTranscribe}
+                          disabled={!conclusionVoiceNote || isConclusionTranscribing}
+                        >
+                          {isConclusionTranscribing ? (
+                            <ActivityIndicator size="small" color="#11224e" />
+                          ) : (
+                            <View style={styles.buttonContentWrapper}>
+                              <Ionicons name="volume-high-outline" size={25} color="#11224e" />
+                              <Ionicons name="arrow-forward-circle-outline" size={20} color="#11224e" />
+                              <Ionicons name="document-text-outline" size={20} color="#11224e" />
+                            </View>
+                          )}
+                        </TouchableOpacity>
+                      </View>
+                    )}
+                    <View style={{ marginTop: 16 }}>
+                      <View style={[styles.inputWrap, { alignItems: 'flex-start' }]}>
+                        <Ionicons name="chatbubble-ellipses-outline" size={16} color="#6b7280" style={{ marginTop: 4 }} />
+                        <TextInput
+                          placeholder="Conclusion"
+                          placeholderTextColor="#9ca3af"
+                          value={conclusion}
+                          onChangeText={setConclusion}
+                          style={[styles.input, { height: 250, paddingRight: 40 }]}
+                          multiline
+                          numberOfLines={6}
+                          textAlignVertical="top"
+                          onFocus={() => {
+                            setTimeout(() => {
+                              scrollViewRef.current?.scrollToEnd({ animated: true });
+                            }, 300);
+                          }}
+                        />
+                        <TouchableOpacity
+                            style={styles.enhanceButton}
+                            onPress={handleEnhanceConclusion}
+                            disabled={isConclusionEnhancing || !conclusion}
+                        >
+                            {isConclusionEnhancing ? (
+                                <ActivityIndicator size="small" color="#f87b1b" />
+                            ) : (
+                                <Ionicons name="sparkles-outline" size={20} color={!conclusion ? '#d1d5db' : '#f87b1b'} />
+                            )}
+                        </TouchableOpacity>
+                      </View>
+                    </View>
                   </View>
                 </View>
               </View>

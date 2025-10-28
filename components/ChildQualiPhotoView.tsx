@@ -1,14 +1,14 @@
 import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
 import {
-    ActivityIndicator,
-    Image,
-    Pressable,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Image,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import { ICONS } from '../constants/Icons';
 import { Comment, QualiPhotoItem } from '../services/qualiphotoService';
@@ -106,7 +106,7 @@ export const ChildQualiPhotoView: React.FC<ChildQualiPhotoViewProps> = ({
     const header = (
         <View style={styles.header}>
           {item?.id_qualiphoto_parent ? (
-            <Pressable onPress={() => setItem(initialItem)} style={styles.closeBtn}>
+            <Pressable onPress={() => setItem(initialItem || null)} style={styles.closeBtn}>
               <Ionicons name="arrow-back" size={28} color="#f87b1b" />
             </Pressable>
           ) : (

@@ -8,6 +8,7 @@ import {
   StyleSheet,
   Text,
   View,
+  ActivityIndicator,
 } from 'react-native';
 
 interface VoiceRecorderProps {
@@ -16,6 +17,8 @@ interface VoiceRecorderProps {
   onFileRemove: () => void;
   placeholder?: string;
   maxDuration?: number; // in seconds
+  onTranscribe?: () => void;
+  isTranscribing?: boolean;
 }
 
 export default function VoiceRecorder({
@@ -24,6 +27,8 @@ export default function VoiceRecorder({
   onFileRemove,
   placeholder = 'Record voice message',
   maxDuration = 300, // 5 minutes default
+  onTranscribe,
+  isTranscribing = false,
 }: VoiceRecorderProps) {
   const [recording, setRecording] = useState<Audio.Recording | null>(null);
   const [isRecording, setIsRecording] = useState(false);
@@ -206,6 +211,20 @@ export default function VoiceRecorder({
               </Pressable>
             )}
             
+            {onTranscribe && (
+              <Pressable 
+                style={styles.controlButton} 
+                onPress={onTranscribe}
+                disabled={isTranscribing}
+              >
+                {isTranscribing ? (
+                  <ActivityIndicator size="small" color="#f87b1b" />
+                ) : (
+                  <Ionicons name="text-outline" size={20} color="#f87b1b" />
+                )}
+              </Pressable>
+            )}
+
             <Pressable style={styles.removeButton} onPress={onFileRemove}>
               <Ionicons name="close-circle" size={20} color="#FF3B30" />
             </Pressable>

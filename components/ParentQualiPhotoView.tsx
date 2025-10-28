@@ -50,9 +50,6 @@ type ParentQualiPhotoViewProps = {
     setSignatureModalVisible: (visible: boolean) => void;
     setImagePreviewVisible: (visible: boolean) => void;
     childPhotos: QualiPhotoItem[];
-    hasActionsOrDescription: boolean;
-    isActionsVisible: boolean;
-    setActionsVisible: React.Dispatch<React.SetStateAction<boolean>>;
     playSound: () => void;
     isPlaying: boolean;
     handleMapPress: () => void;
@@ -70,6 +67,7 @@ type ParentQualiPhotoViewProps = {
     isLoadingChildren: boolean;
     childIdToHasComplement: Record<string, boolean>;
     setItem: (item: QualiPhotoItem) => void;
+    onOpenConclusionModal: () => void;
   };
   
 
@@ -83,9 +81,6 @@ type ParentQualiPhotoViewProps = {
     setSignatureModalVisible,
     setImagePreviewVisible,
     childPhotos,
-    hasActionsOrDescription,
-    isActionsVisible,
-    setActionsVisible,
     playSound,
     isPlaying,
     handleMapPress,
@@ -103,6 +98,7 @@ type ParentQualiPhotoViewProps = {
     isLoadingChildren,
     childIdToHasComplement,
     setItem,
+    onOpenConclusionModal,
   }) => {
     const header = (
         <View style={styles.header}>
@@ -156,80 +152,74 @@ type ParentQualiPhotoViewProps = {
         <>
         {header}
         <View style={{ paddingHorizontal: 12, paddingTop: 12, paddingBottom: 12 }}>
-          {item.photo ? (
-            <PhotoCard
-              uri={item.photo}
-              title={item.title}
-              userName={item.user_name}
-              userLastName={item.user_lastname}
-              date={item.date_taken}
-              onPress={() => setImagePreviewVisible(true)}
-              onToggleActions={() => setActionsVisible(v => !v)}
-              isActionsVisible={isActionsVisible}
-            />
-          ) : (
-            hasActionsOrDescription ? (
-              <View style={{ alignItems: 'flex-end', marginBottom: 8 }}>
-                <TouchableOpacity
-                  style={styles.inlineActionsButton}
-                  onPress={() => setActionsVisible(v => !v)}
-                  accessibilityLabel={isActionsVisible ? 'Masquer les actions' : 'Afficher les actions'}
-                >
-                  <Ionicons name={isActionsVisible ? 'close' : 'ellipsis-horizontal'} size={20} color="#11224e" />
-                </TouchableOpacity>
+          <View style={styles.folderCard}>
+            <View style={styles.folderHeader}>
+              <View style={styles.folderIconContainer}>
+                <Ionicons name="folder-outline" size={24} color="#f87b1b" />
               </View>
-            ) : null
-          )}
+              <View style={styles.folderTitleContainer}>
+                <Text style={styles.folderTitle} numberOfLines={1}>{item.title}</Text>
+                <Text style={styles.folderSubtitle} numberOfLines={1}>{subtitle}</Text>
+              </View>
+            </View>
+            <View style={styles.folderMeta}>
+              <Text style={styles.folderMetaText} numberOfLines={1}>
+                {item.user_name} {item.user_lastname}
+              </Text>
+              <Text style={styles.folderMetaText}>{item.date_taken ? formatDate(item.date_taken) : ''}</Text>
+            </View>
+
+            <View style={styles.folderContentContainer}>
+              <PhotoActions
+                item={item}
+                isPlaying={isPlaying}
+                onPlaySound={playSound}
+                onMapPress={handleMapPress}
+                onAddComment={() => setCommentModalVisible(true)}
+                onAddComplement={() => setComplementModalVisible(true)}
+              />
+              
+              {(typeof item.commentaire === 'string' && item.commentaire.trim().length > 0) && (
+                <View>
+                  <Text style={styles.metaLabel}>Description</Text>
+                  <Text style={styles.metaValue}>{item.commentaire}</Text>
+                </View>
+              )}
+
+              <TouchableOpacity onPress={onOpenConclusionModal} style={styles.compareButton}>
+                <Image source={ICONS.chatgpt} style={{ width: 22, height: 22 }} />
+                <Text style={styles.compareButtonText}>Conclusion</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
         </View>
         <ScrollView bounces>
           <View style={[styles.content, { paddingTop: 0 }]}>
-            {isActionsVisible && (
-              <>
-                <PhotoActions
-                  item={item}
-                  isPlaying={isPlaying}
-                  onPlaySound={playSound}
-                  onMapPress={handleMapPress}
-                  onAddComment={() => setCommentModalVisible(true)}
-                  onAddComplement={() => setComplementModalVisible(true)}
-                />
-                {(typeof item.commentaire === 'string' && item.commentaire.trim().length > 0) ? (
-                  <View style={styles.metaCard}>
-                    {typeof item.commentaire === 'string' && item.commentaire.trim().length > 0 ? (
-                      <View style={[styles.metaRow, { borderTopWidth: 0, paddingTop: 0 }]}>
-                        <Text style={styles.metaLabel}>Description</Text>
-                        <Text style={[styles.metaValue, styles.metaMultiline]}>{item.commentaire}</Text>
-                      </View>
+            {item.id_qualiphoto_parent && (
+              <View style={styles.metaCard}>
+                <Text style={styles.sectionTitle}>Photo après</Text>
+                {isLoadingComplement ? (
+                  <ActivityIndicator style={{ marginVertical: 12 }} />
+                ) : complement ? (
+                  <View>
+                    {(complement.photo_comp || complement.photo) ? (
+                      (() => {
+                        const compUri = complement.photo_comp || complement.photo;
+                        if (!compUri) return null;
+                        return (
+                          <TouchableOpacity onPress={() => setImagePreviewVisible(true)} activeOpacity={0.9}>
+                            <View style={styles.imageWrap}>
+                              <Image source={{ uri: compUri }} style={styles.image} />
+                            </View>
+                          </TouchableOpacity>
+                        );
+                      })()
                     ) : null}
                   </View>
-                ) : null}
-                {item.id_qualiphoto_parent && (
-                  <View style={styles.metaCard}>
-                    <Text style={styles.sectionTitle}>Photo après</Text>
-                    {isLoadingComplement ? (
-                      <ActivityIndicator style={{ marginVertical: 12 }} />
-                    ) : complement ? (
-                      <View>
-                        {(complement.photo_comp || complement.photo) ? (
-                          (() => {
-                            const compUri = complement.photo_comp || complement.photo;
-                            if (!compUri) return null;
-                            return (
-                              <TouchableOpacity onPress={() => setImagePreviewVisible(true)} activeOpacity={0.9}>
-                                <View style={styles.imageWrap}>
-                                  <Image source={{ uri: compUri }} style={styles.image} />
-                                </View>
-                              </TouchableOpacity>
-                            );
-                          })()
-                        ) : null}
-                      </View>
-                    ) : (
-                      <Text style={styles.noChildrenText}>Aucune photo après.</Text>
-                    )}
-                  </View>
+                ) : (
+                  <Text style={styles.noChildrenText}>Aucune photo après.</Text>
                 )}
-              </>
+              </View>
             )}
             {item.after === 1 && (comments.length > 0 || isLoadingComments) && (
               <View style={styles.metaCard}>
@@ -359,6 +349,63 @@ const styles = StyleSheet.create({
         borderRadius: 30,
         borderWidth: 1,
         borderColor: '#f87b1b',
+      },
+      folderCard: {
+        backgroundColor: '#FFFFFF',
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: '#E5E5EA',
+        padding: 16,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.06,
+        shadowRadius: 12,
+        elevation: 2,
+      },
+      folderHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 12,
+      },
+      folderIconContainer: {
+        width: 44,
+        height: 44,
+        borderRadius: 22,
+        backgroundColor: '#F2F2F7',
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginRight: 12,
+        borderWidth: 1,
+        borderColor: '#f87b1b',
+      },
+      folderTitleContainer: {
+        flex: 1,
+      },
+      folderTitle: {
+        fontSize: 16,
+        fontWeight: '700',
+        color: '#11224e',
+      },
+      folderSubtitle: {
+        fontSize: 12,
+        color: '#8E8E93',
+      },
+      folderMeta: {
+        borderTopWidth: 1,
+        borderTopColor: '#E5E5EA',
+        paddingTop: 12,
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+      },
+      folderMetaText: {
+        fontSize: 12,
+        color: '#6b7280',
+        flexShrink: 1,
+      },
+      folderContentContainer: {
+        paddingTop: 12,
+        marginTop: 12,
+        gap: 12,
       },
       title: {
         fontSize: 16,
@@ -591,5 +638,23 @@ const styles = StyleSheet.create({
         backgroundColor: '#f87b1b',
         marginVertical: 16,
         marginHorizontal: 12,
+      },
+      compareButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: 10,
+        paddingVertical: 6,
+        borderRadius: 8,
+        backgroundColor: '#fff7ed',
+        borderColor: '#f87b1b',
+        borderWidth: 1,
+        gap: 6,
+        alignSelf: 'flex-start',
+        marginTop: 8,
+      },
+      compareButtonText: {
+        fontSize: 12,
+        fontWeight: '600',
+        color: '#f87b1b',
       },
 });

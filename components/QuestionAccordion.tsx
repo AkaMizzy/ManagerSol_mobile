@@ -1,3 +1,4 @@
+import { ICONS } from '@/constants/Icons';
 import { ManifolderQuestion, QuestionType, Zone } from '@/types/manifolder';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
@@ -47,6 +48,10 @@ interface QuestionAccordionProps {
   imageAnswer?: any;
   onImageFileSelect?: (file: { uri: string; name: string; type: string }) => void;
   onImageFileRemove?: () => void;
+  onEnhanceText?: (questionId: string, text: string) => void;
+  isEnhancing?: boolean;
+  onTranscribeAudio?: (questionId: string, audioUri: string) => void;
+  isTranscribing?: boolean;
 }
 
 export default function QuestionAccordion({
@@ -54,7 +59,6 @@ export default function QuestionAccordion({
   value,
   quantity,
   selectedZoneId,
-  selectedStatus,
   availableZones,
   defaultZoneId,
   manifolderId,
@@ -75,17 +79,42 @@ export default function QuestionAccordion({
   imageAnswer,
   onImageFileSelect,
   onImageFileRemove,
+  onEnhanceText,
+  isEnhancing = false,
+  onTranscribeAudio,
+  isTranscribing = false,
 }: QuestionAccordionProps) {
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [animatedHeight] = useState(new Animated.Value(0));
   const [showPreview, setShowPreview] = useState(false);
   const [questionZoneId, setQuestionZoneId] = useState(selectedZoneId || defaultZoneId);
-  const [questionStatus, setQuestionStatus] = useState(selectedStatus || 0);
   const [showZoneModal, setShowZoneModal] = useState(false);
-  const [showStatusModal, setShowStatusModal] = useState(false);
   const [showCameraModal, setShowCameraModal] = useState(false);
   const [showVoiceModal, setShowVoiceModal] = useState(false);
   const [showListModal, setShowListModal] = useState(false);
+
+  // Tooltip state for compact labels
+  const [tooltipVisible, setTooltipVisible] = useState(false);
+  const [tooltipText, setTooltipText] = useState<string | null>(null);
+  const [tooltipAnim] = useState(new Animated.Value(0));
+  let tooltipTimer: ReturnType<typeof setTimeout> | null = null;
+
+  const showInfo = (text?: string) => {
+    if (!text) return;
+    if (tooltipTimer) clearTimeout(tooltipTimer);
+    setTooltipText(text);
+    setTooltipVisible(true);
+    tooltipAnim.setValue(0);
+    Animated.timing(tooltipAnim, { toValue: 1, duration: 180, useNativeDriver: true }).start();
+    tooltipTimer = setTimeout(() => hideInfo(), 2500);
+  };
+
+  const hideInfo = () => {
+    Animated.timing(tooltipAnim, { toValue: 0, duration: 150, useNativeDriver: true }).start(() => {
+      setTooltipVisible(false);
+      setTooltipText(null);
+    });
+  };
 
   React.useEffect(() => {
     Animated.timing(animatedHeight, {
@@ -95,18 +124,13 @@ export default function QuestionAccordion({
     }).start();
   }, [isExpanded, animatedHeight]);
 
-  const handleValueChange = (newValue: any, newQuantity?: number, zoneId?: string, status?: number) => {
-    onValueChange(question.id, newValue, newQuantity, zoneId || questionZoneId, status || questionStatus);
+  const handleValueChange = (newValue: any, newQuantity?: number, zoneId?: string) => {
+    onValueChange(question.id, newValue, newQuantity, zoneId || questionZoneId);
   };
 
   const handleZoneChange = (zoneId: string) => {
     setQuestionZoneId(zoneId);
-    onValueChange(question.id, value, quantity, zoneId, questionStatus);
-  };
-
-  const handleStatusChange = (status: number) => {
-    setQuestionStatus(status);
-    onValueChange(question.id, value, quantity, questionZoneId, status);
+    onValueChange(question.id, value, quantity, zoneId);
   };
 
   const formatDate = (date: Date) => {
@@ -114,17 +138,6 @@ export default function QuestionAccordion({
     const m = String(date.getMonth() + 1).padStart(2, '0');
     const day = String(date.getDate()).padStart(2, '0');
     return `${y}-${m}-${day}`;
-  };
-
-  const getStatusLabel = (status: number) => {
-    const statusLabels = {
-      0: 'Not Started',
-      1: 'In Progress',
-      2: 'Completed',
-      3: 'On Hold',
-      4: 'Cancelled'
-    };
-    return statusLabels[status as keyof typeof statusLabels] || 'Not Started';
   };
 
   const handleCameraCapture = async () => {
@@ -227,81 +240,155 @@ export default function QuestionAccordion({
       case 'text':
         return (
           <View style={styles.inputContainer}>
-            {question.description && (
-              <Text style={styles.inputLabel}>{question.description}</Text>
-            )}
-            <TextInput
-              style={styles.textInput}
-              value={value || ''}
-              onChangeText={handleValueChange}
-              placeholder={question.placeholder || 'Enter your answer...'}
-              multiline
-              numberOfLines={3}
-            />
+            <View style={styles.inputWithInfo}>
+              <TextInput
+                style={styles.textInput}
+                value={value || ''}
+                onChangeText={handleValueChange}
+                placeholder={question.placeholder || 'Enter your answer...'}
+                multiline
+                numberOfLines={3}
+              />
+              {!!question.description && (
+                <Pressable
+                  onPress={() => showInfo(question.description ?? undefined)}
+                  accessibilityRole="button"
+                  accessibilityLabel="Show field info"
+                  style={styles.infoIcon}
+                >
+                  <Ionicons name="information-circle-outline" size={18} color="#8E8E93" />
+                </Pressable>
+              )}
+              {tooltipVisible && tooltipText && (
+                <Animated.View
+                  pointerEvents="none"
+                  style={[
+                    styles.tooltip,
+                    {
+                      opacity: tooltipAnim,
+                      transform: [{ translateY: tooltipAnim.interpolate({ inputRange: [0, 1], outputRange: [-6, 0] }) }],
+                    },
+                  ]}
+                >
+                  <Text style={styles.tooltipText}>{tooltipText}</Text>
+                </Animated.View>
+              )}
+            </View>
           </View>
         );
 
       case 'long_text':
         return (
           <View style={styles.inputContainer}>
-            {question.description && (
-              <Text style={styles.inputLabel}>{question.description}</Text>
-            )}
-            <TextInput
-              style={styles.longTextInput}
-              value={value || ''}
-              onChangeText={handleValueChange}
-              placeholder={question.placeholder || 'Enter your detailed answer...'}
-              multiline
-              numberOfLines={8}
-              textAlignVertical="top"
-            />
+            <View style={styles.longTextInputContainer}>
+              <TextInput
+                style={styles.longTextInput}
+                value={value || ''}
+                onChangeText={handleValueChange}
+                placeholder={question.placeholder || 'Enter your detailed answer...'}
+                multiline
+                numberOfLines={8}
+                textAlignVertical="top"
+              />
+              {onEnhanceText && (
+                <Pressable
+                  onPress={() => onEnhanceText(question.id, value)}
+                  style={styles.enhanceButton}
+                  disabled={isEnhancing || !value}
+                  accessibilityRole="button"
+                  accessibilityLabel="Enhance text"
+                >
+                  <Ionicons name="sparkles-outline" size={24} color={isEnhancing ? '#fbbf24' : '#f87b1b'} />
+                </Pressable>
+              )}
+              {!!question.description && (
+                <Pressable
+                  onPress={() => showInfo(question.description ?? undefined)}
+                  accessibilityRole="button"
+                  accessibilityLabel="Show field info"
+                  style={[styles.infoIcon, { right: 44 }]}
+                >
+                  <Ionicons name="information-circle-outline" size={18} color="#8E8E93" />
+                </Pressable>
+              )}
+              {tooltipVisible && tooltipText && (
+                <Animated.View
+                  pointerEvents="none"
+                  style={[
+                    styles.tooltip,
+                    {
+                      opacity: tooltipAnim,
+                      transform: [{ translateY: tooltipAnim.interpolate({ inputRange: [0, 1], outputRange: [-6, 0] }) }],
+                    },
+                  ]}
+                >
+                  <Text style={styles.tooltipText}>{tooltipText}</Text>
+                </Animated.View>
+              )}
+            </View>
           </View>
         );
 
       case 'number':
         return (
           <View style={styles.inputContainer}>
-            {question.description && (
-              <Text style={styles.inputLabel}>{question.description}</Text>
-            )}
-            <TextInput
-              style={styles.textInput}
-              value={value?.toString() || ''}
-              onChangeText={(text) => {
-                const numValue = parseFloat(text);
-                handleValueChange(isNaN(numValue) ? '' : numValue);
-              }}
-              placeholder={question.placeholder || 'Enter a number...'}
-              keyboardType="numeric"
-            />
+            <View style={styles.inputWithInfo}>
+              <TextInput
+                style={styles.textInput}
+                value={value?.toString() || ''}
+                onChangeText={(text) => {
+                  const numValue = parseFloat(text);
+                  handleValueChange(isNaN(numValue) ? '' : numValue);
+                }}
+                placeholder={question.placeholder || 'Enter a number...'}
+                keyboardType="numeric"
+              />
+              {!!question.description && (
+                <Pressable onPress={() => showInfo(question.description ?? undefined)} accessibilityRole="button" accessibilityLabel="Show field info" style={styles.infoIcon}>
+                  <Ionicons name="information-circle-outline" size={18} color="#8E8E93" />
+                </Pressable>
+              )}
+              {tooltipVisible && tooltipText && (
+                <Animated.View pointerEvents="none" style={[styles.tooltip, { opacity: tooltipAnim, transform: [{ translateY: tooltipAnim.interpolate({ inputRange: [0, 1], outputRange: [-6, 0] }) }] }]}>
+                  <Text style={styles.tooltipText}>{tooltipText}</Text>
+                </Animated.View>
+              )}
+            </View>
           </View>
         );
 
       case 'taux':
         return (
           <View style={styles.inputContainer}>
-            {question.description && (
-              <Text style={styles.inputLabel}>{question.description}</Text>
-            )}
-            <View style={styles.tauxContainer}>
-              <TextInput
-                style={styles.tauxInput}
-                value={value?.toString() || ''}
-                onChangeText={(text) => {
-                  const numValue = parseFloat(text);
-                  if (isNaN(numValue)) {
-                    handleValueChange('');
-                  } else if (numValue >= 0 && numValue <= 100) {
-                    handleValueChange(numValue);
-                  }
-                  // If value is outside range, don't update (silently ignore)
-                }}
-                placeholder={question.placeholder || 'Enter percentage (0-100)...'}
-                keyboardType="numeric"
-                maxLength={5} // Allow up to 100.0
-              />
-              <Text style={styles.tauxUnit}>%</Text>
+            <View style={styles.inputWithInfo}>
+              <View style={styles.tauxContainer}>
+                <TextInput
+                  style={styles.tauxInput}
+                  value={value?.toString() || ''}
+                  onChangeText={(text) => {
+                    const numValue = parseFloat(text);
+                    if (isNaN(numValue)) {
+                      handleValueChange('');
+                    } else if (numValue >= 0 && numValue <= 100) {
+                      handleValueChange(numValue);
+                    }
+                  }}
+                  placeholder={question.placeholder || 'Enter percentage (0-100)...'}
+                  keyboardType="numeric"
+                  maxLength={5}
+                />
+                <Text style={styles.tauxUnit}>%</Text>
+              </View>
+              {!!question.description && (
+                <Pressable onPress={() => showInfo(question.description ?? undefined)} accessibilityRole="button" accessibilityLabel="Show field info" style={styles.infoIcon}>
+                  <Ionicons name="information-circle-outline" size={18} color="#8E8E93" />
+                </Pressable>
+              )}
+              {tooltipVisible && tooltipText && (
+                <Animated.View pointerEvents="none" style={[styles.tooltip, { opacity: tooltipAnim, transform: [{ translateY: tooltipAnim.interpolate({ inputRange: [0, 1], outputRange: [-6, 0] }) }] }]}>
+                  <Text style={styles.tooltipText}>{tooltipText}</Text>
+                </Animated.View>
+              )}
             </View>
           </View>
         );
@@ -309,89 +396,124 @@ export default function QuestionAccordion({
       case 'boolean':
         return (
           <View style={styles.inputContainer}>
-            {question.description && (
-              <Text style={styles.inputLabel}>{question.description}</Text>
-            )}
-            <View style={styles.booleanContainer}>
-              <Text style={styles.booleanLabel}>
-                {value ? 'Yes' : 'No'}
-              </Text>
-              <Switch
-                value={Boolean(value)}
-                onValueChange={handleValueChange}
-                trackColor={{ false: '#E5E5EA', true: '#34C759' }}
-                thumbColor={value ? '#FFFFFF' : '#FFFFFF'}
+            <View style={[styles.inputWithInfo, { paddingTop: 6 }] }>
+              <View style={styles.booleanContainer}>
+                <Text style={styles.booleanLabel}>
+                  {value ? 'Yes' : 'No'}
+                </Text>
+                <Switch
+                  value={Boolean(value)}
+                  onValueChange={handleValueChange}
+                  trackColor={{ false: '#E5E5EA', true: '#34C759' }}
+                  thumbColor={value ? '#FFFFFF' : '#FFFFFF'}
+                />
+              </View>
+              {!!question.description && (
+                <Pressable onPress={() => showInfo(question.description ?? undefined)} accessibilityRole="button" accessibilityLabel="Show field info" style={styles.infoIcon}>
+                  <Ionicons name="information-circle-outline" size={18} color="#8E8E93" />
+                </Pressable>
+              )}
+              {tooltipVisible && tooltipText && (
+                <Animated.View pointerEvents="none" style={[styles.tooltip, { opacity: tooltipAnim, transform: [{ translateY: tooltipAnim.interpolate({ inputRange: [0, 1], outputRange: [-6, 0] }) }] }]}>
+                  <Text style={styles.tooltipText}>{tooltipText}</Text>
+                </Animated.View>
+              )}
+            </View>
+          </View>
+        );
+
+      case 'date':
+        return (
+          <View style={styles.inputContainer}>
+            <View style={styles.inputWithInfo}>
+              <Pressable 
+                style={styles.dateButton} 
+                onPress={() => setShowDatePicker(true)}
+              >
+                <Text style={[styles.dateText, !value && styles.placeholderText]}>
+                  {value ? formatDate(new Date(value)) : 'Select a date...'}
+                </Text>
+              </Pressable>
+              {!!question.description && (
+                <Pressable onPress={() => showInfo(question.description ?? undefined)} accessibilityRole="button" accessibilityLabel="Show field info" style={styles.infoIcon}>
+                  <Ionicons name="information-circle-outline" size={18} color="#8E8E93" />
+                </Pressable>
+              )}
+              {tooltipVisible && tooltipText && (
+                <Animated.View pointerEvents="none" style={[styles.tooltip, { opacity: tooltipAnim, transform: [{ translateY: tooltipAnim.interpolate({ inputRange: [0, 1], outputRange: [-6, 0] }) }] }]}>
+                  <Text style={styles.tooltipText}>{tooltipText}</Text>
+                </Animated.View>
+              )}
+              <DateTimePickerModal
+                isVisible={showDatePicker}
+                mode="date"
+                date={value ? new Date(value) : new Date()}
+                onConfirm={(selectedDate) => {
+                  setShowDatePicker(false);
+                  if (selectedDate) {
+                    handleValueChange(formatDate(selectedDate));
+                  }
+                }}
+                onCancel={() => setShowDatePicker(false)}
               />
             </View>
           </View>
         );
 
-             case 'date':
-         return (
-           <View style={styles.inputContainer}>
-             {question.description && (
-               <Text style={styles.inputLabel}>{question.description}</Text>
-             )}
-             <Pressable 
-               style={styles.dateButton} 
-               onPress={() => setShowDatePicker(true)}
-             >
-               <Text style={[styles.dateText, !value && styles.placeholderText]}>
-                 {value ? formatDate(new Date(value)) : 'Select a date...'}
-               </Text>
-             </Pressable>
-             <DateTimePickerModal
-               isVisible={showDatePicker}
-               mode="date"
-               date={value ? new Date(value) : new Date()}
-               onConfirm={(selectedDate) => {
-                 setShowDatePicker(false);
-                 if (selectedDate) {
-                   handleValueChange(formatDate(selectedDate));
-                 }
-               }}
-               onCancel={() => setShowDatePicker(false)}
-             />
-           </View>
-         );
-
-       case 'GPS':
-         return (
-           <View style={styles.inputContainer}>
-             {question.description && (
-               <Text style={styles.inputLabel}>{question.description}</Text>
-             )}
-             <MapSelector
-               value={value && value.latitude && value.longitude ? {
-                 latitude: parseFloat(value.latitude),
-                 longitude: parseFloat(value.longitude)
-               } : null}
-               onLocationSelect={(latitude, longitude) => {
-                 // Handle clearing (when latitude/longitude are 0)
-                 if (latitude === 0 && longitude === 0) {
-                   handleValueChange(null);
-                 } else {
-                   handleValueChange({ latitude, longitude });
-                 }
-               }}
-               placeholder={question.placeholder || 'Select location on map...'}
-             />
-           </View>
-         );
+      case 'GPS':
+        return (
+          <View style={styles.inputContainer}>
+            <View style={styles.inputWithInfo}>
+              <MapSelector
+                value={value && value.latitude && value.longitude ? {
+                  latitude: parseFloat(value.latitude),
+                  longitude: parseFloat(value.longitude)
+                } : null}
+                onLocationSelect={(latitude, longitude) => {
+                  if (latitude === 0 && longitude === 0) {
+                    handleValueChange(null);
+                  } else {
+                    handleValueChange({ latitude, longitude });
+                  }
+                }}
+                placeholder={question.placeholder || 'Select location on map...'}
+              />
+              {!!question.description && (
+                <Pressable onPress={() => showInfo(question.description ?? undefined)} accessibilityRole="button" accessibilityLabel="Show field info" style={styles.infoIcon}>
+                  <Ionicons name="information-circle-outline" size={18} color="#8E8E93" />
+                </Pressable>
+              )}
+              {tooltipVisible && tooltipText && (
+                <Animated.View pointerEvents="none" style={[styles.tooltip, { opacity: tooltipAnim, transform: [{ translateY: tooltipAnim.interpolate({ inputRange: [0, 1], outputRange: [-6, 0] }) }] }]}>
+                  <Text style={styles.tooltipText}>{tooltipText}</Text>
+                </Animated.View>
+              )}
+            </View>
+          </View>
+        );
 
       case 'file':
         return (
           <View style={styles.inputContainer}>
-            {question.description && (
-              <Text style={styles.inputLabel}>{question.description}</Text>
-            )}
-            <FileUploader
-              value={value}
-              onFileSelect={(file) => handleValueChange(file)}
-              onFileRemove={() => handleValueChange(null)}
-              placeholder={question.placeholder || 'Select a document...'}
-              acceptedTypes={['document']}
-            />
+            <View style={styles.inputWithInfo}>
+              <FileUploader
+                value={value}
+                onFileSelect={(file) => handleValueChange(file)}
+                onFileRemove={() => handleValueChange(null)}
+                placeholder={question.placeholder || 'Select a document...'}
+                acceptedTypes={['document']}
+              />
+              {!!question.description && (
+                <Pressable onPress={() => showInfo(question.description ?? undefined)} accessibilityRole="button" accessibilityLabel="Show field info" style={styles.infoIcon}>
+                  <Ionicons name="information-circle-outline" size={18} color="#8E8E93" />
+                </Pressable>
+              )}
+              {tooltipVisible && tooltipText && (
+                <Animated.View pointerEvents="none" style={[styles.tooltip, { opacity: tooltipAnim, transform: [{ translateY: tooltipAnim.interpolate({ inputRange: [0, 1], outputRange: [-6, 0] }) }] }]}>
+                  <Text style={styles.tooltipText}>{tooltipText}</Text>
+                </Animated.View>
+              )}
+            </View>
           </View>
         );
 
@@ -399,65 +521,92 @@ export default function QuestionAccordion({
       case 'video':
         return (
           <View style={styles.inputContainer}>
-            {question.description && (
-              <Text style={styles.inputLabel}>{question.description}</Text>
-            )}
-            <FileUploader
-              value={imageAnswer}
-              onFileSelect={(file) => {
-                  if (onImageFileSelect) onImageFileSelect(file);
-              }}
-              onFileRemove={() => {
-                  if (onImageFileRemove) onImageFileRemove();
-              }}
-              placeholder={question.placeholder || 'Select an image...'}
-              acceptedTypes={question.type === 'photo' ? ['image'] : question.type === 'video' ? ['video'] : ['document']}
-            />
+            <View style={styles.inputWithInfo}>
+              <FileUploader
+                value={imageAnswer}
+                onFileSelect={(file) => {
+                    if (onImageFileSelect) onImageFileSelect(file);
+                }}
+                onFileRemove={() => {
+                    if (onImageFileRemove) onImageFileRemove();
+                }}
+                placeholder={question.placeholder || 'Select an image...'}
+                acceptedTypes={question.type === 'photo' ? ['image'] : question.type === 'video' ? ['video'] : ['document']}
+              />
+              {!!question.description && (
+                <Pressable onPress={() => showInfo(question.description ?? undefined)} accessibilityRole="button" accessibilityLabel="Show field info" style={styles.infoIcon}>
+                  <Ionicons name="information-circle-outline" size={18} color="#8E8E93" />
+                </Pressable>
+              )}
+              {tooltipVisible && tooltipText && (
+                <Animated.View pointerEvents="none" style={[styles.tooltip, { opacity: tooltipAnim, transform: [{ translateY: tooltipAnim.interpolate({ inputRange: [0, 1], outputRange: [-6, 0] }) }] }]}>
+                  <Text style={styles.tooltipText}>{tooltipText}</Text>
+                </Animated.View>
+              )}
+            </View>
           </View>
         );
 
       case 'voice':
         return (
           <View style={styles.inputContainer}>
-            {question.description && (
-              <Text style={styles.inputLabel}>{question.description}</Text>
-            )}
-            <VoiceRecorder
-              value={vocalAnswer}
-              onFileSelect={(file) => {
-                 if (onVocalFileSelect) {
-                   onVocalFileSelect(file);
-                 }
-               }}
-               onFileRemove={() => {
-                 if (onVocalFileRemove) {
-                   onVocalFileRemove();
-                 }
-               }}
-               placeholder={question.placeholder || 'Record voice message...'}
-               maxDuration={300} // 5 minutes
-             />
-           </View>
-         );
+            <View style={styles.inputWithInfo}>
+              <VoiceRecorder
+                value={vocalAnswer}
+                onFileSelect={(file) => {
+                   if (onVocalFileSelect) {
+                     onVocalFileSelect(file);
+                   }
+                 }}
+                 onFileRemove={() => {
+                   if (onVocalFileRemove) {
+                     onVocalFileRemove();
+                   }
+                 }}
+                 placeholder={question.placeholder || 'Record voice message...'}
+                 maxDuration={300}
+               />
+              {!!question.description && (
+                <Pressable onPress={() => showInfo(question.description ?? undefined)} accessibilityRole="button" accessibilityLabel="Show field info" style={styles.infoIcon}>
+                  <Ionicons name="information-circle-outline" size={18} color="#8E8E93" />
+                </Pressable>
+              )}
+              {tooltipVisible && tooltipText && (
+                <Animated.View pointerEvents="none" style={[styles.tooltip, { opacity: tooltipAnim, transform: [{ translateY: tooltipAnim.interpolate({ inputRange: [0, 1], outputRange: [-6, 0] }) }] }]}>
+                  <Text style={styles.tooltipText}>{tooltipText}</Text>
+                </Animated.View>
+              )}
+            </View>
+          </View>
+        );
 
       case 'list':
         return (
           <View style={styles.inputContainer}>
-            {question.description && (
-              <Text style={styles.inputLabel}>{question.description}</Text>
-            )}
-            <Pressable 
-              style={styles.listPickerContainer}
-              onPress={() => setShowListModal(true)}
-            >
-              <Text style={[
-                styles.listPickerText,
-                !value && styles.listPickerPlaceholder
-              ]}>
-                {value || question.placeholder || 'Tap to select an option...'}
-              </Text>
-              <Ionicons name="chevron-down" size={20} color="#8E8E93" />
-            </Pressable>
+            <View style={styles.inputWithInfo}>
+              <Pressable 
+                style={styles.listPickerContainer}
+                onPress={() => setShowListModal(true)}
+              >
+                <Text style={[
+                  styles.listPickerText,
+                  !value && styles.listPickerPlaceholder
+                ]}>
+                  {value || question.placeholder || 'Tap to select an option...'}
+                </Text>
+                <Ionicons name="chevron-down" size={20} color="#8E8E93" />
+              </Pressable>
+              {!!question.description && (
+                <Pressable onPress={() => showInfo(question.description ?? undefined)} accessibilityRole="button" accessibilityLabel="Show field info" style={styles.infoIcon}>
+                  <Ionicons name="information-circle-outline" size={18} color="#8E8E93" />
+                </Pressable>
+              )}
+              {tooltipVisible && tooltipText && (
+                <Animated.View pointerEvents="none" style={[styles.tooltip, { opacity: tooltipAnim, transform: [{ translateY: tooltipAnim.interpolate({ inputRange: [0, 1], outputRange: [-6, 0] }) }] }]}>
+                  <Text style={styles.tooltipText}>{tooltipText}</Text>
+                </Animated.View>
+              )}
+            </View>
           </View>
         );
 
@@ -616,20 +765,6 @@ export default function QuestionAccordion({
               </Pressable>
             </View> */}
 
-            {/* Status Selection */}
-            <View style={styles.statusContainer}>
-              <Text style={styles.statusLabel}>Status:</Text>
-              <Pressable 
-                style={styles.statusPickerContainer}
-                onPress={() => setShowStatusModal(true)}
-              >
-                <Text style={styles.statusPickerText}>
-                  {getStatusLabel(questionStatus)}
-                </Text>
-                <Ionicons name="chevron-down" size={20} color="#8E8E93" />
-              </Pressable>
-            </View>
-
             {/* Action Buttons - Only visible when expanded */}
             <View style={styles.actionButtonsContainer}>
               {/* Copy Button */}
@@ -676,11 +811,7 @@ export default function QuestionAccordion({
                 accessibilityLabel="Take photo"
                 disabled={isLocked || isSubmitting}
               >
-                <Ionicons 
-                  name="camera-outline" 
-                  size={16} 
-                  color="#FFFFFF" 
-                />
+                <Image source={ICONS.cameraPng} style={{ width: 20, height: 20 }} />
               </Pressable>
 
               {/* Vocal Button */}
@@ -735,6 +866,12 @@ export default function QuestionAccordion({
                                 onVocalFileRemove();
                             }
                         }}
+                        onTranscribe={() => {
+                          if (onTranscribeAudio && vocalAnswer && (vocalAnswer.uri || vocalAnswer.path)) {
+                            onTranscribeAudio(question.id, vocalAnswer.uri || vocalAnswer.path);
+                          }
+                        }}
+                        isTranscribing={isTranscribing}
                     />
                 </View>
             )}
@@ -844,57 +981,6 @@ export default function QuestionAccordion({
                     {item.title} ({item.code})
                   </Text>
                   {item.id === questionZoneId && (
-                    <Ionicons name="checkmark" size={20} color="#007AFF" />
-                  )}
-                </Pressable>
-              )}
-            />
-          </View>
-        </View>
-      </Modal>
-
-      {/* Status Selection Modal */}
-      <Modal
-        visible={showStatusModal}
-        transparent={true}
-        animationType="slide"
-        onRequestClose={() => setShowStatusModal(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Select Status</Text>
-              <Pressable onPress={() => setShowStatusModal(false)}>
-                <Ionicons name="close" size={24} color="#1C1C1E" />
-              </Pressable>
-            </View>
-            <FlatList
-              data={[
-                { id: 0, label: 'Not Started' },
-                { id: 1, label: 'In Progress' },
-                { id: 2, label: 'Completed' },
-                { id: 3, label: 'On Hold' },
-                { id: 4, label: 'Cancelled' }
-              ]}
-              keyExtractor={(item) => item.id.toString()}
-              renderItem={({ item }) => (
-                <Pressable
-                  style={[
-                    styles.statusOption,
-                    item.id === questionStatus && styles.statusOptionSelected
-                  ]}
-                  onPress={() => {
-                    handleStatusChange(item.id);
-                    setShowStatusModal(false);
-                  }}
-                >
-                  <Text style={[
-                    styles.statusOptionText,
-                    item.id === questionStatus && styles.statusOptionTextSelected
-                  ]}>
-                    {item.label}
-                  </Text>
-                  {item.id === questionStatus && (
                     <Ionicons name="checkmark" size={20} color="#007AFF" />
                   )}
                 </Pressable>
@@ -1134,6 +1220,9 @@ const styles = StyleSheet.create({
   inputContainer: {
     marginTop: 8,
   },
+  inputWithInfo: {
+    position: 'relative',
+  },
   inputLabel: {
     fontSize: 16,
     color: '#1C1C1E',
@@ -1162,6 +1251,9 @@ const styles = StyleSheet.create({
     textAlignVertical: 'top',
     minHeight: 44,
   },
+  longTextInputContainer: {
+    position: 'relative',
+  },
   longTextInput: {
     borderWidth: 1,
     borderColor: '#E5E5EA',
@@ -1174,6 +1266,13 @@ const styles = StyleSheet.create({
     textAlignVertical: 'top',
     minHeight: 120,
     maxHeight: 200,
+    paddingRight: 50, // To avoid text overlapping with button
+  },
+  enhanceButton: {
+    position: 'absolute',
+    right: 10,
+    top: 10,
+    padding: 5,
   },
   booleanContainer: {
     flexDirection: 'row',
@@ -1469,57 +1568,6 @@ voiceNoteLabel: {
     paddingVertical: 20,
     paddingHorizontal: 20,
   },
-  statusContainer: {
-    marginTop: 12,
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  statusLabel: {
-    fontSize: 18,
-    color: '#1C1C1E',
-    fontWeight: '600',
-    marginRight: 12,
-    minWidth: 60,
-  },
-  statusPickerContainer: {
-    flex: 1,
-    backgroundColor: '#FAFAFA',
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#E5E5EA',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-    minHeight: 44,
-  },
-  statusPickerText: {
-    fontSize: 16,
-    color: '#1C1C1E',
-    flex: 1,
-  },
-  statusOption: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F2F2F7',
-  },
-  statusOptionSelected: {
-    backgroundColor: '#F0F8FF',
-  },
-  statusOptionText: {
-    fontSize: 16,
-    color: '#1C1C1E',
-    flex: 1,
-  },
-  statusOptionTextSelected: {
-    color: '#007AFF',
-    fontWeight: '500',
-  },
   submitContainer: {
     marginTop: 16,
     paddingTop: 16,
@@ -1579,5 +1627,27 @@ voiceNoteLabel: {
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '600',
+  },
+  infoIcon: {
+    position: 'absolute',
+    right: 10,
+    top: 10,
+    padding: 4,
+    backgroundColor: 'transparent',
+  },
+  tooltip: {
+    position: 'absolute',
+    right: 10,
+    top: -30,
+    backgroundColor: '#111827',
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+    borderRadius: 6,
+    maxWidth: '80%',
+    zIndex: 10,
+  },
+  tooltipText: {
+    color: '#F9FAFB',
+    fontSize: 12,
   },
 });
