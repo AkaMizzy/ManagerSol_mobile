@@ -235,6 +235,14 @@ class QualiPhotoService {
     });
   }
 
+  async updateQualiPhoto(qualiphotoId: string, payload: { commentaire?: string; conclusion?: string }, token: string): Promise<{ success: boolean }> {
+    return this.makeRequest<{ success: boolean }>(`/qualiphoto/${qualiphotoId}`, token, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+  }
+
   async compareImages(beforeImageUrl: string, afterImageUrl: string, token: string): Promise<{ description: string }> {
     // Convert absolute URLs from the client to relative paths for the backend
     const beforeRelativeUrl = beforeImageUrl.replace(this.baseUrl, '');

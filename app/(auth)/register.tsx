@@ -1,25 +1,25 @@
 import { useAuth } from '@/contexts/AuthContext';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
+import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import {
-  ActivityIndicator,
-  Alert,
-  FlatList,
-  KeyboardAvoidingView,
-  Modal,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TextInputProps,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    Alert,
+    FlatList,
+    KeyboardAvoidingView,
+    Modal,
+    Platform,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TextInputProps,
+    TouchableOpacity,
+    View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import * as ImagePicker from 'expo-image-picker';
 
 const STEPS = [
   { id: 1, title: 'Informations sur l’entreprise' },
@@ -170,10 +170,22 @@ export default function RegisterScreen() {
     const result = await register(finalFormData);
     if (result.success) {
         Alert.alert('Succès', 'Votre compte a été créé avec succès.');
-        router.push('/(tabs)');
+        router.replace('/');
     } else {
         Alert.alert('Erreur', result.error || 'Une erreur est survenue lors de l’inscription.');
     }
+  };
+
+  const handleSelectCountry = (country: Country) => {
+    handleInputChange('pays', country.name);
+    setCountryModalVisible(false);
+    setSearchQuery('');
+  };
+
+  const handleSelectCity = (city: string) => {
+    handleInputChange('ville', city);
+    setCityModalVisible(false);
+    setSearchQuery('');
   };
 
   const renderStep = () => {
@@ -264,7 +276,12 @@ export default function RegisterScreen() {
   );
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+      <View style={styles.navHeader}>
+        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+          <Ionicons name="arrow-back" size={28} color="#11224E" />
+        </TouchableOpacity>
+      </View>
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={{ flex: 1 }}
@@ -321,64 +338,61 @@ export default function RegisterScreen() {
 
       {/* Country Modal */}
       <Modal visible={isCountryModalVisible} animationType="slide" onRequestClose={() => setCountryModalVisible(false)}>
-        <SafeAreaView style={{ flex: 1 }}>
-          <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>Sélectionner un pays</Text>
-            <TouchableOpacity onPress={() => setCountryModalVisible(false)}>
-                <Ionicons name="close" size={24} color="#11224e" />
-            </TouchableOpacity>
-          </View>
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Rechercher un pays..."
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-          />
-          <FlatList
-            data={filteredCountries}
-            keyExtractor={(item) => item.name}
-            renderItem={({ item }) => (
-              <TouchableOpacity style={styles.modalItem} onPress={() => {
-                handleInputChange('pays', item.name);
-                setCountryModalVisible(false);
-                setSearchQuery('');
-              }}>
-                <Image source={{ uri: item.flag }} style={styles.flagImage} />
-                <Text>{item.name}</Text>
+        <SafeAreaView style={{ flex: 1, backgroundColor: '#FFF' }}>
+          <View style={styles.modalContentContainer}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Sélectionner un pays</Text>
+              <TouchableOpacity onPress={() => setCountryModalVisible(false)}>
+                <Ionicons name="close" size={28} color="#333" />
               </TouchableOpacity>
-            )}
-          />
+            </View>
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Rechercher un pays..."
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+            />
+            <FlatList
+              data={countries.filter(c => c.name.toLowerCase().includes(searchQuery.toLowerCase()))}
+              keyExtractor={(item) => item.name}
+              renderItem={({ item }) => (
+                <TouchableOpacity style={styles.countryItem} onPress={() => handleSelectCountry(item)}>
+                  <Image source={{ uri: item.flag }} style={styles.flag} />
+                  <Text style={styles.countryName}>{item.name}</Text>
+                </TouchableOpacity>
+              )}
+            />
+          </View>
         </SafeAreaView>
       </Modal>
 
       {/* City Modal */}
       <Modal visible={isCityModalVisible} animationType="slide" onRequestClose={() => setCityModalVisible(false)}>
-        <SafeAreaView style={{ flex: 1 }}>
-            <View style={styles.modalHeader}>
-                <Text style={styles.modalTitle}>Sélectionner une ville</Text>
-                <TouchableOpacity onPress={() => setCityModalVisible(false)}>
-                    <Ionicons name="close" size={24} color="#11224e" />
-                </TouchableOpacity>
+        <SafeAreaView style={{ flex: 1, backgroundColor: '#FFF' }}>
+            <View style={styles.modalContentContainer}>
+                <View style={styles.modalHeader}>
+                    <Text style={styles.modalTitle}>Sélectionner une ville</Text>
+                    <TouchableOpacity onPress={() => setCityModalVisible(false)}>
+                        <Ionicons name="close" size={28} color="#333" />
+                    </TouchableOpacity>
+                </View>
+                <TextInput
+                    style={styles.searchInput}
+                    placeholder="Rechercher une ville..."
+                    value={searchQuery}
+                    onChangeText={setSearchQuery}
+                />
+                <FlatList
+                    data={cities.filter(c => c.toLowerCase().includes(searchQuery.toLowerCase()))}
+                    keyExtractor={(item) => item}
+                    renderItem={({ item }) => (
+                    <TouchableOpacity style={styles.cityItem} onPress={() => handleSelectCity(item)}>
+                        <Text style={styles.cityName}>{item}</Text>
+                    </TouchableOpacity>
+                    )}
+                    ListEmptyComponent={<Text style={styles.emptyListText}>Aucune ville trouvée ou le pays n&apos;a pas de villes répertoriées.</Text>}
+                />
             </View>
-            <TextInput
-                style={styles.searchInput}
-                placeholder="Rechercher une ville..."
-                value={searchQuery}
-                onChangeText={setSearchQuery}
-            />
-            <FlatList
-                data={filteredCities}
-                keyExtractor={(item) => item}
-                renderItem={({ item }) => (
-                <TouchableOpacity style={styles.modalItem} onPress={() => {
-                    handleInputChange('ville', item);
-                    setCityModalVisible(false);
-                    setSearchQuery('');
-                }}>
-                    <Text>{item}</Text>
-                </TouchableOpacity>
-                )}
-            />
         </SafeAreaView>
       </Modal>
 
@@ -586,5 +600,54 @@ const styles = StyleSheet.create({
     navButtonText: {
         color: '#FFFFFF',
         fontWeight: 'bold',
+    },
+    modalContainer: {
+      flex: 1,
+      paddingTop: 50,
+      paddingHorizontal: 20,
+      backgroundColor: '#FFF',
+    },
+    modalContentContainer: {
+      flex: 1,
+      paddingHorizontal: 20,
+    },
+    countryItem: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingVertical: 15,
+      borderBottomWidth: 1,
+      borderBottomColor: '#EEE',
+    },
+    flag: {
+      width: 30,
+      height: 20,
+      marginRight: 12,
+      borderRadius: 3,
+    },
+    countryName: {
+      fontSize: 16,
+    },
+    cityItem: {
+      paddingVertical: 15,
+      borderBottomWidth: 1,
+      borderBottomColor: '#EEE',
+    },
+    cityName: {
+      fontSize: 16,
+    },
+    emptyListText: {
+      textAlign: 'center',
+      marginTop: 20,
+      color: '#6B7280',
+    },
+    navHeader: {
+      paddingHorizontal: 20,
+      paddingTop: 10,
+      paddingBottom: 5,
+      width: '100%',
+    },
+    backButton: {
+      alignSelf: 'flex-start',
+      padding: 5,
     },
 });

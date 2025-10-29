@@ -1,23 +1,24 @@
 import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
 import {
-    ActivityIndicator,
-    Image,
-    LayoutAnimation,
-    Platform,
-    Pressable,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    UIManager,
-    View,
+  ActivityIndicator,
+  Image,
+  LayoutAnimation,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  UIManager,
+  View,
 } from 'react-native';
 
 import { ICONS } from '../constants/Icons';
 import { Comment, QualiPhotoItem } from '../services/qualiphotoService';
 import { PhotoActions } from './PhotoActions';
 import { PhotoCard } from './PhotoCard';
+import QualiPhotoEditModal from './QualiPhotoEditModal';
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
@@ -106,6 +107,7 @@ type ParentQualiPhotoViewProps = {
     setItem,
   }) => {
     const [isDescriptionExpanded, setIsDescriptionExpanded] = React.useState(false);
+    const [isEditModalVisible, setIsEditModalVisible] = React.useState(false);
 
     const toggleDescription = () => {
       LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
@@ -189,6 +191,7 @@ type ParentQualiPhotoViewProps = {
                 onMapPress={handleMapPress}
                 onAddComment={() => setCommentModalVisible(true)}
                 onAddComplement={() => setComplementModalVisible(true)}
+                onEdit={!item.id_qualiphoto_parent ? () => setIsEditModalVisible(true) : undefined}
               />
               
               {(typeof item.commentaire === 'string' && item.commentaire.trim().length > 0) && (() => {
@@ -325,7 +328,15 @@ type ParentQualiPhotoViewProps = {
             )}
           </View>
         </ScrollView>
-        
+        <QualiPhotoEditModal
+            visible={isEditModalVisible}
+            onClose={() => setIsEditModalVisible(false)}
+            item={item}
+            onSuccess={(updatedItem) => {
+                setItem({ ...item, ...updatedItem });
+                setIsEditModalVisible(false);
+            }}
+        />
       </>
     )
   }

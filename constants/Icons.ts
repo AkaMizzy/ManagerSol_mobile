@@ -1,5 +1,3 @@
-// Centralized registry of local icon assets
-// Export both a keyed map and a flat array for preloading
 
 export const ICONS = {
   // PNG icons
@@ -22,6 +20,7 @@ export const ICONS = {
   signature: require('@/assets/icons/sign.png'),
   chatgpt: require('@/assets/icons/chatgpt.png'),
   folder: require('@/assets/icons/folder.png'),
+  edit: require('@/assets/icons/edit.png'),
 } as const;
 
 export const ICONS_ASSETS = Object.values(ICONS);

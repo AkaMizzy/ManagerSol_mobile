@@ -12,6 +12,7 @@ type PhotoActionsProps = {
   onAddComment?: () => void;
   onAddComplement?: () => void;
   onCreateDeclaration?: () => void;
+  onEdit?: () => void;
 };
 
 export const PhotoActions: React.FC<PhotoActionsProps> = ({
@@ -22,12 +23,14 @@ export const PhotoActions: React.FC<PhotoActionsProps> = ({
   onAddComment,
   onAddComplement,
   onCreateDeclaration,
+  onEdit,
 }) => {
   const showActions =
     item.voice_note ||
     (item.latitude && item.longitude) ||
     item.after === 1 ||
-    (item.id_qualiphoto_parent && (onAddComplement || onCreateDeclaration));
+    (item.id_qualiphoto_parent && (onAddComplement || onCreateDeclaration)) ||
+    (!item.id_qualiphoto_parent && onEdit);
 
   if (!showActions) {
     return null;
@@ -62,6 +65,11 @@ export const PhotoActions: React.FC<PhotoActionsProps> = ({
           accessibilityLabel="Créer une déclaration depuis cette photo"
         >
           <Image source={ICONS.declaration} style={styles.actionIcon} />
+        </TouchableOpacity>
+      )}
+      {!item.id_qualiphoto_parent && onEdit && (
+        <TouchableOpacity style={styles.actionButton} onPress={onEdit} accessibilityLabel="Éditer">
+          <Image source={ICONS.edit} style={styles.actionIcon} />
         </TouchableOpacity>
       )}
     </View>
