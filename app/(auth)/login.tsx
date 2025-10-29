@@ -212,7 +212,7 @@ export default function LoginScreen() {
             <View style={styles.footer}>
               <Text style={styles.footerText}>
                 Vous n&apos;avez pas de compte?{' '}
-                <Link href="/register" style={styles.footerLink}>
+                <Link href="/Register" style={styles.footerLink}>
                   Créer un compte
                 </Link>
               </Text>

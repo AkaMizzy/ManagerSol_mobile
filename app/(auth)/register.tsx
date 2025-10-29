@@ -1,7 +1,6 @@
 import { useAuth } from '@/contexts/AuthContext';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
-import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import {
@@ -21,23 +20,11 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-const STEPS = [
-  { id: 1, title: 'Informations sur l’entreprise' },
-  { id: 2, title: 'Coordonnées & Secteur' },
-  { id: 3, title: 'Informations Bancaires & Légales' },
-  { id: 4, title: 'Création de votre compte' },
-];
-
-type FormData = {
-  [key: string]: string;
-};
-
 interface Country {
   name: string;
   flag: string;
 }
 
-// Reusable LabeledInput component
 const LabeledInput = ({ label, ...props }: TextInputProps & { label: string }) => (
   <View style={styles.inputContainer}>
     <Text style={styles.inputLabel}>{label}</Text>
@@ -48,10 +35,14 @@ const LabeledInput = ({ label, ...props }: TextInputProps & { label: string }) =
 export default function RegisterScreen() {
   const { register, isLoading } = useAuth();
   const router = useRouter();
-  const [currentStep, setCurrentStep] = useState(1);
-  const [formData, setFormData] = useState<FormData>({});
-  const [logo, setLogo] = useState<ImagePicker.ImagePickerAsset | null>(null);
-  const [photo, setPhoto] = useState<ImagePicker.ImagePickerAsset | null>(null);
+  const [formData, setFormData] = useState({
+    company_title: '',
+    pays: '',
+    ville: '',
+    user_phone1: '',
+    user_email: '',
+    user_password: '',
+  });
   const [countries, setCountries] = useState<Country[]>([]);
   const [cities, setCities] = useState<string[]>([]);
   const [isCountryModalVisible, setCountryModalVisible] = useState(false);
@@ -69,7 +60,6 @@ export default function RegisterScreen() {
         }
       } catch (error) {
         console.error("Failed to fetch countries:", error);
-        // Optionally, show an alert to the user
       }
     };
     fetchCountries();
@@ -107,70 +97,16 @@ export default function RegisterScreen() {
 
   const handleInputChange = (field: string, value: string) => {
     if (field === 'pays') {
-      // Reset city when country changes
       setFormData(prev => ({ ...prev, [field]: value, ville: '' }));
     } else {
       setFormData(prev => ({ ...prev, [field]: value }));
     }
   };
   
-  const pickImage = async (setImage: React.Dispatch<React.SetStateAction<ImagePicker.ImagePickerAsset | null>>) => {
-    let result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 1,
-    });
-
-    if (!result.canceled) {
-      setImage(result.assets[0]);
-    }
-  };
-
-  const nextStep = () => {
-    // Add validation logic here before proceeding
-    if (currentStep < STEPS.length) {
-      setCurrentStep(currentStep + 1);
-    } else {
-        handleSubmit();
-    }
-  };
-
-  const prevStep = () => {
-    if (currentStep > 1) {
-      setCurrentStep(currentStep - 1);
-    }
-  };
-  
   const handleSubmit = async () => {
-    const finalFormData = new FormData();
-    
-    Object.keys(formData).forEach(key => {
-        finalFormData.append(key, formData[key]);
-    });
-    
-    if (logo) {
-      const logoFile = {
-        uri: logo.uri,
-        name: logo.uri.split('/').pop(),
-        type: 'image/jpeg', // or other image types
-      } as any;
-      finalFormData.append('logo', logoFile);
-    }
-
-    if (photo) {
-        const photoFile = {
-          uri: photo.uri,
-          name: photo.uri.split('/').pop(),
-          type: 'image/jpeg',
-        } as any;
-        finalFormData.append('photo', photoFile);
-    }
-
-    const result = await register(finalFormData);
+    const result = await register(formData);
     if (result.success) {
         Alert.alert('Succès', 'Votre compte a été créé avec succès.');
-        router.replace('/');
     } else {
         Alert.alert('Erreur', result.error || 'Une erreur est survenue lors de l’inscription.');
     }
@@ -187,93 +123,6 @@ export default function RegisterScreen() {
     setCityModalVisible(false);
     setSearchQuery('');
   };
-
-  const renderStep = () => {
-    switch (currentStep) {
-      case 1:
-        return (
-          <View>
-            <Text style={styles.stepTitle}>Informations Générales</Text>
-            <LabeledInput label="Titre de l'entreprise" placeholder="ex: QualiSol Inc." value={formData.company_title || ''} onChangeText={(v) => handleInputChange('company_title', v)} />
-            <LabeledInput label="Description" placeholder="Une brève description de votre entreprise" multiline value={formData.company_description || ''} onChangeText={(v) => handleInputChange('company_description', v)} />
-            <LabeledInput label="Email de l'entreprise" placeholder="contact@entreprise.com" keyboardType="email-address" value={formData.company_email || ''} onChangeText={(v) => handleInputChange('company_email', v)} />
-            
-            <View style={styles.inputContainer}>
-              <Text style={styles.inputLabel}>Pays</Text>
-              <TouchableOpacity style={styles.dropdown} onPress={() => setCountryModalVisible(true)}>
-                <Text style={styles.dropdownText}>{formData.pays || 'Sélectionner un pays'}</Text>
-                <Ionicons name="chevron-down" size={20} color="#6B7280" />
-              </TouchableOpacity>
-            </View>
-
-            <View style={styles.inputContainer}>
-              <Text style={styles.inputLabel}>Ville</Text>
-              <TouchableOpacity 
-                style={[styles.dropdown, !formData.pays && styles.dropdownDisabled]} 
-                onPress={() => formData.pays && setCityModalVisible(true)}
-                disabled={!formData.pays || isFetchingCities}
-              >
-                <Text style={styles.dropdownText}>{isFetchingCities ? 'Chargement...' : formData.ville || 'Sélectionner une ville'}</Text>
-                <Ionicons name="chevron-down" size={20} color="#6B7280" />
-              </TouchableOpacity>
-            </View>
-
-            <TouchableOpacity style={styles.imagePicker} onPress={() => pickImage(setLogo)}>
-              <Text style={styles.imagePickerText}>{logo ? 'Changer le logo' : 'Sélectionner un logo'}</Text>
-            </TouchableOpacity>
-            {logo && <Image source={{ uri: logo.uri }} style={styles.previewImage} />}
-          </View>
-        );
-      case 2:
-        return (
-          <View>
-            <Text style={styles.stepTitle}>Coordonnées (Secteur)</Text>
-            <LabeledInput label="Téléphone 1 " placeholder="05 XX XX XX XX" keyboardType="phone-pad" value={formData.sector_phone1 || ''} onChangeText={(v) => handleInputChange('sector_phone1', v)} />
-            <LabeledInput label="Téléphone 2 " placeholder="Optionnel" keyboardType="phone-pad" value={formData.sector_phone2 || ''} onChangeText={(v) => handleInputChange('sector_phone2', v)} />
-            <LabeledInput label="Site web " placeholder="www.entreprise.com" value={formData.sector_website || ''} onChangeText={(v) => handleInputChange('sector_website', v)} />
-            <LabeledInput label="Email 2" placeholder="Optionnel" keyboardType="email-address" value={formData.sector_email2 || ''} onChangeText={(v) => handleInputChange('sector_email2', v)} />
-          </View>
-        );
-      case 3:
-        return (
-          <View>
-            <Text style={styles.stepTitle}>Informations Bancaires & Légales</Text>
-            <LabeledInput label="Nom de la banque" placeholder="Nom de votre banque" value={formData.bank_name || ''} onChangeText={(v) => handleInputChange('bank_name', v)} />
-            <LabeledInput label="RIB" placeholder="Numéro de Relevé d'Identité Bancaire" value={formData.rib_number || ''} onChangeText={(v) => handleInputChange('rib_number', v)} />
-            <LabeledInput label="Numéro RC" placeholder="Numéro du Registre de Commerce" value={formData.rc_number || ''} onChangeText={(v) => handleInputChange('rc_number', v)} />
-            <LabeledInput label="Numéro IF" placeholder="Identifiant Fiscal" value={formData.if_number || ''} onChangeText={(v) => handleInputChange('if_number', v)} />
-            <LabeledInput label="Numéro ICE" placeholder="Identifiant Commun de l'Entreprise" value={formData.ice_number || ''} onChangeText={(v) => handleInputChange('ice_number', v)} />
-            <LabeledInput label="Numéro de patente" placeholder="Numéro de patente" value={formData.patente_number || ''} onChangeText={(v) => handleInputChange('patente_number', v)} />
-            <LabeledInput label="Numéro CNSS" placeholder="Numéro de la Caisse Nationale de Sécurité Sociale" value={formData.cnss_number || ''} onChangeText={(v) => handleInputChange('cnss_number', v)} />
-          </View>
-        );
-      case 4:
-        return (
-          <View>
-            <Text style={styles.stepTitle}>Votre Compte</Text>
-            <LabeledInput label="Prénom" placeholder="Votre prénom" value={formData.user_firstname || ''} onChangeText={(v) => handleInputChange('user_firstname', v)} />
-            <LabeledInput label="Nom" placeholder="Votre nom de famille" value={formData.user_lastname || ''} onChangeText={(v) => handleInputChange('user_lastname', v)} />
-            <LabeledInput label="Email" placeholder="Votre email de connexion" keyboardType="email-address" value={formData.user_email || ''} onChangeText={(v) => handleInputChange('user_email', v)} />
-            <LabeledInput label="Téléphone" keyboardType="phone-pad" placeholder="Votre numéro de téléphone" value={formData.user_phone1 || ''} onChangeText={(v) => handleInputChange('user_phone1', v)} />
-            <LabeledInput label="Mot de passe" placeholder="Créez un mot de passe sécurisé" secureTextEntry value={formData.user_password || ''} onChangeText={(v) => handleInputChange('user_password', v)} />
-            <TouchableOpacity style={styles.imagePicker} onPress={() => pickImage(setPhoto)}>
-                <Text style={styles.imagePickerText}>{photo ? 'Changer la photo' : 'Sélectionner une photo'}</Text>
-            </TouchableOpacity>
-            {photo && <Image source={{ uri: photo.uri }} style={styles.previewImage} />}
-          </View>
-        );
-      default:
-        return null;
-    }
-  };
-
-  const filteredCountries = countries.filter(country => 
-    country.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
-  const filteredCities = cities.filter(city => 
-    city.toLowerCase().includes(searchQuery.toLowerCase())
-  );
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
@@ -296,43 +145,37 @@ export default function RegisterScreen() {
             <Text style={styles.title}>Créer un compte</Text>
           </View>
           
-          {/* Stepper */}
-          <View style={styles.stepperContainer}>
-            {STEPS.map((step, index) => (
-              <View key={step.id} style={styles.step}>
-                <View
-                  style={[
-                    styles.stepIndicator,
-                    currentStep > index + 1 && styles.stepIndicatorCompleted,
-                    currentStep === index + 1 && styles.stepIndicatorActive,
-                  ]}
-                >
-                    {currentStep > index + 1 ? (
-                        <Ionicons name="checkmark" size={16} color="#FFFFFF" />
-                    ) : (
-                        <Text style={[styles.stepNumber, currentStep === index + 1 && styles.stepNumberActive]}>{step.id}</Text>
-                    )}
-                </View>
-                <Text style={[styles.stepLabel, currentStep === index + 1 && styles.stepLabelActive]}>
-                  {step.title}
-                </Text>
-                {index < STEPS.length - 1 && <View style={styles.connector} />}
-              </View>
-            ))}
-          </View>
-
-          <View style={styles.formContainer}>{renderStep()}</View>
-
-          <View style={styles.navigation}>
-            {currentStep > 1 && (
-              <TouchableOpacity style={[styles.navButton, styles.prevButton]} onPress={prevStep}>
-                <Text style={styles.navButtonText}>Précédent</Text>
+          <View style={styles.card}>
+            <LabeledInput label="Nom de l'entreprise" placeholder="ex: QualiSol Inc." value={formData.company_title} onChangeText={(v) => handleInputChange('company_title', v)} />
+            
+            <View style={styles.inputContainer}>
+              <Text style={styles.inputLabel}>Pays</Text>
+              <TouchableOpacity style={styles.dropdown} onPress={() => setCountryModalVisible(true)}>
+                <Text style={styles.dropdownText}>{formData.pays || 'Sélectionner un pays'}</Text>
+                <Ionicons name="chevron-down" size={20} color="#6B7280" />
               </TouchableOpacity>
-            )}
-            <TouchableOpacity style={[styles.navButton, styles.nextButton]} onPress={nextStep} disabled={isLoading}>
-                {isLoading ? <ActivityIndicator color="#FFFFFF" /> : <Text style={styles.navButtonText}>{currentStep === STEPS.length ? 'Terminer' : 'Suivant'}</Text>}
-            </TouchableOpacity>
+            </View>
+
+            <View style={styles.inputContainer}>
+              <Text style={styles.inputLabel}>Ville</Text>
+              <TouchableOpacity 
+                style={[styles.dropdown, !formData.pays && styles.dropdownDisabled]} 
+                onPress={() => formData.pays && setCityModalVisible(true)}
+                disabled={!formData.pays || isFetchingCities}
+              >
+                <Text style={styles.dropdownText}>{isFetchingCities ? 'Chargement...' : formData.ville || 'Sélectionner une ville'}</Text>
+                <Ionicons name="chevron-down" size={20} color="#6B7280" />
+              </TouchableOpacity>
+            </View>
+
+            <LabeledInput label="Téléphone" keyboardType="phone-pad" placeholder="Votre numéro de téléphone" value={formData.user_phone1} onChangeText={(v) => handleInputChange('user_phone1', v)} />
+            <LabeledInput label="Email" placeholder="Votre email de connexion" keyboardType="email-address" value={formData.user_email} onChangeText={(v) => handleInputChange('user_email', v)} />
+            <LabeledInput label="Mot de passe" placeholder="Créez un mot de passe sécurisé" secureTextEntry value={formData.user_password} onChangeText={(v) => handleInputChange('user_password', v)} />
           </View>
+
+          <TouchableOpacity style={styles.submitButton} onPress={handleSubmit} disabled={isLoading}>
+              {isLoading ? <ActivityIndicator color="#FFFFFF" /> : <Text style={styles.submitButtonText}>Créer mon compte</Text>}
+          </TouchableOpacity>
         </ScrollView>
       </KeyboardAvoidingView>
 
@@ -395,7 +238,6 @@ export default function RegisterScreen() {
             </View>
         </SafeAreaView>
       </Modal>
-
     </SafeAreaView>
   );
 }
@@ -403,91 +245,43 @@ export default function RegisterScreen() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#FFFFFF',
+        backgroundColor: '#F9FAFB',
     },
     scrollViewContent: {
         flexGrow: 1,
         justifyContent: 'center',
-        padding: 24,
+        paddingHorizontal: 24,
+        paddingVertical: 16,
     },
     header: {
         alignItems: 'center',
         marginBottom: 24,
     },
     logoImage: {
-        width: 80,
-        height: 80,
+        width: 60,
+        height: 60,
         marginBottom: 12,
     },
     title: {
-        fontSize: 24,
+        fontSize: 26,
         fontWeight: 'bold',
         color: '#11224e',
     },
-    stepperContainer: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'flex-start',
-        marginBottom: 24,
-    },
-    step: {
-        alignItems: 'center',
-        flex: 1,
-        position: 'relative',
-    },
-    stepIndicator: {
-        width: 32,
-        height: 32,
-        borderRadius: 16,
-        backgroundColor: '#E5E7EB',
-        justifyContent: 'center',
-        alignItems: 'center',
-        borderWidth: 2,
-        borderColor: '#D1D5DB',
-    },
-    stepIndicatorActive: {
-        backgroundColor: '#f87b1b',
-        borderColor: '#f87b1b',
-    },
-    stepIndicatorCompleted: {
-        backgroundColor: '#11224e',
-        borderColor: '#11224e',
-    },
-    stepNumber: {
+    subtitle: {
+        fontSize: 15,
         color: '#6B7280',
-        fontWeight: 'bold',
+        marginTop: 4,
     },
-    stepNumberActive: {
-        color: '#FFFFFF',
-    },
-    stepLabel: {
-        fontSize: 10,
-        textAlign: 'center',
-        marginTop: 8,
-        color: '#6B7280',
-        fontWeight: '500',
-    },
-    stepLabelActive: {
-        color: '#f87b1b',
-        fontWeight: 'bold',
-    },
-    connector: {
-        position: 'absolute',
-        top: 15,
-        left: '50%',
-        right: '-50%',
-        height: 2,
-        backgroundColor: '#D1D5DB',
-        zIndex: -1,
-    },
-    formContainer: {
+    card: {
+        backgroundColor: '#FFFFFF',
+        borderRadius: 12,
+        padding: 24,
         marginBottom: 24,
-    },
-    stepTitle: {
-        fontSize: 18,
-        fontWeight: 'bold',
-        color: '#11224e',
-        marginBottom: 16,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 10,
+        elevation: 3,
     },
     inputContainer: {
       marginBottom: 12,
@@ -496,12 +290,13 @@ const styles = StyleSheet.create({
       fontSize: 14,
       fontWeight: '600',
       color: '#11224e',
-      marginBottom: 8,
+      marginBottom: 6,
     },
     input: {
         backgroundColor: '#F3F4F6',
         borderRadius: 8,
-        padding: 16,
+        paddingVertical: 12,
+        paddingHorizontal: 16,
         fontSize: 16,
         borderColor: '#D1D5DB',
         borderWidth: 1,
@@ -512,7 +307,8 @@ const styles = StyleSheet.create({
       alignItems: 'center',
       backgroundColor: '#F3F4F6',
       borderRadius: 8,
-      padding: 16,
+      paddingVertical: 12,
+      paddingHorizontal: 16,
       borderColor: '#D1D5DB',
       borderWidth: 1,
     },
@@ -523,93 +319,48 @@ const styles = StyleSheet.create({
     dropdownDisabled: {
         backgroundColor: '#E5E7EB',
     },
+    submitButton: {
+        backgroundColor: '#f87b1b',
+        borderRadius: 8,
+        padding: 16,
+        alignItems: 'center',
+        justifyContent: 'center',
+        shadowColor: '#f87b1b',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 8,
+        elevation: 5,
+    },
+    submitButtonText: {
+        color: '#FFFFFF',
+        fontSize: 16,
+        fontWeight: 'bold',
+    },
+    modalContentContainer: {
+      flex: 1,
+      paddingHorizontal: 20,
+    },
     modalHeader: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        padding: 16,
+        paddingVertical: 16,
         borderBottomWidth: 1,
         borderBottomColor: '#E5E7EB',
     },
     modalTitle: {
-        fontSize: 18,
+        fontSize: 20,
         fontWeight: 'bold',
         color: '#11224e',
     },
     searchInput: {
-        margin: 16,
+        marginVertical: 16,
         padding: 12,
         fontSize: 16,
         backgroundColor: '#F3F4F6',
         borderRadius: 8,
         borderColor: '#D1D5DB',
         borderWidth: 1,
-    },
-    modalItem: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        padding: 16,
-        borderBottomWidth: 1,
-        borderBottomColor: '#E5E7EB',
-    },
-    flagImage: {
-        width: 30,
-        height: 20,
-        marginRight: 12,
-        borderRadius: 3,
-    },
-    imagePicker: {
-        backgroundColor: '#E5E7EB',
-        borderRadius: 8,
-        padding: 16,
-        alignItems: 'center',
-        marginBottom: 12,
-    },
-    previewImage: {
-      width: 100,
-      height: 100,
-      borderRadius: 8,
-      alignSelf: 'center',
-      marginTop: 12,
-      marginBottom: 12,
-      borderWidth: 1,
-      borderColor: '#D1D5DB',
-    },
-    imagePickerText: {
-        color: '#11224e',
-        fontWeight: '500',
-    },
-    navigation: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-    },
-    navButton: {
-        padding: 16,
-        borderRadius: 8,
-        alignItems: 'center',
-        flex: 1,
-    },
-    prevButton: {
-        backgroundColor: '#6B7280',
-        marginRight: 8,
-    },
-    nextButton: {
-        backgroundColor: '#f87b1b',
-        marginLeft: 8,
-    },
-    navButtonText: {
-        color: '#FFFFFF',
-        fontWeight: 'bold',
-    },
-    modalContainer: {
-      flex: 1,
-      paddingTop: 50,
-      paddingHorizontal: 20,
-      backgroundColor: '#FFF',
-    },
-    modalContentContainer: {
-      flex: 1,
-      paddingHorizontal: 20,
     },
     countryItem: {
       flexDirection: 'row',
