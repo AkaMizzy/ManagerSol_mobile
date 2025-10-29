@@ -23,6 +23,7 @@ interface AuthState {
 
 interface AuthContextType extends AuthState {
   login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  register: (formData: FormData) => Promise<{ success: boolean; error?: string }>;
   logout: () => Promise<void>;
   updateUser: (userData: Partial<User>) => void;
   completePostLoginLoading: () => void;
@@ -88,6 +89,44 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isAuthenticated: false,
         isPostLoginLoading: false,
       });
+    }
+  };
+
+  const register = async (formData: FormData): Promise<{ success: boolean; error?: string }> => {
+    try {
+      setAuthState(prev => ({ ...prev, isLoading: true }));
+
+      const response = await fetch(`${API_CONFIG.BASE_URL}/auth/register`, {
+        method: 'POST',
+        body: formData,
+        // Headers are not needed for multipart/form-data with fetch, browser will set it
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        // Store auth data
+        await Promise.all([
+          AsyncStorage.setItem(STORAGE_KEYS.TOKEN, data.token),
+          AsyncStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(data.user)),
+        ]);
+
+        setAuthState({
+          user: { ...data.user, id: String(data.user.id) },
+          token: data.token,
+          isLoading: false,
+          isAuthenticated: true,
+          isPostLoginLoading: true,
+        });
+        return { success: true };
+      } else {
+        setAuthState(prev => ({ ...prev, isLoading: false }));
+        return { success: false, error: data.error || 'Registration failed' };
+      }
+    } catch (error) {
+      console.error('Registration error:', error);
+      setAuthState(prev => ({ ...prev, isLoading: false }));
+      return { success: false, error: 'Network error. Please check your connection.' };
     }
   };
 
@@ -196,6 +235,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const value: AuthContextType = {
     ...authState,
     login,
+    register,
     logout,
     updateUser,
     completePostLoginLoading,

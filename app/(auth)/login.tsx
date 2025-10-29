@@ -1,6 +1,7 @@
 import { useAuth } from '@/contexts/AuthContext';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
+import { Link } from 'expo-router';
 import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
@@ -211,7 +212,9 @@ export default function LoginScreen() {
             <View style={styles.footer}>
               <Text style={styles.footerText}>
                 Vous n&apos;avez pas de compte?{' '}
-                <Text style={styles.footerLink}>Contactez votre administrateur</Text>
+                <Link href="/register" style={styles.footerLink}>
+                  Créer un compte
+                </Link>
               </Text>
               <Text style={styles.copyrightText}>
                 <Text style={styles.copyrightBrand}>QualiSol</Text> ©{new Date().getFullYear()}. Tous droits réservés.
