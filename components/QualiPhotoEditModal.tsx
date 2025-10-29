@@ -2,20 +2,21 @@ import { ICONS } from '@/constants/Icons';
 import { useAuth } from '@/contexts/AuthContext';
 import qualiphotoService, { QualiPhotoItem } from '@/services/qualiphotoService';
 import { Ionicons } from '@expo/vector-icons';
+import { Audio } from 'expo-av';
 import { Image } from 'expo-image';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
-    ActivityIndicator,
-    Alert,
-    KeyboardAvoidingView,
-    Modal,
-    Platform,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View
+  ActivityIndicator,
+  Alert,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -35,6 +36,17 @@ export default function QualiPhotoEditModal({ visible, onClose, item, onSuccess 
   const [isEnhancingIntro, setIsEnhancingIntro] = useState(false);
   const [isEnhancingConclusion, setIsEnhancingConclusion] = useState(false);
 
+  const [conclusionVoiceNote, setConclusionVoiceNote] = useState<{ uri: string; name: string; type: string } | null>(null);
+  const [recording, setRecording] = useState<Audio.Recording | null>(null);
+  const [conclusionSound, setConclusionSound] = useState<Audio.Sound | null>(null);
+  const [isConclusionRecording, setIsConclusionRecording] = useState(false);
+  const [isConclusionPlaying, setIsConclusionPlaying] = useState(false);
+  const [conclusionRecordingDuration, setConclusionRecordingDuration] = useState(0);
+  const [isConclusionTranscribing, setIsConclusionTranscribing] = useState(false);
+  const [isConclusionTranscribed, setIsConclusionTranscribed] = useState(false);
+  
+  const conclusionDurationIntervalRef = useRef<number | null>(null);
+
   useEffect(() => {
     if (item) {
       setIntroduction(item.commentaire || '');
@@ -45,6 +57,20 @@ export default function QualiPhotoEditModal({ visible, onClose, item, onSuccess 
   const handleClose = () => {
     setError(null);
     setSubmitting(false);
+    setConclusionVoiceNote(null);
+    if (conclusionSound) {
+      conclusionSound.unloadAsync();
+      setConclusionSound(null);
+    }
+    setIsConclusionRecording(false);
+    setIsConclusionPlaying(false);
+    setConclusionRecordingDuration(0);
+    setIsConclusionTranscribing(false);
+    setIsConclusionTranscribed(false);
+    if (conclusionDurationIntervalRef.current) {
+      clearInterval(conclusionDurationIntervalRef.current);
+    }
+    setRecording(null);
     onClose();
   };
 
@@ -95,6 +121,100 @@ export default function QualiPhotoEditModal({ visible, onClose, item, onSuccess 
       setEnhancing(false);
     }
   };
+
+  function formatDuration(seconds: number) {
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
+  }
+
+  async function startConclusionRecording() {
+    try {
+      const { status } = await Audio.requestPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission Denied', 'Microphone access is required to record audio.');
+        return;
+      }
+      await Audio.setAudioModeAsync({ allowsRecordingIOS: true, playsInSilentModeIOS: true });
+      const { recording } = await Audio.Recording.createAsync(Audio.RecordingOptionsPresets.HIGH_QUALITY);
+      setRecording(recording);
+      setIsConclusionRecording(true);
+      conclusionDurationIntervalRef.current = setInterval(() => {
+        setConclusionRecordingDuration(prev => prev + 1);
+      }, 1000);
+    } catch (err) {
+      console.error('Failed to start conclusion recording', err);
+    }
+  }
+
+  async function stopConclusionRecording() {
+    if (!recording) return;
+    setIsConclusionRecording(false);
+    if (conclusionDurationIntervalRef.current) clearInterval(conclusionDurationIntervalRef.current);
+    await recording.stopAndUnloadAsync();
+    const uri = recording.getURI();
+    if (uri) {
+      setConclusionVoiceNote({ uri, name: `conclusion-voicenote-${Date.now()}.m4a`, type: 'audio/m4a' });
+      setIsConclusionTranscribed(false);
+    }
+    setConclusionRecordingDuration(0);
+    setRecording(null);
+  }
+
+  async function playConclusionSound() {
+    if (!conclusionVoiceNote) return;
+    if (isConclusionPlaying && conclusionSound) {
+      await conclusionSound.pauseAsync();
+      setIsConclusionPlaying(false);
+      return;
+    }
+    if (conclusionSound) {
+      await conclusionSound.playAsync();
+      setIsConclusionPlaying(true);
+      return;
+    }
+    const { sound: newSound } = await Audio.Sound.createAsync({ uri: conclusionVoiceNote.uri });
+    setConclusionSound(newSound);
+    setIsConclusionPlaying(true);
+    newSound.setOnPlaybackStatusUpdate((status) => {
+      if (status.isLoaded && status.didJustFinish) {
+        setIsConclusionPlaying(false);
+        newSound.setPositionAsync(0);
+      }
+    });
+    await newSound.playAsync();
+  }
+
+  const resetConclusionVoiceNote = () => {
+    if (conclusionSound) conclusionSound.unloadAsync();
+    setConclusionVoiceNote(null);
+    setConclusionSound(null);
+    setIsConclusionPlaying(false);
+    setIsConclusionTranscribed(false);
+  };
+
+  const handleConclusionTranscribe = async () => {
+    if (!conclusionVoiceNote || !token) {
+      Alert.alert('Erreur', 'Aucune note vocale à transcrire.');
+      return;
+    }
+    setIsConclusionTranscribing(true);
+    setError(null);
+    try {
+      const result = await qualiphotoService.transcribeVoiceNote(conclusionVoiceNote, token);
+      setConclusion(prev => prev ? `${prev}\n${result.transcription}` : result.transcription);
+      setIsConclusionTranscribed(true);
+    } catch (e: any) {
+      setError(e?.message || 'Échec de la transcription');
+      Alert.alert('Erreur de Transcription', e?.message || 'Une erreur est survenue lors de la transcription.');
+    } finally {
+      setIsConclusionTranscribing(false);
+    }
+  };
+
+  useEffect(() => {
+    return conclusionSound ? () => { conclusionSound.unloadAsync(); } : undefined;
+  }, [conclusionSound]);
 
 
   return (
@@ -156,7 +276,6 @@ export default function QualiPhotoEditModal({ visible, onClose, item, onSuccess 
                    <Text style={styles.fieldLabel}>Introduction</Text>
                  </View>
                  <View style={[styles.inputWrap, { alignItems: 'flex-start', marginTop: 8 }]}>
-                   <Ionicons name="chatbubble-ellipses-outline" size={16} color="#6b7280" style={{ marginTop: 4 }} />
                    <TextInput
                      placeholder="Saisir l'introduction..."
                      value={introduction}
@@ -182,11 +301,58 @@ export default function QualiPhotoEditModal({ visible, onClose, item, onSuccess 
               {/* Conclusion */}
               <View style={{ marginTop: 16 }}>
                  <View style={styles.fieldLabelContainer}>
-                   <Ionicons name="checkmark-circle-outline" size={18} color="#11224e" />
+                   <Ionicons name="chatbubble-ellipses-outline" size={18} color="#11224e" />
                    <Text style={styles.fieldLabel}>Conclusion</Text>
                  </View>
+                 <View style={styles.voiceNoteContainer}>
+                    {isConclusionRecording ? (
+                      <View style={styles.recordingWrap}>
+                        <Text style={styles.recordingText}>Enregistrement... {formatDuration(conclusionRecordingDuration)}</Text>
+                        <TouchableOpacity style={styles.stopButton} onPress={stopConclusionRecording}>
+                          <Ionicons name="stop-circle" size={24} color="#dc2626" />
+                        </TouchableOpacity>
+                      </View>
+                    ) : (
+                      <View style={styles.voiceActionsContainer}>
+                        {conclusionVoiceNote ? (
+                          <View style={styles.audioPlayerWrap}>
+                            <TouchableOpacity style={styles.playButton} onPress={playConclusionSound}>
+                              <Ionicons name={isConclusionPlaying ? 'pause-circle' : 'play-circle'} size={28} color="#11224e" />
+                            </TouchableOpacity>
+                            <TouchableOpacity style={[styles.deleteButton, isConclusionTranscribed && styles.buttonDisabled]} onPress={resetConclusionVoiceNote} disabled={isConclusionTranscribed}>
+                              <Ionicons name="trash-outline" size={20} color={isConclusionTranscribed ? '#9ca3af' : '#dc2626'} />
+                            </TouchableOpacity>
+                          </View>
+                        ) : (
+                          <TouchableOpacity style={styles.voiceRecordButton} onPress={startConclusionRecording}>
+                            <View style={styles.buttonContentWrapper}>
+                              <Ionicons name="mic-outline" size={24} color="#11224e" />
+                            </View>
+                          </TouchableOpacity>
+                        )}
+                        <TouchableOpacity
+                          style={[
+                            styles.voiceRecordButton,
+                            styles.transcribeButton,
+                            (!conclusionVoiceNote || isConclusionTranscribing) && styles.buttonDisabled,
+                          ]}
+                          onPress={handleConclusionTranscribe}
+                          disabled={!conclusionVoiceNote || isConclusionTranscribing}
+                        >
+                          {isConclusionTranscribing ? (
+                            <ActivityIndicator size="small" color="#11224e" />
+                          ) : (
+                            <View style={styles.buttonContentWrapper}>
+                              <Ionicons name="volume-high-outline" size={25} color="#11224e" />
+                              <Ionicons name="arrow-forward-circle-outline" size={20} color="#11224e" />
+                              <Ionicons name="document-text-outline" size={20} color="#11224e" />
+                            </View>
+                          )}
+                        </TouchableOpacity>
+                      </View>
+                    )}
+                  </View>
                  <View style={[styles.inputWrap, { alignItems: 'flex-start', marginTop: 8 }]}>
-                   <Ionicons name="chatbubble-ellipses-outline" size={16} color="#6b7280" style={{ marginTop: 4 }} />
                    <TextInput
                      placeholder="Saisir la conclusion..."
                      value={conclusion}
@@ -252,4 +418,38 @@ const styles = StyleSheet.create({
   submitButtonDisabled: { backgroundColor: '#d1d5db' },
   submitButtonText: { fontSize: 16, fontWeight: '600', color: '#FFFFFF' },
   enhanceButton: { position: 'absolute', top: 10, right: 10, padding: 4, borderRadius: 8, backgroundColor: '#fff' },
+  voiceNoteContainer: {
+    marginTop: 12,
+    marginBottom: 8,
+  },
+  voiceActionsContainer: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  voiceRecordButton: {
+    flex: 1,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    height: 50,
+    backgroundColor: '#f1f5f9',
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#f87b1b'
+  },
+  transcribeButton: {},
+  buttonContentWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    flex: 1,
+  },
+  recordingWrap: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#fef2f2', padding: 12, borderRadius: 10 },
+  recordingText: { color: '#dc2626', fontWeight: '600' },
+  stopButton: { padding: 4 },
+  audioPlayerWrap: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#f1f5f9', paddingHorizontal: 12, height: 50, borderRadius: 10, flex: 1, borderWidth: 1, borderColor: '#f87b1b' },
+  playButton: {},
+  deleteButton: {},
+  buttonDisabled: { opacity: 0.5, backgroundColor: '#e5e7eb' },
 });
