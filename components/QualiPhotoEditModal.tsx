@@ -88,6 +88,7 @@ export default function QualiPhotoEditModal({ visible, onClose, item, onSuccess 
         {
           commentaire: introduction,
           conclusion: conclusion,
+          conclusion_voice_note: conclusionVoiceNote || undefined,
         },
         token
       );

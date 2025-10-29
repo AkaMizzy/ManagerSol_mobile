@@ -235,12 +235,43 @@ class QualiPhotoService {
     });
   }
 
-  async updateQualiPhoto(qualiphotoId: string, payload: { commentaire?: string; conclusion?: string }, token: string): Promise<{ success: boolean }> {
-    return this.makeRequest<{ success: boolean }>(`/qualiphoto/${qualiphotoId}`, token, {
+  async updateQualiPhoto(
+    qualiphotoId: string, 
+    payload: { 
+      commentaire?: string; 
+      conclusion?: string,
+      conclusion_voice_note?: { uri: string; name: string; type: string };
+    }, 
+    token: string
+  ): Promise<{ success: boolean }> {
+    const formData = new FormData();
+    if (payload.commentaire) {
+      formData.append('commentaire', payload.commentaire);
+    }
+    if (payload.conclusion) {
+      formData.append('conclusion', payload.conclusion);
+    }
+    if (payload.conclusion_voice_note) {
+      formData.append('conclusion_audio', {
+        uri: payload.conclusion_voice_note.uri,
+        name: payload.conclusion_voice_note.name,
+        type: payload.conclusion_voice_note.type,
+      } as any);
+    }
+
+    const res = await fetch(`${API_CONFIG.BASE_URL}/qualiphoto/${qualiphotoId}`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      body: formData,
     });
+    
+    const data = await res.json();
+    if (!res.ok) {
+      throw new Error(data?.error || 'Failed to update QualiPhoto');
+    }
+    return data;
   }
 
   async compareImages(beforeImageUrl: string, afterImageUrl: string, token: string): Promise<{ description: string }> {
