@@ -11,6 +11,7 @@ type PhotoCardProps = {
   onPress: () => void;
   onToggleActions?: () => void;
   isActionsVisible?: boolean;
+  borderColor?: string;
 };
 
 function formatDate(dateStr: string) {
@@ -35,6 +36,7 @@ export const PhotoCard: React.FC<PhotoCardProps> = ({
   onPress,
   onToggleActions,
   isActionsVisible,
+  borderColor,
 }) => {
   if (!uri) {
     return null;
@@ -43,7 +45,7 @@ export const PhotoCard: React.FC<PhotoCardProps> = ({
   return (
     <View>
       <TouchableOpacity onPress={onPress} activeOpacity={0.9}>
-        <View style={styles.imageWrap}>
+        <View style={[styles.imageWrap, borderColor ? { borderColor } : {}]}>
           <Image source={{ uri }} style={styles.image} />
           <View style={[styles.overlay, { gap: 4 }]}>
             {title && <Text style={styles.title} numberOfLines={1}>{title}</Text>}
@@ -79,7 +81,7 @@ const styles = StyleSheet.create({
   imageWrap: {
     backgroundColor: '#ffffff',
     borderRadius: 12,
-    borderWidth: 1,
+    borderWidth: 2,
     borderColor: '#f87b1b',
     overflow: 'hidden',
   },

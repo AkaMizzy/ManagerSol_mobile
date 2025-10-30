@@ -16,8 +16,6 @@ export type QualiPhotoItem = {
   latitude: number | null;
   longitude: number | null;
   id_qualiphoto_parent?: string | null;
-  before?: number;
-  after?: number;
   id_user?: string;
   user_name?: string;
   user_lastname?: string;
@@ -342,6 +340,48 @@ class QualiPhotoService {
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data?.error || 'Failed to create QualiPhoto');
+    return this.normalizeQualiPhotoItem(data);
+  }
+
+  async createChild(parentId: string, payload: Omit<CreateQualiPhotoPayload, 'id_zone' | 'id_project' | 'id_qualiphoto_parent'>, token: string): Promise<Partial<QualiPhotoItem>> {
+    const formData = new FormData();
+    if (payload.title) formData.append('title', payload.title);
+    if (payload.commentaire) formData.append('commentaire', payload.commentaire);
+    if (payload.date_taken) formData.append('date_taken', payload.date_taken);
+    if (payload.latitude) formData.append('latitude', String(payload.latitude));
+    if (payload.longitude) formData.append('longitude', String(payload.longitude));
+
+    if (payload.photo) {
+      formData.append('photo', {
+        uri: payload.photo.uri,
+        name: payload.photo.name,
+        type: payload.photo.type,
+      } as any);
+    }
+    if (payload.photo_plan) {
+      formData.append('photo_plan', {
+        uri: payload.photo_plan.uri,
+        name: payload.photo_plan.name,
+        type: payload.photo_plan.type,
+      } as any);
+    }
+    if (payload.voice_note) {
+      formData.append('voice_note', {
+        uri: payload.voice_note.uri,
+        name: payload.voice_note.name,
+        type: payload.voice_note.type,
+      } as any);
+    }
+    
+    const res = await fetch(`${API_CONFIG.BASE_URL}/qualiphoto/${parentId}/children`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      body: formData,
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data?.error || 'Failed to create child QualiPhoto');
     return this.normalizeQualiPhotoItem(data);
   }
 

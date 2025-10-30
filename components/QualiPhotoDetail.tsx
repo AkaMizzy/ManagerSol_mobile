@@ -13,7 +13,6 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AppHeader from './AppHeader';
 import { ChildQualiPhotoView } from './ChildQualiPhotoView';
 import ComparisonModal from './ComparisonModal';
-import ConclusionModal from './ConclusionModal';
 import { CreateChildQualiPhotoForm } from './CreateChildQualiPhotoModal';
 import CreateComplementaireQualiPhotoModal from './CreateComplementaireQualiPhotoModal';
 import { ParentQualiPhotoView } from './ParentQualiPhotoView';
@@ -75,10 +74,6 @@ type Props = {
   const [isComparing, setIsComparing] = useState(false);
   const [comparisonDescription, setComparisonDescription] = useState<string | null>(null);
   const [comparisonError, setComparisonError] = useState<string | null>(null);
-  const [conclusion, setConclusion] = useState<string | null>(null);
-  const [isGeneratingConclusion, setIsGeneratingConclusion] = useState(false);
-  const [isConclusionModalVisible, setConclusionModalVisible] = useState(false);
-  const [generatedConclusion, setGeneratedConclusion] = useState<string | null>(null);
 
   // Signature states
   const [signatures, setSignatures] = useState<{
@@ -101,41 +96,7 @@ type Props = {
     setLayoutMode('list');
     setComplement(null);
     setSignatures({ technicien: null, control: null, admin: null });
-    setConclusion(initialItem?.conclusion || null);
-    setGeneratedConclusion(null);
   }, [initialItem]);
-
-  const handleOpenConclusionModal = async () => {
-    if (!token || !item || !item.commentaire) {
-      Alert.alert('Erreur', 'La description est requise pour générer une conclusion.');
-      return;
-    }
-    setConclusionModalVisible(true);
-    setIsGeneratingConclusion(true);
-    setGeneratedConclusion(null);
-    try {
-      const result = await qualiphotoService.generateConclusion(item.commentaire, token);
-      setGeneratedConclusion(result.conclusion);
-    } catch (e: any) {
-      Alert.alert('Erreur', e?.message || 'Une erreur est survenue lors de la génération de la conclusion.');
-      setConclusionModalVisible(false);
-    } finally {
-      setIsGeneratingConclusion(false);
-    }
-  };
-
-  const handleSaveConclusion = async (finalConclusion: string) => {
-    if (!token || !item) return;
-    try {
-      await qualiphotoService.updateConclusion(item.id, finalConclusion, token);
-      setConclusion(finalConclusion);
-      setItem({ ...item, conclusion: finalConclusion });
-      setConclusionModalVisible(false);
-      Alert.alert('Succès', 'Conclusion enregistrée avec succès.');
-    } catch (e: any) {
-      Alert.alert('Erreur', e?.message || 'Une erreur est survenue lors de la sauvegarde de la conclusion.');
-    }
-  };
 
   const handleCompare = async (beforeUrl: string | null, afterUrl: string | null) => {
     if (!token || !beforeUrl || !afterUrl) {
@@ -204,7 +165,7 @@ type Props = {
 
   useEffect(() => {
     if (item && item.id && token) {
-      if (item.after === 1) {
+      if (item.id_qualiphoto_parent) {
         setIsLoadingComments(true);
         qualiphotoService.getComments(item.id, token)
           .then(setComments)
@@ -214,7 +175,7 @@ type Props = {
         setComments([]);
       }
 
-      if (item.before === 1) {
+      if (!item.id_qualiphoto_parent) {
         setIsLoadingChildren(true);
         qualiphotoService.getChildren(item.id, token, sortOrder)
           .then(async (rows) => {
@@ -224,7 +185,7 @@ type Props = {
               const entries = await Promise.all(rows.map(async (r) => {
                 try {
                   const kids = await qualiphotoService.getChildren(r.id, token);
-                  const comp = kids.find(c => (c.before === 0 && c.after === 0) || !!c.photo_comp);
+                  const comp = kids.find(c => !!c.photo_comp);
                   return [String(r.id), !!comp] as const;
                 } catch {
                   return [String(r.id), false] as const;
@@ -249,7 +210,7 @@ type Props = {
         setIsLoadingComplement(true);
         qualiphotoService.getChildren(item.id, token)
           .then((rows) => {
-            const comp = rows.find(r => (r.before === 0 && r.after === 0) || !!r.photo_comp);
+            const comp = rows.find(r => !!r.photo_comp);
             setComplement(comp || null);
           })
           .catch(() => setComplement(null))
@@ -400,8 +361,8 @@ type Props = {
     if (!item) return false;
     const hasActions = item.voice_note || 
                        (item.latitude && item.longitude) || 
-                       (item.before === 1 && children.length > 0) || 
-                       item.after === 1;
+                       (!item.id_qualiphoto_parent && children.length > 0) || 
+                       !!item.id_qualiphoto_parent;
     const hasDescription = typeof item.commentaire === 'string' && item.commentaire.trim().length > 0;
     return hasActions || hasDescription;
   }, [item, children]);
@@ -527,7 +488,6 @@ type Props = {
           isLoadingChildren={isLoadingChildren}
           childIdToHasComplement={childIdToHasComplement}
           setItem={setItem}
-          onOpenConclusionModal={handleOpenConclusionModal}
         />
       );
     } else {
@@ -761,14 +721,6 @@ type Props = {
         ) : (
           renderDetailView()
         )}
-        <ConclusionModal
-            visible={isConclusionModalVisible}
-            onClose={() => setConclusionModalVisible(false)}
-            onSave={handleSaveConclusion}
-            isGenerating={isGeneratingConclusion}
-            generatedConclusion={generatedConclusion}
-            initialConclusion={conclusion}
-        />
         <CreateDeclarationModal
           visible={isDeclModalVisible}
           onClose={() => setDeclModalVisible(false)}

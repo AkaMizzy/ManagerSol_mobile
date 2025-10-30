@@ -53,7 +53,7 @@ export function CreateChildQualiPhotoForm({ onClose, onSuccess, parentItem }: Fo
   const durationIntervalRef = useRef<number | null>(null);
   const scrollViewRef = useRef<ScrollView>(null);
 
-  const canSave = useMemo(() => !!photo && !submitting, [photo, submitting]);
+  const canSave = useMemo(() => !!photo && !submitting && !isGeneratingDescription, [photo, submitting, isGeneratingDescription]);
 
   const resetForm = () => {
     setTitle('');
@@ -142,16 +142,13 @@ export function CreateChildQualiPhotoForm({ onClose, onSuccess, parentItem }: Fo
     setSubmitting(true);
     setError(null);
     try {
-      const created = await qualiphotoService.create({
-        id_project: parentItem.id_project,
-        id_zone: selectedZoneId,
+      const created = await qualiphotoService.createChild(parentItem.id, {
         title: title || parentItem.title || undefined,
         commentaire: comment,
         photo,
         photo_plan: annotatedPlan || undefined,
         latitude: latitude || undefined,
         longitude: longitude || undefined,
-        id_qualiphoto_parent: parentItem.id,
         voice_note: voiceNote || undefined,
       }, token);
       onSuccess(created);
@@ -524,6 +521,11 @@ export function CreateChildQualiPhotoForm({ onClose, onSuccess, parentItem }: Fo
               <>
                 <Ionicons name="hourglass" size={16} color="#FFFFFF" />
                 <Text style={styles.submitButtonText}>Enregistrement...</Text>
+              </>
+            ) : isGeneratingDescription ? (
+              <>
+                <ActivityIndicator size="small" color="#FFFFFF" />
+                <Text style={styles.submitButtonText}>Génération IA...</Text>
               </>
             ) : (
               <>

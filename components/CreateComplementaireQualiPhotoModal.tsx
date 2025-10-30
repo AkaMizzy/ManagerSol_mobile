@@ -42,7 +42,7 @@ export default function CreateComplementaireQualiPhotoModal({ visible, onClose, 
   const [isAnnotatorVisible, setAnnotatorVisible] = useState(false);
   const [annotatorBaseUri, setAnnotatorBaseUri] = useState<string | null>(null);
 
-  const canSave = useMemo(() => !!photo && !submitting, [photo, submitting]);
+  const canSave = useMemo(() => !!photo && !submitting && !isGeneratingDescription, [photo, submitting, isGeneratingDescription]);
 
   const handlePickPhoto = useCallback(async () => {
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
@@ -383,6 +383,11 @@ export default function CreateComplementaireQualiPhotoModal({ visible, onClose, 
                 <>
                   <ActivityIndicator size="small" color="#FFFFFF" />
                   <Text style={styles.submitButtonText}>Enregistrement...</Text>
+                </>
+              ) : isGeneratingDescription ? (
+                <>
+                  <ActivityIndicator size="small" color="#FFFFFF" />
+                  <Text style={styles.submitButtonText}>Génération IA...</Text>
                 </>
               ) : (
                 <>

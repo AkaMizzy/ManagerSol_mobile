@@ -252,7 +252,7 @@ type ParentQualiPhotoViewProps = {
                 )}
               </View>
             )}
-            {item.after === 1 && (comments.length > 0 || isLoadingComments) && (
+            {!!item.id_qualiphoto_parent && (comments.length > 0 || isLoadingComments) && (
               <View style={styles.metaCard}>
                 <Text style={styles.sectionTitle}>Commentaires</Text>
                 {isLoadingComments && <ActivityIndicator style={{ marginVertical: 16 }} />}
@@ -266,7 +266,7 @@ type ParentQualiPhotoViewProps = {
                 ))}
               </View>
             )}
-            {item.before === 1 && (
+            {!item.id_qualiphoto_parent && (
               <>
                 <View style={styles.sectionSeparator} />
                 <View style={styles.childPicturesContainer}>
@@ -306,22 +306,28 @@ type ParentQualiPhotoViewProps = {
                  )}
                </View>
                 {isLoadingChildren && <Text>Chargement...</Text>}
-                {!isLoadingChildren && childPhotos.length === 0 && item.before === 1 && (
+                {!isLoadingChildren && childPhotos.length === 0 && !item.id_qualiphoto_parent && (
                   <Text style={styles.noChildrenText}>Aucune photo suivie n&apos;a encore été ajoutée.</Text>
                 )}
                 <View style={layoutMode === 'grid' ? styles.childGridContainer : styles.childListContainer}>
-                  {childPhotos.map((child) => (
-                    <View key={child.id} style={layoutMode === 'grid' ? styles.childGridItem : styles.childListItem}>
+                  {childPhotos.map((child) => {
+                    const hasComplement = !!childIdToHasComplement[child.id];
+                    const borderColor = hasComplement ? '#4caf50' : '#f87b1b';
+
+                    return (
+                      <View key={child.id} style={layoutMode === 'grid' ? styles.childGridItem : styles.childListItem}>
                         <PhotoCard
-                            uri={child.photo}
-                            title={child.title}
-                            userName={child.user_name}
-                            userLastName={child.user_lastname}
-                            date={child.date_taken}
-                            onPress={() => setItem(child)}
+                          uri={child.photo}
+                          title={child.title}
+                          userName={child.user_name}
+                          userLastName={child.user_lastname}
+                          date={child.date_taken}
+                          onPress={() => setItem(child)}
+                          borderColor={borderColor}
                         />
-                    </View>
-                  ))}
+                      </View>
+                    );
+                  })}
                 </View>
               </View>
               </>
@@ -545,8 +551,6 @@ const styles = StyleSheet.create({
         borderRadius: 12,
         overflow: 'hidden',
         position: 'relative',
-        borderWidth: 1,
-        borderColor: '#e5e7eb',
       },
       childListItem: {
         width: '100%',
@@ -554,8 +558,6 @@ const styles = StyleSheet.create({
         borderRadius: 12,
         overflow: 'hidden',
         position: 'relative',
-        borderWidth: 1,
-        borderColor: '#e5e7eb',
       },
       childGridOverlay: {
         position: 'absolute',

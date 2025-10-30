@@ -215,13 +215,6 @@ export const ChildQualiPhotoView: React.FC<ChildQualiPhotoViewProps> = ({
                   {complement && (
                     <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                       <TouchableOpacity
-                        onPress={() => handleCompare(item.photo, complement.photo_comp || complement.photo)}
-                        accessibilityLabel="Comparer les images"
-                        style={{ marginLeft: 12 }}
-                      >
-                        <Image source={ICONS.chatgpt} style={{ width: 22, height: 22 }} />
-                      </TouchableOpacity>
-                      <TouchableOpacity
                         onPress={deleteComplement}
                         accessibilityLabel="Supprimer la photo complémentaire"
                         style={{ marginLeft: 12 }}
@@ -294,7 +287,7 @@ export const ChildQualiPhotoView: React.FC<ChildQualiPhotoViewProps> = ({
                 )}
               </View>
 
-              {item.after === 1 && (comments.length > 0 || isLoadingComments) && (
+              {!!item.id_qualiphoto_parent && (comments.length > 0 || isLoadingComments) && (
                 <View style={styles.metaCard}>
                   <Text style={styles.sectionTitle}>Commentaires</Text>
                   {isLoadingComments && <ActivityIndicator style={{ marginVertical: 16 }} />}
