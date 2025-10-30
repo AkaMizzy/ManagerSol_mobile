@@ -1,6 +1,6 @@
-import API_CONFIG from '@/app/config/api';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createContext, ReactNode, useContext, useEffect, useState } from 'react';
+import api, { setAuthToken } from '../services/api';
 
 // Types
 interface User {
@@ -61,6 +61,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       ]);
 
       if (token && userData) {
+        setAuthToken(token); // Set token for API calls
         const user = JSON.parse(userData);
         // For now, we'll trust the stored data
         // In production, you might want to validate the token with the backend
@@ -98,23 +99,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   
       const isDetailedRegistration = formData instanceof FormData;
       const endpoint = isDetailedRegistration
-        ? `${API_CONFIG.BASE_URL}/auth/register/detailed`
-        : `${API_CONFIG.BASE_URL}/auth/register/simple`;
+        ? `/auth/register/detailed`
+        : `/auth/register/simple`;
   
-      const response = await fetch(endpoint, {
+      const response = await api({
         method: 'POST',
-        headers: isDetailedRegistration ? {} : { 'Content-Type': 'application/json' },
-        body: isDetailedRegistration ? formData : JSON.stringify(formData),
+        url: endpoint,
+        data: formData,
+        headers: isDetailedRegistration ? { 'Content-Type': 'multipart/form-data' } : {},
       });
   
-      const data = await response.json();
+      const data = response.data;
   
-      if (response.ok) {
+      if (response.status === 201) {
         // Store auth data
         await Promise.all([
           AsyncStorage.setItem(STORAGE_KEYS.TOKEN, data.token),
           AsyncStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(data.user)),
         ]);
+        
+        setAuthToken(data.token); // Set token for API calls
   
         setAuthState({
           user: { ...data.user, id: String(data.user.id) },
@@ -139,24 +143,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       setAuthState(prev => ({ ...prev, isLoading: true }));
 
-      const response = await fetch(`${API_CONFIG.BASE_URL}/auth/login`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email, password }),
-      });
+      const response = await api.post('/auth/login', { email, password });
+      const data = response.data;
 
-      const data = await response.json();
-
-      if (response.ok) {
+      if (response.status === 200) {
         // Check if user is of type 'user' (only user type can access mobile app)
-        if (data.role === 'user') {
+        if (data.role === 'user' || data.role === 'admin') {
           // Store auth data
           await Promise.all([
             AsyncStorage.setItem(STORAGE_KEYS.TOKEN, data.token),
             AsyncStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(data)),
           ]);
+
+          setAuthToken(data.token); // Set token for API calls
 
           setAuthState({
             user: { ...data, id: String(data.id) },
@@ -195,6 +194,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       console.log('AuthContext: Starting logout process...');
       await clearStorage();
+      setAuthToken(null); // Clear token
       console.log('AuthContext: Storage cleared, updating state...');
       
       setAuthState({

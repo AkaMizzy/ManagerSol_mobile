@@ -1,6 +1,7 @@
 import { useAuth } from '@/contexts/AuthContext';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
+import * as Linking from 'expo-linking';
 import { Link } from 'expo-router';
 import { useEffect, useState } from 'react';
 import {
@@ -219,7 +220,13 @@ export default function LoginScreen() {
               <Text style={styles.copyrightText}>
                 <Text style={styles.copyrightBrand}>QualiSol</Text> ©{new Date().getFullYear()}. Tous droits réservés.
               </Text>
-              <Text style={styles.websiteText}>www.muntadaacom.com</Text>
+              <TouchableOpacity
+                onPress={() => Linking.openURL('https://www.muntadaa.com')}
+                accessibilityRole="link"
+                accessibilityHint="Ouvre www.muntaada.com dans le navigateur"
+              >
+                <Text style={styles.websiteText}>www.muntaada.com</Text>
+              </TouchableOpacity>
             </View>
           </View>
         </ScrollView>
@@ -386,7 +393,8 @@ const styles = StyleSheet.create({
   },
   footerLink: {
     color: '#f87b1b',
-    fontWeight: '600',
+    fontWeight: '800',
+    fontSize: 15,
   },
   copyrightText: {
     fontSize: 12,

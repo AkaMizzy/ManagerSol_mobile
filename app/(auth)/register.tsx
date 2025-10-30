@@ -1,22 +1,23 @@
+import API_CONFIG from '@/app/config/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import {
-    ActivityIndicator,
-    Alert,
-    FlatList,
-    KeyboardAvoidingView,
-    Modal,
-    Platform,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TextInputProps,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Alert,
+  FlatList,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TextInputProps,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -42,6 +43,7 @@ export default function RegisterScreen() {
     user_phone1: '',
     user_email: '',
     user_password: '',
+    confirm_password: '',
   });
   const [countries, setCountries] = useState<Country[]>([]);
   const [cities, setCities] = useState<string[]>([]);
@@ -49,6 +51,50 @@ export default function RegisterScreen() {
   const [isCityModalVisible, setCityModalVisible] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [isFetchingCities, setIsFetchingCities] = useState(false);
+  const [isPasswordVisible, setPasswordVisible] = useState(false);
+  const [isConfirmPasswordVisible, setConfirmPasswordVisible] = useState(false);
+  const [emailError, setEmailError] = useState('');
+  const [isCheckingEmail, setIsCheckingEmail] = useState(false);
+
+  function isValidEmail(email: string) {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+    return emailRegex.test(email);
+  }
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      if (formData.user_email && isValidEmail(formData.user_email)) {
+        checkEmailAvailability(formData.user_email);
+      }
+    }, 500); // 500ms debounce delay
+
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [formData.user_email]);
+
+  const checkEmailAvailability = async (email: string) => {
+    setIsCheckingEmail(true);
+    setEmailError('');
+    try {
+      const response = await fetch(`${API_CONFIG.BASE_URL}/auth/check-email`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      });
+      if (response.ok) {
+        setEmailError('Cette adresse e-mail est déjà utilisée.');
+      } else if (response.status === 404) {
+        setEmailError(''); // Email is available
+      } else {
+        setEmailError('Erreur lors de la vérification de l\'e-mail.');
+      }
+    } catch (error) {
+      setEmailError('Erreur réseau. Veuillez vérifier votre connexion.');
+    } finally {
+      setIsCheckingEmail(false);
+    }
+  };
 
   useEffect(() => {
     const fetchCountries = async () => {
@@ -104,7 +150,37 @@ export default function RegisterScreen() {
   };
   
   const handleSubmit = async () => {
-    const result = await register(formData);
+    if (!formData.company_title.trim()) {
+      Alert.alert('Erreur', "Le nom de l'entreprise est obligatoire.");
+      return;
+    }
+    if (!formData.user_email.trim()) {
+      Alert.alert('Erreur', "L'email est obligatoire.");
+      return;
+    }
+    if (!formData.user_password.trim()) {
+      Alert.alert('Erreur', 'Le mot de passe est obligatoire.');
+      return;
+    }
+    if (!isValidEmail(formData.user_email.trim())) {
+      Alert.alert('Erreur', "L'email n'est pas valide.");
+      return;
+    }
+    if (formData.user_password !== formData.confirm_password) {
+      Alert.alert('Erreur', 'Les mots de passe ne correspondent pas.');
+      return;
+    }
+
+    const payload = {
+      company_title: formData.company_title,
+      pays: formData.pays,
+      ville: formData.ville,
+      user_phone1: formData.user_phone1,
+      user_email: formData.user_email,
+      user_password: formData.user_password,
+    };
+
+    const result = await register(payload);
     if (result.success) {
         Alert.alert('Succès', 'Votre compte a été créé avec succès.');
     } else {
@@ -146,8 +222,14 @@ export default function RegisterScreen() {
           </View>
           
           <View style={styles.card}>
+          <LabeledInput label="Email" placeholder="Votre email de connexion" keyboardType="email-address" autoCapitalize="none" autoCorrect={false} value={formData.user_email} onChangeText={(v) => handleInputChange('user_email', v)} />
+            {isCheckingEmail && <ActivityIndicator size="small" color="#f87b1b" style={styles.emailFeedbackText} />}
+            {emailError ? <Text style={styles.emailErrorText}>{emailError}</Text> : null}
+            {!isCheckingEmail && !emailError && formData.user_email && isValidEmail(formData.user_email) && <Text style={styles.emailSuccessText}>Email disponible</Text>}
             <LabeledInput label="Nom de l'entreprise" placeholder="ex: QualiSol Inc." value={formData.company_title} onChangeText={(v) => handleInputChange('company_title', v)} />
-            
+
+            <LabeledInput label="Téléphone" keyboardType="phone-pad" placeholder="Votre numéro de téléphone" value={formData.user_phone1} onChangeText={(v) => handleInputChange('user_phone1', v)} />
+
             <View style={styles.inputContainer}>
               <Text style={styles.inputLabel}>Pays</Text>
               <TouchableOpacity style={styles.dropdown} onPress={() => setCountryModalVisible(true)}>
@@ -168,12 +250,50 @@ export default function RegisterScreen() {
               </TouchableOpacity>
             </View>
 
-            <LabeledInput label="Téléphone" keyboardType="phone-pad" placeholder="Votre numéro de téléphone" value={formData.user_phone1} onChangeText={(v) => handleInputChange('user_phone1', v)} />
-            <LabeledInput label="Email" placeholder="Votre email de connexion" keyboardType="email-address" value={formData.user_email} onChangeText={(v) => handleInputChange('user_email', v)} />
-            <LabeledInput label="Mot de passe" placeholder="Créez un mot de passe sécurisé" secureTextEntry value={formData.user_password} onChangeText={(v) => handleInputChange('user_password', v)} />
+            <View style={styles.inputContainer}>
+              <Text style={styles.inputLabel}>Mot de passe</Text>
+              <View style={styles.passwordInputWrapper}>
+                <TextInput
+                  style={styles.passwordInput}
+                  placeholder="Créez un mot de passe sécurisé"
+                  placeholderTextColor="#9CA3AF"
+                  secureTextEntry={!isPasswordVisible}
+                  value={formData.user_password}
+                  onChangeText={(v) => handleInputChange('user_password', v)}
+                  autoComplete="off"
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  textContentType="newPassword"
+                />
+                <TouchableOpacity onPress={() => setPasswordVisible(v => !v)} style={styles.eyeIcon}>
+                  <Ionicons name={isPasswordVisible ? 'eye-off-outline' : 'eye-outline'} size={22} color="#6B7280" />
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            <View style={styles.inputContainer}>
+              <Text style={styles.inputLabel}>Confirmer le mot de passe</Text>
+              <View style={styles.passwordInputWrapper}>
+                <TextInput
+                  style={styles.passwordInput}
+                  placeholder="Retapez le mot de passe"
+                  placeholderTextColor="#9CA3AF"
+                  secureTextEntry={!isConfirmPasswordVisible}
+                  value={formData.confirm_password}
+                  onChangeText={(v) => handleInputChange('confirm_password', v)}
+                  autoComplete="off"
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  textContentType="newPassword"
+                />
+                <TouchableOpacity onPress={() => setConfirmPasswordVisible(v => !v)} style={styles.eyeIcon}>
+                  <Ionicons name={isConfirmPasswordVisible ? 'eye-off-outline' : 'eye-outline'} size={22} color="#6B7280" />
+                </TouchableOpacity>
+              </View>
+            </View>
           </View>
 
-          <TouchableOpacity style={styles.submitButton} onPress={handleSubmit} disabled={isLoading}>
+          <TouchableOpacity style={[styles.submitButton, (isLoading || isCheckingEmail || !!emailError) && styles.submitButtonDisabled]} onPress={handleSubmit} disabled={isLoading || isCheckingEmail || !!emailError}>
               {isLoading ? <ActivityIndicator color="#FFFFFF" /> : <Text style={styles.submitButtonText}>Créer mon compte</Text>}
           </TouchableOpacity>
         </ScrollView>
@@ -181,7 +301,7 @@ export default function RegisterScreen() {
 
       {/* Country Modal */}
       <Modal visible={isCountryModalVisible} animationType="slide" onRequestClose={() => setCountryModalVisible(false)}>
-        <SafeAreaView style={{ flex: 1, backgroundColor: '#FFF' }}>
+        <SafeAreaView style={{ flex: 1, backgroundColor: '#FFF' }} edges={['top', 'bottom']}>
           <View style={styles.modalContentContainer}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Sélectionner un pays</Text>
@@ -211,7 +331,7 @@ export default function RegisterScreen() {
 
       {/* City Modal */}
       <Modal visible={isCityModalVisible} animationType="slide" onRequestClose={() => setCityModalVisible(false)}>
-        <SafeAreaView style={{ flex: 1, backgroundColor: '#FFF' }}>
+        <SafeAreaView style={{ flex: 1, backgroundColor: '#FFF' }} edges={['top', 'bottom']}>
             <View style={styles.modalContentContainer}>
                 <View style={styles.modalHeader}>
                     <Text style={styles.modalTitle}>Sélectionner une ville</Text>
@@ -286,6 +406,20 @@ const styles = StyleSheet.create({
     inputContainer: {
       marginBottom: 12,
     },
+    emailFeedbackText: {
+      marginTop: 4,
+      alignSelf: 'flex-start',
+    },
+    emailErrorText: {
+      fontSize: 13,
+      color: '#EF4444',
+      marginTop: 4,
+    },
+    emailSuccessText: {
+      fontSize: 13,
+      color: '#10B981',
+      marginTop: 4,
+    },
     inputLabel: {
       fontSize: 14,
       fontWeight: '600',
@@ -300,6 +434,26 @@ const styles = StyleSheet.create({
         fontSize: 16,
         borderColor: '#D1D5DB',
         borderWidth: 1,
+    },
+    passwordInputWrapper: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: '#F3F4F6',
+      borderRadius: 8,
+      paddingHorizontal: 12,
+      borderColor: '#D1D5DB',
+      borderWidth: 1,
+    },
+    passwordInput: {
+      flex: 1,
+      paddingVertical: 12,
+      paddingHorizontal: 4,
+      fontSize: 16,
+      color: '#11224e',
+      backgroundColor: 'transparent',
+    },
+    eyeIcon: {
+      padding: 8,
     },
     dropdown: {
       flexDirection: 'row',
@@ -330,6 +484,11 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.3,
         shadowRadius: 8,
         elevation: 5,
+    },
+    submitButtonDisabled: {
+      backgroundColor: '#F8B48B',
+      shadowColor: 'transparent',
+      elevation: 0,
     },
     submitButtonText: {
         color: '#FFFFFF',
