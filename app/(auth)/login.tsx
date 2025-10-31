@@ -1,8 +1,10 @@
 import { useAuth } from '@/contexts/AuthContext';
 import { Ionicons } from '@expo/vector-icons';
+import * as Google from 'expo-auth-session/providers/google';
 import { Image } from 'expo-image';
 import * as Linking from 'expo-linking';
-import { Link } from 'expo-router';
+import { Link, useRouter } from 'expo-router';
+import * as WebBrowser from 'expo-web-browser';
 import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
@@ -20,6 +22,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import CustomAlert from '../../components/CustomAlert';
 import ForgotPasswordModal from '../../components/ForgotPasswordModal';
 
+WebBrowser.maybeCompleteAuthSession();
+
 interface LoginForm {
   email: string;
   password: string;
@@ -35,7 +39,8 @@ interface AlertState {
 const { height } = Dimensions.get('window');
 
 export default function LoginScreen() {
-  const { login, isLoading, isAuthenticated } = useAuth();
+  const { login, signInWithGoogle, isLoading, isAuthenticated } = useAuth();
+  const router = useRouter();
   const [form, setForm] = useState<LoginForm>({
     email: '',
     password: '',
@@ -49,6 +54,36 @@ export default function LoginScreen() {
     message: '',
   });
   const [isForgotPasswordModalVisible, setForgotPasswordModalVisible] = useState(false);
+
+  const [request, response, promptAsync] = Google.useAuthRequest({
+    iosClientId: "1003184877153-pe30nmchbu9ji54o957qkh1isusesn34.apps.googleusercontent.com",
+    webClientId: "1003184877153-idnal07pq0vjods5e0pukd1ljmdafvtg.apps.googleusercontent.com",
+    androidClientId: "1003184877153-t0lfqit1m2q63jjj5hjqubgco0agk56b.apps.googleusercontent.com",
+  });
+
+  useEffect(() => {
+    if (response?.type === 'success') {
+      const { authentication } = response;
+      if (authentication?.accessToken) {
+        handleGoogleSignIn(authentication.accessToken);
+      }
+    }
+  }, [response]);
+
+  const handleGoogleSignIn = async (accessToken: string) => {
+    const result = await signInWithGoogle(accessToken);
+    if (result.success) {
+      if (result.email) {
+        // User does not exist, redirect to register screen with email pre-filled
+        router.push({ pathname: '/Register', params: { email: result.email } });
+      } else {
+        // User exists and is logged in
+        showAlert('success', 'Login Successful!', 'Welcome back to QualiSol.');
+      }
+    } else {
+      showAlert('error', 'Login Failed', result.error || 'Could not sign in with Google.');
+    }
+  };
 
   // Watch for authentication changes - navigation will be handled by AuthWrapper
   useEffect(() => {
@@ -205,6 +240,17 @@ export default function LoginScreen() {
                   ) : (
                     <Text style={styles.loginButtonText}>Se connecter</Text>
                   )}
+                </TouchableOpacity>
+
+                <View style={styles.orDivider}>
+                  <View style={styles.dividerLine} />
+                  <Text style={styles.orText}>OR</Text>
+                  <View style={styles.dividerLine} />
+                </View>
+
+                <TouchableOpacity style={styles.googleButton} onPress={() => promptAsync()}>
+                  <Ionicons name="logo-google" size={24} color="#fff" />
+                  <Text style={styles.googleButtonText}>Sign in with Google</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -376,6 +422,37 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#f87b1b',
     marginBottom: 10,
+  },
+  orDivider: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 16,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: '#E5E7EB',
+  },
+  orText: {
+    alignSelf: 'center',
+    paddingHorizontal: 8,
+    fontSize: 14,
+    color: '#6B7280',
+  },
+  googleButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#4285F4',
+    borderRadius: 12,
+    paddingVertical: 16,
+    marginTop: 12,
+  },
+  googleButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginLeft: 12,
   },
   forgotPasswordText: {
     color: '#f87b1b',

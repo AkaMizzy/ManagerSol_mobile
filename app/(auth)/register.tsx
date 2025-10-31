@@ -1,8 +1,10 @@
 import API_CONFIG from '@/app/config/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { Ionicons } from '@expo/vector-icons';
+import * as Google from 'expo-auth-session/providers/google';
 import { Image } from 'expo-image';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import * as WebBrowser from 'expo-web-browser';
 import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
@@ -21,6 +23,8 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+WebBrowser.maybeCompleteAuthSession();
+
 interface Country {
   name: string;
   flag: string;
@@ -34,8 +38,9 @@ const LabeledInput = ({ label, ...props }: TextInputProps & { label: string }) =
 );
 
 export default function RegisterScreen() {
-  const { register, isLoading } = useAuth();
+  const { register, signInWithGoogle, isLoading } = useAuth();
   const router = useRouter();
+  const params = useLocalSearchParams();
   const [formData, setFormData] = useState({
     company_title: '',
     pays: '',
@@ -55,6 +60,37 @@ export default function RegisterScreen() {
   const [isConfirmPasswordVisible, setConfirmPasswordVisible] = useState(false);
   const [emailError, setEmailError] = useState('');
   const [isCheckingEmail, setIsCheckingEmail] = useState(false);
+
+  useEffect(() => {
+    if (params.email && typeof params.email === 'string') {
+      handleInputChange('user_email', params.email);
+    }
+  }, [params.email]);
+
+  const [request, response, promptAsync] = Google.useAuthRequest({
+    webClientId: "1003184877153-idnal07pq0vjods5e0pukd1ljmdafvtg.apps.googleusercontent.com",
+    iosClientId: "1003184877153-pe30nmchbu9ji54o957qkh1isusesn34.apps.googleusercontent.com",
+    androidClientId: "1003184877153-t0lfqit1m2q63jjj5hjqubgco0agk56b.apps.googleusercontent.com",
+  });
+
+  useEffect(() => {
+    if (response?.type === 'success') {
+      const { authentication } = response;
+      if (authentication?.accessToken) {
+        handleGoogleSignIn(authentication.accessToken);
+      }
+    }
+  }, [response]);
+
+  const handleGoogleSignIn = async (accessToken: string) => {
+    const result = await signInWithGoogle(accessToken);
+    if (result.success && result.email) {
+      setFormData(prev => ({ ...prev, user_email: result.email ?? '' }));
+      Alert.alert('Email Filled', 'Your email has been filled from your Google account. Please complete the rest of the form.');
+    } else if (!result.success) {
+      Alert.alert('Error', result.error || 'An error occurred during Google Sign-In.');
+    }
+  };
 
   function isValidEmail(email: string) {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
@@ -222,7 +258,18 @@ export default function RegisterScreen() {
           </View>
           
           <View style={styles.card}>
-          <LabeledInput label="Email" placeholder="Votre email de connexion" keyboardType="email-address" autoCapitalize="none" autoCorrect={false} value={formData.user_email} onChangeText={(v) => handleInputChange('user_email', v)} />
+            <TouchableOpacity style={styles.googleButton} onPress={() => promptAsync()}>
+              <Ionicons name="logo-google" size={24} color="#fff" />
+              <Text style={styles.googleButtonText}>S&apos;inscrire avec Gmail</Text>
+            </TouchableOpacity>
+
+            <View style={styles.orDivider}>
+              <View style={styles.dividerLine} />
+              <Text style={styles.orText}>OU</Text>
+              <View style={styles.dividerLine} />
+            </View>
+
+            <LabeledInput label="Email" placeholder="Votre email de connexion" keyboardType="email-address" autoCapitalize="none" autoCorrect={false} value={formData.user_email} onChangeText={(v) => handleInputChange('user_email', v)} />
             {isCheckingEmail && <ActivityIndicator size="small" color="#f87b1b" style={styles.emailFeedbackText} />}
             {emailError ? <Text style={styles.emailErrorText}>{emailError}</Text> : null}
             {!isCheckingEmail && !emailError && formData.user_email && isValidEmail(formData.user_email) && <Text style={styles.emailSuccessText}>Email disponible</Text>}
@@ -559,5 +606,37 @@ const styles = StyleSheet.create({
     backButton: {
       alignSelf: 'flex-start',
       padding: 5,
+    },
+    googleButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: '#4285F4',
+      borderRadius: 8,
+      padding: 16,
+      marginBottom: 16,
+    },
+    googleButtonText: {
+      color: '#FFFFFF',
+      fontSize: 16,
+      fontWeight: 'bold',
+      marginLeft: 12,
+    },
+    orDivider: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginVertical: 16,
+    },
+    dividerLine: {
+      flex: 1,
+      height: 1,
+      backgroundColor: '#D1D5DB',
+    },
+    orText: {
+      marginHorizontal: 12,
+      fontSize: 14,
+      color: '#6B7280',
+      fontWeight: '600',
     },
 });
