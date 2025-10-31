@@ -105,8 +105,11 @@ export default function CreateComplementaireQualiPhotoModal({ visible, onClose, 
     await recording.stopAndUnloadAsync();
     const uri = recording.getURI();
     if (uri) {
-        setVoiceNote({ uri, name: `voicenote-${Date.now()}.m4a`, type: 'audio/m4a' });
+        const newVoiceNote = { uri, name: `voicenote-${Date.now()}.m4a`, type: 'audio/m4a' };
+        setVoiceNote(newVoiceNote);
         setIsTranscribed(false);
+        // Automatically transcribe the voice note
+        transcribeVoiceNote(newVoiceNote);
     }
     setRecording(null);
   }
@@ -130,12 +133,14 @@ export default function CreateComplementaireQualiPhotoModal({ visible, onClose, 
     return `${m}:${s}`;
   }
 
-  const handleTranscribe = async () => {
-    if (!voiceNote || !token) return;
+  const transcribeVoiceNote = async (voiceNoteToTranscribe: { uri: string; name: string; type: string }) => {
+    if (!voiceNoteToTranscribe || !token) {
+      return;
+    }
     setIsTranscribing(true);
     setError(null);
     try {
-      const result = await qualiphotoService.transcribeVoiceNote(voiceNote, token);
+      const result = await qualiphotoService.transcribeVoiceNote(voiceNoteToTranscribe, token);
       setComment(prev => prev ? `${prev}\n${result.transcription}` : result.transcription);
       setIsTranscribed(true);
     } catch (e: any) {
@@ -143,6 +148,11 @@ export default function CreateComplementaireQualiPhotoModal({ visible, onClose, 
     } finally {
       setIsTranscribing(false);
     }
+  };
+
+  const handleTranscribe = async () => {
+    if (!voiceNote || !token) return;
+    await transcribeVoiceNote(voiceNote);
   };
 
   const handleGenerateDescription = async (photoToDescribe: { uri: string; name: string; type: string }) => {

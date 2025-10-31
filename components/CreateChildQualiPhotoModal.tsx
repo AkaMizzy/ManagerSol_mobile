@@ -188,8 +188,11 @@ export function CreateChildQualiPhotoForm({ onClose, onSuccess, parentItem }: Fo
     await recording.stopAndUnloadAsync();
     const uri = recording.getURI();
     if (uri) {
-      setVoiceNote({ uri, name: `voicenote-${Date.now()}.m4a`, type: 'audio/m4a' });
+      const newVoiceNote = { uri, name: `voicenote-${Date.now()}.m4a`, type: 'audio/m4a' };
+      setVoiceNote(newVoiceNote);
       setIsTranscribed(false);
+      // Automatically transcribe the voice note
+      transcribeVoiceNote(newVoiceNote);
     }
     setRecording(null);
   }
@@ -226,15 +229,14 @@ export function CreateChildQualiPhotoForm({ onClose, onSuccess, parentItem }: Fo
     setIsTranscribed(false);
   };
 
-  const handleTranscribe = async () => {
-    if (!voiceNote || !token) {
-      Alert.alert('Erreur', 'Aucune note vocale à transcrire.');
+  const transcribeVoiceNote = async (voiceNoteToTranscribe: { uri: string; name: string; type: string }) => {
+    if (!voiceNoteToTranscribe || !token) {
       return;
     }
     setIsTranscribing(true);
     setError(null);
     try {
-      const result = await qualiphotoService.transcribeVoiceNote(voiceNote, token);
+      const result = await qualiphotoService.transcribeVoiceNote(voiceNoteToTranscribe, token);
       setComment(prev => prev ? `${prev}\n${result.transcription}` : result.transcription);
       setIsTranscribed(true);
     } catch (e: any) {
@@ -243,6 +245,14 @@ export function CreateChildQualiPhotoForm({ onClose, onSuccess, parentItem }: Fo
     } finally {
       setIsTranscribing(false);
     }
+  };
+
+  const handleTranscribe = async () => {
+    if (!voiceNote || !token) {
+      Alert.alert('Erreur', 'Aucune note vocale à transcrire.');
+      return;
+    }
+    await transcribeVoiceNote(voiceNote);
   };
 
   useEffect(() => {

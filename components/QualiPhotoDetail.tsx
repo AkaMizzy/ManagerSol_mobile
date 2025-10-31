@@ -561,7 +561,6 @@ type Props = {
         const supported = await Linking.canOpenURL(absoluteUrl);
         if (supported) {
             await Linking.openURL(absoluteUrl);
-            Alert.alert('Succès', 'PDF généré et ouvert avec succès.');
         } else {
             Alert.alert('Erreur', `Impossible d'ouvrir l'URL: ${absoluteUrl}`);
         }

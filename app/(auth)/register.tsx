@@ -218,7 +218,6 @@ export default function RegisterScreen() {
 
     const result = await register(payload);
     if (result.success) {
-        Alert.alert('Succès', 'Votre compte a été créé avec succès.');
     } else {
         Alert.alert('Erreur', result.error || 'Une erreur est survenue lors de l’inscription.');
     }
