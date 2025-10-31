@@ -40,14 +40,6 @@ export default function ConstructionLoadingScreen({
   return (
     <SafeAreaView style={styles.container}>
       
-      <View style={styles.logoContainer}>
-        <Image
-          source={require('../assets/images/icon.png')}
-          style={styles.logo}
-          contentFit="contain"
-        />
-      </View>
-      
       <View style={styles.content}>
         {/* Construction GIF */}
         <View style={styles.gifContainer}>

@@ -1,4 +1,5 @@
 import API_CONFIG from '@/app/config/api';
+import { ICONS } from '@/constants/Icons';
 import { useAuth } from '@/contexts/AuthContext';
 import { Ionicons } from '@expo/vector-icons';
 import * as Google from 'expo-auth-session/providers/google';
@@ -249,7 +250,7 @@ export default function RegisterScreen() {
         <ScrollView contentContainerStyle={styles.scrollViewContent}>
           <View style={styles.header}>
             <Image
-                source={require('../../assets/images/icon.png')}
+                source={ICONS.icon}
                 style={styles.logoImage}
                 contentFit="contain"
             />

@@ -21,6 +21,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import CustomAlert from '../../components/CustomAlert';
 import ForgotPasswordModal from '../../components/ForgotPasswordModal';
+import { ICONS } from '@/constants/Icons';
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -146,7 +147,7 @@ export default function LoginScreen() {
               <View style={styles.header}>
                 <View style={styles.logoContainer}>
                   <Image
-                    source={require('../../assets/images/icon.png')}
+                    source={ICONS.icon}
                     style={styles.logoImage}
                     contentFit="contain"
                   />
