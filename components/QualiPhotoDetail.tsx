@@ -333,21 +333,12 @@ type Props = {
   }, [visible, sound]);
 
   const handleChildSuccess = (createdItem: Partial<QualiPhotoItem>) => {
-    // Keep modal open for multiple submissions
-    if (item && token) {
-        setIsLoadingChildren(true);
-        qualiphotoService.getChildren(item.id, token)
-            .then((newChildren) => {
-                setChildren(newChildren);
-                if (createdItem.id) {
-                  const newChildInList = newChildren.find((c) => c.id === createdItem.id);
-                  if (newChildInList) {
-                      setItem(newChildInList);
-                  }
-                }
-            })
-            .catch(() => setChildren([]))
-            .finally(() => setIsLoadingChildren(false));
+    if (item && token && !item.id_qualiphoto_parent) {
+      setIsLoadingChildren(true);
+      qualiphotoService.getChildren(item.id, token, sortOrder)
+        .then(setChildren)
+        .catch(() => setChildren([]))
+        .finally(() => setIsLoadingChildren(false));
     }
   };
 

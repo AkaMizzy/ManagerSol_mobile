@@ -52,8 +52,9 @@ export function CreateChildQualiPhotoForm({ onClose, onSuccess, parentItem }: Fo
 
   const durationIntervalRef = useRef<number | null>(null);
   const scrollViewRef = useRef<ScrollView>(null);
+  const descriptionPromiseRef = useRef<Promise<any> | null>(null);
 
-  const canSave = useMemo(() => !!photo && !submitting && !isGeneratingDescription, [photo, submitting, isGeneratingDescription]);
+  const canSave = useMemo(() => !!photo && !submitting, [photo, submitting]);
 
   const resetForm = () => {
     setTitle('');
@@ -72,6 +73,7 @@ export function CreateChildQualiPhotoForm({ onClose, onSuccess, parentItem }: Fo
     setLongitude(null);
     setLocationStatus('idle');
     setError(null);
+    descriptionPromiseRef.current = null;
     scrollViewRef.current?.scrollTo({ y: 0, animated: true }); // Scroll to top
   };
 
@@ -81,20 +83,29 @@ export function CreateChildQualiPhotoForm({ onClose, onSuccess, parentItem }: Fo
     return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
   }
 
-  const handlePickPhoto = useCallback(async () => {
-    const { status } = await ImagePicker.requestCameraPermissionsAsync();
-    if (status !== 'granted') {
-      Alert.alert('Permission', 'L\'autorisation d\'accéder à la caméra est requise.');
-      return;
-    }
-    const result = await ImagePicker.launchCameraAsync({ allowsEditing: false, quality: 0.9 });
-    if (!result.canceled && result.assets[0]) {
-      const asset = result.assets[0];
-      setPhoto({ uri: asset.uri, name: `photo-${Date.now()}.jpg`, type: 'image/jpeg' });
-    }
-  }, []);
+  const startDescriptionGeneration = useCallback((photoToDescribe: { uri: string; name: string; type: string }) => {
+    if (!token) return;
 
-  const handleGenerateDescription = async (photoToDescribe: { uri: string; name: string; type: string }) => {
+    setIsGeneratingDescription(true);
+    const promise = qualiphotoService.describeImage(photoToDescribe, token)
+      .then(result => {
+        setComment(prev => (prev ? `${prev}\n${result.description}` : result.description));
+        return result.description; // Pass description to next .then()
+      })
+      .catch(e => {
+        // Silently fail for the user, but log it.
+        console.warn('Failed to auto-generate description:', e);
+        // Rethrow to allow handleSubmit to know it failed
+        throw e;
+      })
+      .finally(() => {
+        setIsGeneratingDescription(false);
+      });
+    
+    descriptionPromiseRef.current = promise;
+  }, [token]);
+
+  const handleGenerateDescription = useCallback(async (photoToDescribe: { uri: string; name: string; type: string }) => {
     if (!photoToDescribe || !token) {
       Alert.alert('Erreur', "Veuillez d'abord sélectionner une image.");
       return;
@@ -110,7 +121,22 @@ export function CreateChildQualiPhotoForm({ onClose, onSuccess, parentItem }: Fo
     } finally {
       setIsGeneratingDescription(false);
     }
-  };
+  }, [token]);
+
+  const handlePickPhoto = useCallback(async () => {
+    const { status } = await ImagePicker.requestCameraPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('Permission', 'L\'autorisation d\'accéder à la caméra est requise.');
+      return;
+    }
+    const result = await ImagePicker.launchCameraAsync({ allowsEditing: false, quality: 0.9 });
+    if (!result.canceled && result.assets[0]) {
+      const asset = result.assets[0];
+      const newPhoto = { uri: asset.uri, name: `photo-${Date.now()}.jpg`, type: 'image/jpeg' };
+      setPhoto(newPhoto);
+      startDescriptionGeneration(newPhoto);
+    }
+  }, [startDescriptionGeneration]);
 
   const handleEnhanceDescription = async () => {
     if (!comment || !token) {
@@ -140,6 +166,7 @@ export function CreateChildQualiPhotoForm({ onClose, onSuccess, parentItem }: Fo
     if (!token || !photo) return;
     setSubmitting(true);
     setError(null);
+
     try {
       const created = await qualiphotoService.createChild(parentItem.id, {
         title: title || parentItem.title || undefined,
@@ -150,6 +177,25 @@ export function CreateChildQualiPhotoForm({ onClose, onSuccess, parentItem }: Fo
         longitude: longitude || undefined,
         voice_note: voiceNote || undefined,
       }, token);
+
+      if (created.id && descriptionPromiseRef.current) {
+        descriptionPromiseRef.current
+          .then(generatedDescription => {
+            if (generatedDescription && generatedDescription.trim() !== '' && comment.trim() !== generatedDescription.trim()) {
+              qualiphotoService.updateQualiPhoto(
+                created.id as string,
+                { commentaire: comment ? `${comment}\n${generatedDescription}` : generatedDescription },
+                token
+              ).catch(e => {
+                console.warn('Background description update failed:', e);
+              });
+            }
+          })
+          .catch(e => {
+            // The error is already logged in startDescriptionGeneration
+          });
+      }
+
       onSuccess(created);
       setCreationCount(prev => prev + 1);
       resetForm();
@@ -346,7 +392,7 @@ export function CreateChildQualiPhotoForm({ onClose, onSuccess, parentItem }: Fo
                 </Text>
               </View>
             </View>
-            {parentItem.photo ? (
+            {parentItem.photo && creationCount === 0 ? (
               <View style={styles.parentPhotoContainer}>
                 <Image source={{ uri: parentItem.photo }} style={styles.parentPhoto} />
               </View>
@@ -562,7 +608,7 @@ export function CreateChildQualiPhotoForm({ onClose, onSuccess, parentItem }: Fo
           onSaved={(image) => {
             setPhoto(image);
             setAnnotatorVisible(false);
-            handleGenerateDescription(image);
+            startDescriptionGeneration(image);
           }}
           title="Annoter la photo"
         />
