@@ -90,8 +90,7 @@ export function CreateChildQualiPhotoForm({ onClose, onSuccess, parentItem }: Fo
     const result = await ImagePicker.launchCameraAsync({ allowsEditing: false, quality: 0.9 });
     if (!result.canceled && result.assets[0]) {
       const asset = result.assets[0];
-      setAnnotatorBaseUri(asset.uri);
-      setAnnotatorVisible(true);
+      setPhoto({ uri: asset.uri, name: `photo-${Date.now()}.jpg`, type: 'image/jpeg' });
     }
   }, []);
 
@@ -154,6 +153,7 @@ export function CreateChildQualiPhotoForm({ onClose, onSuccess, parentItem }: Fo
       onSuccess(created);
       setCreationCount(prev => prev + 1);
       resetForm();
+      handlePickPhoto();
     } catch (e: any) {
       setError(e?.message || 'Échec de l\'enregistrement de la photo "avant".');
     } finally {
@@ -313,7 +313,7 @@ export function CreateChildQualiPhotoForm({ onClose, onSuccess, parentItem }: Fo
       <SafeAreaView style={styles.container}>
         <View style={styles.header}>
           <TouchableOpacity onPress={onClose} style={styles.headerStopButton}>
-            <Text style={styles.stopButtonText}>Arrêter</Text>
+            <Text style={styles.stopButtonText}></Text>
           </TouchableOpacity>
           <View style={styles.headerCenter}>
             <Text style={styles.headerTitle} numberOfLines={1}>
@@ -382,7 +382,7 @@ export function CreateChildQualiPhotoForm({ onClose, onSuccess, parentItem }: Fo
               {isRecording ? (
                 <View style={styles.recordingWrap}>
                   <Text style={styles.recordingText}>Enregistrement... {formatDuration(recordingDuration)}</Text>
-                  <TouchableOpacity style={styles.stopButton} onPress={stopRecording}>
+                  <TouchableOpacity style={styles.stopRecordingButton} onPress={stopRecording}>
                     <Ionicons name="stop-circle" size={24} color="#dc2626" />
                   </TouchableOpacity>
                 </View>
@@ -526,6 +526,9 @@ export function CreateChildQualiPhotoForm({ onClose, onSuccess, parentItem }: Fo
         </ScrollView>
 
         <View style={styles.footer}>
+          <TouchableOpacity style={styles.stopButton} onPress={onClose}>
+            <Text style={styles.stopButtonText}>Arrêter</Text>
+          </TouchableOpacity>
           <TouchableOpacity style={[styles.submitButton, !canSave && styles.submitButtonDisabled]} disabled={!canSave} onPress={handleSubmit}>
             {submitting ? (
               <>
@@ -623,7 +626,7 @@ export default function CreateChildQualiPhotoModal({ visible, onClose, onSuccess
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F8FAFC' },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12, backgroundColor: '#FFFFFF', borderBottomWidth: 1, borderBottomColor: '#e5e7eb' },
-  headerStopButton: { padding: 8 },
+  headerStopButton: { padding: 8, },
   stopButtonText: { color: '#f87b1b', fontWeight: '600', fontSize: 16 },
   headerCenter: { flex: 1, alignItems: 'center', paddingHorizontal: 8 },
   headerTitle: { fontSize: 18, fontWeight: '600', color: '#11224e' },
@@ -769,13 +772,26 @@ const styles = StyleSheet.create({
   buttonDisabled: { opacity: 0.5, backgroundColor: '#e5e7eb' },
   recordingWrap: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#fef2f2', padding: 12, borderRadius: 10 },
   recordingText: { color: '#dc2626', fontWeight: '600' },
-  stopButton: { padding: 4 },
+  stopRecordingButton: { padding: 4 },
+  stopButton: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    paddingVertical: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'row',
+    gap: 8,
+    height: 48,
+    flex: 1,
+    borderWidth: 1,
+    borderColor: '#f87b1b'
+  },
   audioPlayerWrap: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#f1f5f9', paddingHorizontal: 12, height: 50, borderRadius: 10, flex: 1, borderWidth: 1, borderColor: '#f87b1b' },
   playButton: {},
   deleteButton: {},
 
-  footer: { paddingHorizontal: 16, paddingTop: 8, paddingBottom: 16, backgroundColor: '#FFFFFF', borderTopWidth: 1, borderTopColor: '#e5e7eb', gap: 8 },
-  submitButton: { backgroundColor: '#f87b1b', borderRadius: 12, paddingVertical: 16, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 8, height: 48, alignSelf: 'center', width: '92%' },
+  footer: { paddingHorizontal: 16, paddingTop: 8, paddingBottom: 24, backgroundColor: '#FFFFFF', borderTopWidth: 1, borderTopColor: '#e5e7eb', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 8 },
+  submitButton: { backgroundColor: '#f87b1b', borderRadius: 12, paddingVertical: 16, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 8, height: 48, flex: 1 },
   submitButtonDisabled: { backgroundColor: '#d1d5db' },
   submitButtonText: { fontSize: 16, fontWeight: '600', color: '#FFFFFF' },
 

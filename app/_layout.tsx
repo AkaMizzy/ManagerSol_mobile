@@ -26,7 +26,8 @@ export default function RootLayout() {
     (async () => {
       try {
         await Asset.loadAsync(ICONS_ASSETS);
-      } catch (_) {
+      } catch (error) {
+        console.error(error);
         // ignore; icons are local and should resolve, but don't block UI
       } finally {
         setAssetsReady(true);

@@ -19,7 +19,7 @@ export default function TabLayout() {
         tabBarActiveTintColor: 'transparent',
         tabBarInactiveTintColor: 'transparent',
       }}
-      // tabBar={(props) => <CustomTabBar {...props} />}
+      
     >
       <Tabs.Screen
         name="manifolder"
